@@ -2,25 +2,28 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Climb to C1 - Your English Journey</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#6c8cff" />
+  <title>Climb to C1 — Your English Journey</title>
   <link rel="stylesheet" href="assets/css/style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;500;600;700&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;500;600;700&family=Lora:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- Welcome / Login modal -->
+  <!-- Welcome modal -->
   <div id="welcome-modal" class="modal">
     <div class="modal-content welcome-card">
       <div class="logo-big">EN<span class="dot">.</span>C1</div>
-      <h1 data-lang-en="Climb to C1" data-lang-ar="ارتقِ إلى C1">Climb to C1</h1>
-      <p class="welcome-sub" data-lang-en="Your personal path from B1 to C1 — lessons, vocabulary, reading, writing, pronunciation, and challenges with your friends." data-lang-ar="رحلتك الخاصة من B1 إلى C1 — دروس، مفردات، قراءة، كتابة، نطق، وتحديات مع أصدقائك.">
-        Your personal path from B1 to C1 — lessons, vocabulary, reading, writing, pronunciation, and challenges with your friends.
+      <h1 data-lang-en="Climb to C1" data-lang-ar="ارتقِ إلى مستوى C1">Climb to C1</h1>
+      <p class="welcome-sub" data-lang-en="Your personal path from B1 to C1 — lessons, vocabulary, reading, writing, pronunciation, and friendly challenges." data-lang-ar="منصّتك الشخصية للارتقاء من B1 إلى C1 — دروس، مفردات، قراءة، كتابة، نطق، وتحديات ممتعة مع أصحابك.">
+        Your personal path from B1 to C1 — lessons, vocabulary, reading, writing, pronunciation, and friendly challenges.
       </p>
       <div class="form-row">
         <label data-lang-en="Your name" data-lang-ar="اسمك">Your name</label>
-        <input id="welcome-name" type="text" placeholder="e.g. Nawaf" maxlength="24" />
+        <input id="welcome-name" type="text" placeholder="Nawaf" maxlength="24" autocomplete="off" />
       </div>
       <div class="form-row">
         <label data-lang-en="Interface language" data-lang-ar="لغة الواجهة">Interface language</label>
@@ -32,7 +35,7 @@
       <button id="welcome-start" class="btn btn-primary btn-lg" data-lang-en="Start learning" data-lang-ar="ابدأ التعلم">
         Start learning
       </button>
-      <p class="tiny-note" data-lang-en="Your progress is saved on this device. Share the site link with friends to challenge them." data-lang-ar="يتم حفظ تقدمك على هذا الجهاز. شارك رابط الموقع مع أصدقائك للتحدي.">
+      <p class="tiny-note" data-lang-en="Your progress is saved on this device. Share the site link with friends to challenge them." data-lang-ar="تقدمك محفوظ على جهازك. شارك رابط الموقع مع أصحابك لتتحداهم.">
         Your progress is saved on this device. Share the site link with friends to challenge them.
       </p>
     </div>
@@ -40,9 +43,17 @@
 
   <!-- App shell -->
   <div id="app" class="app hidden">
-    <aside class="sidebar">
+    <!-- Mobile top bar -->
+    <header class="mobile-bar">
+      <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
+      <div class="logo mobile-logo">EN<span class="dot">.</span>C1</div>
+      <button class="ghost-btn" id="mobile-lang" title="Language">🌐</button>
+    </header>
+
+    <aside class="sidebar" id="sidebar">
       <div class="brand">
         <div class="logo">EN<span class="dot">.</span>C1</div>
+        <button class="ghost-btn close-sidebar" id="close-sidebar" aria-label="Close">✕</button>
       </div>
       <nav class="nav">
         <button class="nav-item active" data-view="dashboard">
@@ -50,6 +61,9 @@
         </button>
         <button class="nav-item" data-view="lessons">
           <span class="ico">📚</span><span data-lang-en="Lessons" data-lang-ar="الدروس">Lessons</span>
+        </button>
+        <button class="nav-item" data-view="explanations">
+          <span class="ico">💡</span><span data-lang-en="Explanations" data-lang-ar="شروحات">Explanations</span>
         </button>
         <button class="nav-item" data-view="vocabulary">
           <span class="ico">🔤</span><span data-lang-en="Vocabulary" data-lang-ar="المفردات">Vocabulary</span>
@@ -81,6 +95,7 @@
         <button id="theme-toggle" class="ghost-btn" title="Toggle theme">🌓</button>
       </div>
     </aside>
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
     <main class="main">
       <header class="topbar">
@@ -88,7 +103,7 @@
         <div class="topbar-actions">
           <button id="share-btn" class="btn btn-ghost">
             <span>🔗</span>
-            <span data-lang-en="Share link" data-lang-ar="مشاركة الرابط">Share link</span>
+            <span data-lang-en="Share link" data-lang-ar="شارك الرابط">Share link</span>
           </button>
           <button id="lang-toggle" class="btn btn-ghost">
             <span>🌐</span><span id="lang-toggle-text">العربية</span>
@@ -98,6 +113,7 @@
 
       <section id="view-dashboard" class="view active"></section>
       <section id="view-lessons" class="view"></section>
+      <section id="view-explanations" class="view"></section>
       <section id="view-vocabulary" class="view"></section>
       <section id="view-reading" class="view"></section>
       <section id="view-writing" class="view"></section>
@@ -120,6 +136,7 @@
   <script src="assets/js/i18n.js"></script>
   <script src="assets/js/views.js"></script>
   <script src="assets/js/challenges.js"></script>
+  <script src="assets/js/typing.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>

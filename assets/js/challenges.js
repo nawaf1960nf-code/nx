@@ -1,9 +1,8 @@
-// Daily-challenge logic. Deterministic per UTC day so friends with the same
-// link get the same questions. Scores are saved locally + can be shared via URL.
+// Quiz challenge: 20 deterministic-per-day questions, varied types.
 window.AppChallenges = (() => {
   const LB_KEY = "enc1_leaderboard";
-  const TOTAL = 10;
-  const TIME_PER_Q = 12; // seconds
+  const TOTAL = 20;
+  const TIME_PER_Q = 14;
 
   function todayKey() {
     const d = new Date();
@@ -16,7 +15,6 @@ window.AppChallenges = (() => {
     return Math.abs(h);
   }
 
-  // Mulberry32 PRNG seeded by the daily seed.
   function rng(seed) {
     let a = seed | 0;
     return function() {
@@ -28,25 +26,38 @@ window.AppChallenges = (() => {
     };
   }
 
-  function todaysQuestions() {
-    const bank = AppData.challengeBank.slice();
-    const r = rng(dailySeed());
-    // Fisher–Yates with the seeded RNG
-    for (let i = bank.length - 1; i > 0; i--) {
+  function shuffle(arr, r) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
       const j = Math.floor(r() * (i + 1));
-      [bank[i], bank[j]] = [bank[j], bank[i]];
+      [a[i], a[j]] = [a[j], a[i]];
     }
-    return bank.slice(0, TOTAL);
+    return a;
+  }
+
+  function todaysQuestions() {
+    const r = rng(dailySeed());
+    const bank = AppData.challengeBank.slice();
+    // Split by type to ensure variety: aim ~10 MCQ + ~5 listen + ~5 others
+    const mcqs = bank.filter(q => q.type === "mcq" || !q.type);
+    const listens = bank.filter(q => q.type === "listen");
+    const shuffledMcq = shuffle(mcqs, r);
+    const shuffledListen = shuffle(listens, r);
+    const picked = [
+      ...shuffledMcq.slice(0, Math.min(15, shuffledMcq.length)),
+      ...shuffledListen.slice(0, Math.min(5, shuffledListen.length))
+    ];
+    return shuffle(picked, r).slice(0, TOTAL);
   }
 
   function leaderboard() {
     const data = JSON.parse(localStorage.getItem(LB_KEY) || "[]");
     const me = AppApp.user().name;
     const today = todayKey();
-    const todays = data.filter(r => r.day === today)
+    return data.filter(r => r.day === today)
       .map(r => ({ ...r, you: r.name === me }))
-      .sort((a, b) => b.score - a.score || a.timeSec - b.timeSec);
-    return todays.slice(0, 20);
+      .sort((a, b) => b.score - a.score || a.timeSec - b.timeSec)
+      .slice(0, 20);
   }
 
   function recordScore({ name, score, total, timeSec }) {
@@ -57,11 +68,9 @@ window.AppChallenges = (() => {
 
   function importSharedScore(b64) {
     try {
-      const json = atob(b64);
-      const obj = JSON.parse(json);
+      const obj = JSON.parse(atob(b64));
       if (!obj.name || obj.score == null) return false;
       const data = JSON.parse(localStorage.getItem(LB_KEY) || "[]");
-      // Avoid duplicates
       const dup = data.some(r => r.name === obj.name && r.day === obj.day && r.score === obj.score && r.timeSec === obj.timeSec);
       if (!dup) {
         data.push(obj);

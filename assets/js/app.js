@@ -1,4 +1,4 @@
-// Main app controller. Wires views, state, audio, and challenges together.
+// Main app controller.
 window.AppApp = (() => {
   const STORE_USER = "enc1_user";
   const STORE_PROGRESS = "enc1_progress";
@@ -16,10 +16,15 @@ window.AppApp = (() => {
     _progress = JSON.parse(localStorage.getItem(STORE_PROGRESS) || "null") || defaultProgress();
     saveProgress();
 
-    // Handle incoming shared-score link (#score=...)
+    // Incoming shared scores
     if (location.hash.startsWith("#score=")) {
-      const ok = AppChallenges.importSharedScore(location.hash.slice("#score=".length));
-      if (ok) setTimeout(() => toast("🏆 Friend's score added to your leaderboard.", "success"), 1200);
+      const ok = AppChallenges.importSharedScore(location.hash.slice(7));
+      if (ok) setTimeout(() => toast("🏆 " + AppI18n.t("Friend's quiz score added to your board.","تم إضافة نتيجة صديقك للوحة الترتيب."), "success"), 1200);
+      history.replaceState({}, "", location.pathname + location.search);
+    }
+    if (location.hash.startsWith("#typing=")) {
+      const ok = AppTyping.importSharedScore(location.hash.slice(8));
+      if (ok) setTimeout(() => toast("⌨️ " + AppI18n.t("Friend's typing score added.","تم إضافة نتيجة كتابة صديقك."), "success"), 1200);
       history.replaceState({}, "", location.pathname + location.search);
     }
 
@@ -77,24 +82,62 @@ window.AppApp = (() => {
 
   function bindGlobalEvents() {
     document.querySelectorAll(".nav-item").forEach(btn => {
-      btn.addEventListener("click", () => go(btn.dataset.view));
+      btn.addEventListener("click", () => { go(btn.dataset.view); closeSidebar(); });
     });
     document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
-    document.getElementById("lang-toggle").addEventListener("click", () => {
-      const next = AppI18n.get() === "en" ? "ar" : "en";
-      _user.lang = next;
-      localStorage.setItem(STORE_USER, JSON.stringify(_user));
-      AppI18n.apply(next);
-      go(_currentView); // re-render
-    });
+    document.getElementById("lang-toggle").addEventListener("click", switchLang);
+    document.getElementById("mobile-lang") && document.getElementById("mobile-lang").addEventListener("click", switchLang);
     document.getElementById("share-btn").addEventListener("click", () => {
       const url = location.origin + location.pathname;
-      navigator.clipboard?.writeText(url);
-      toast(AppI18n.t("Link copied! Share it with your friends.","تم نسخ الرابط! شاركه مع أصدقائك."), "success");
+      copyToClipboard(url);
+      toast(AppI18n.t("Link copied! Share it with your friends.","تم نسخ الرابط! شاركه مع أصحابك."), "success");
     });
     document.getElementById("generic-modal").addEventListener("click", e => {
       if (e.target.id === "generic-modal") closeModal();
     });
+
+    // Mobile sidebar drawer
+    const ham = document.getElementById("hamburger");
+    const closeBtn = document.getElementById("close-sidebar");
+    const backdrop = document.getElementById("sidebar-backdrop");
+    if (ham) ham.addEventListener("click", openSidebar);
+    if (closeBtn) closeBtn.addEventListener("click", closeSidebar);
+    if (backdrop) backdrop.addEventListener("click", closeSidebar);
+  }
+
+  function openSidebar() {
+    document.getElementById("sidebar").classList.add("open");
+    document.getElementById("sidebar-backdrop").classList.add("open");
+  }
+  function closeSidebar() {
+    document.getElementById("sidebar").classList.remove("open");
+    document.getElementById("sidebar-backdrop").classList.remove("open");
+  }
+
+  function switchLang() {
+    const next = AppI18n.get() === "en" ? "ar" : "en";
+    _user.lang = next;
+    localStorage.setItem(STORE_USER, JSON.stringify(_user));
+    AppI18n.apply(next);
+    go(_currentView);
+  }
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+    } else {
+      fallbackCopy(text);
+    }
+  }
+  function fallbackCopy(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch {}
+    document.body.removeChild(ta);
   }
 
   function toggleTheme() {
@@ -111,18 +154,24 @@ window.AppApp = (() => {
     const target = document.getElementById("view-" + view);
     if (!target) return;
     target.classList.add("active");
+
     if (view === "dashboard") target.innerHTML = AppViews.renderDashboard();
     else if (view === "lessons") target.innerHTML = AppViews.renderLessons();
+    else if (view === "explanations") target.innerHTML = AppViews.renderExplanations();
     else if (view === "vocabulary") { target.innerHTML = AppViews.renderVocabulary(); mountVocab(); }
     else if (view === "reading") target.innerHTML = AppViews.renderReading();
     else if (view === "writing") target.innerHTML = AppViews.renderWriting();
     else if (view === "pronunciation") { target.innerHTML = AppViews.renderPronunciation(); mountPron(); }
     else if (view === "listening") { target.innerHTML = AppViews.renderListening(); mountListening(); }
-    else if (view === "challenges") target.innerHTML = AppViews.renderChallenges();
+    else if (view === "challenges") {
+      if (opts.sub === "quiz") { target.innerHTML = AppViews.renderChallengeQuiz(); startChallenge(); }
+      else if (opts.sub === "typing") { target.innerHTML = AppViews.renderTypingRace(); mountTyping(); }
+      else target.innerHTML = AppViews.renderChallenges();
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  // ===== speech wrapper =====
+  // ===== AUDIO =====
   function speak(btn, text) {
     if (btn && btn.classList.contains("speaking")) {
       AppAudio.stop();
@@ -131,12 +180,10 @@ window.AppApp = (() => {
     }
     document.querySelectorAll(".audio-btn.speaking").forEach(b => b.classList.remove("speaking"));
     btn && btn.classList.add("speaking");
-    AppAudio.speak(text, {
-      onend: () => btn && btn.classList.remove("speaking")
-    });
+    AppAudio.speak(text, { onend: () => btn && btn.classList.remove("speaking") });
   }
 
-  // ===== LESSON =====
+  // ===== LESSONS =====
   function openLesson(id) {
     _currentView = "lessons";
     document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
@@ -184,7 +231,17 @@ window.AppApp = (() => {
     promoteLevelIfDue();
     saveProgress();
     refreshHeader();
-    toast(AppI18n.t(`Done! ${correct} / ${l.quiz.length} correct (+${correct*10+20} XP).`, `أحسنت! ${correct}/${l.quiz.length} صحيحة (+${correct*10+20} XP).`), "success");
+    toast(AppI18n.t(`Done! ${correct}/${l.quiz.length} correct (+${correct*10+20} XP).`, `أحسنت! ${correct}/${l.quiz.length} صحيحة (+${correct*10+20} XP).`), "success");
+  }
+
+  // ===== EXPLANATIONS =====
+  function openExplanation(id) {
+    _currentView = "explanations";
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    const target = document.getElementById("view-explanations");
+    target.classList.add("active");
+    target.innerHTML = AppViews.renderExplanationDetail(id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   // ===== VOCAB =====
@@ -203,16 +260,15 @@ window.AppApp = (() => {
     if (i >= 0) _progress.knownWords.splice(i, 1);
     else { _progress.knownWords.push(w); addXP(5); }
     saveProgress();
-    if (_currentView === "vocabulary") mountVocabRefresh();
+    if (_currentView === "vocabulary") {
+      const grid = document.getElementById("vocab-grid");
+      if (grid) {
+        const search = document.getElementById("vocab-search");
+        const level = document.getElementById("vocab-level");
+        grid.innerHTML = AppViews.renderVocabGrid(search.value, level.value);
+      }
+    }
     refreshHeader();
-  }
-
-  function mountVocabRefresh() {
-    const grid = document.getElementById("vocab-grid");
-    if (!grid) return;
-    const search = document.getElementById("vocab-search");
-    const level = document.getElementById("vocab-level");
-    grid.innerHTML = AppViews.renderVocabGrid(search.value, level.value);
   }
 
   function openFlashcards() {
@@ -224,7 +280,7 @@ window.AppApp = (() => {
       if (i >= words.length) {
         content.innerHTML = `<div style="text-align:center;padding:20px;">
           <h2>🎉 ${AppI18n.t("Deck complete","انتهت البطاقات")}</h2>
-          <p>${AppI18n.t("Great session.","جلسة ممتازة.")}</p>
+          <p>${AppI18n.t("Great session!","جلسة ممتازة!")}</p>
           <button class="btn btn-primary" onclick="AppApp.closeModal()">${AppI18n.t("Close","إغلاق")}</button>
         </div>`;
         return;
@@ -240,19 +296,19 @@ window.AppApp = (() => {
             <div class="flashcard-face front">
               <div class="word-big">${w.word}</div>
               <div class="ipa">${w.ipa}</div>
-              <button class="audio-btn" style="margin-top:14px;" onclick="event.stopPropagation();AppApp.speak(this, ${JSON.stringify(w.word).replace(/"/g,"&quot;")})">🔊</button>
+              <button class="audio-btn" style="margin-top:14px;" onclick="event.stopPropagation();AppApp.speak(this, ${JSON.stringify(w.word).replace(/"/g,'&quot;')})">🔊</button>
               <div class="hint">${AppI18n.t("Tap to flip","اضغط للقلب")}</div>
             </div>
             <div class="flashcard-face back">
               <div style="font-weight:600;">${w.def}</div>
-              <div style="color:var(--text-dim);font-size:13px;margin-top:6px;">${w.defAr || ""}</div>
+              <div style="color:var(--text-dim);font-size:13px;margin-top:6px;font-family:'Cairo';">${w.defAr || ""}</div>
               <div style="margin-top:14px;font-family:'Lora',serif;font-style:italic;">"${w.ex}"</div>
             </div>
           </div>
         </div>
         <div class="flashcard-controls">
-          <button class="btn btn-danger" onclick="AppApp.fcNext(false)">${AppI18n.t("Didn't know","لم أعرف")}</button>
-          <button class="btn btn-success" onclick="AppApp.fcNext(true)">${AppI18n.t("Knew it ✓","عرفت ✓")}</button>
+          <button class="btn btn-danger" onclick="AppApp.fcNext(false)">${AppI18n.t("Didn't know","لم أعرفها")}</button>
+          <button class="btn btn-success" onclick="AppApp.fcNext(true)">${AppI18n.t("Knew it ✓","عرفتها ✓")}</button>
         </div>
       `;
       document.getElementById("fc").addEventListener("click", e => {
@@ -282,15 +338,15 @@ window.AppApp = (() => {
     ev.stopPropagation();
     document.querySelectorAll(".popup-tip").forEach(p => p.remove());
     const w = AppData.vocabulary.find(v => v.word.toLowerCase() === word.toLowerCase());
-    const def = w ? `<div class="pt-def">${w.ipa} · ${w.pos}<br>${w.def}</div>` : `<div class="pt-def" style="color:var(--text-dim);">${AppI18n.t("No entry. Hear pronunciation:","لا تعريف. استمع للنطق:")}</div>`;
+    const def = w ? `<div class="pt-def">${w.ipa} · ${w.pos}<br>${w.def}<br><span style="font-family:'Cairo';">${w.defAr || ""}</span></div>` : `<div class="pt-def" style="color:var(--text-dim);">${AppI18n.t("No entry. Hear pronunciation:","لا يوجد تعريف. استمع للنطق:")}</div>`;
     const tip = document.createElement("div");
     tip.className = "popup-tip";
     tip.innerHTML = `
       <div class="pt-word">${word}</div>
       ${def}
       <div class="pt-actions">
-        <button class="audio-btn" style="width:28px;height:28px;font-size:12px;" onclick="AppApp.speak(this, ${JSON.stringify(word).replace(/"/g,"&quot;")})">🔊</button>
-        <button class="btn btn-ghost" style="padding:4px 8px;font-size:12px;" onclick="this.closest('.popup-tip').remove()">✕</button>
+        <button class="audio-btn audio-btn-sm" onclick="AppApp.speak(this, ${JSON.stringify(word).replace(/"/g,'&quot;')})">🔊</button>
+        <button class="btn btn-ghost" style="padding:4px 8px;font-size:12px;min-height:28px;" onclick="this.closest('.popup-tip').remove()">✕</button>
       </div>
     `;
     document.body.appendChild(tip);
@@ -336,7 +392,7 @@ window.AppApp = (() => {
       if (chosen === q.correct) correct++;
     });
     addXP(correct * 8);
-    toast(AppI18n.t(`Reading done: ${correct}/${r.questions.length}.`, `قراءة: ${correct}/${r.questions.length}.`), "success");
+    toast(AppI18n.t(`Reading: ${correct}/${r.questions.length}`, `قراءة: ${correct}/${r.questions.length}`), "success");
     saveProgress();
     refreshHeader();
   }
@@ -382,11 +438,11 @@ window.AppApp = (() => {
     const lengthOk = wc >= min && wc <= max;
 
     const checks = [
-      { label: AppI18n.t("Length","الطول"), value: `${wc} ${AppI18n.t("words","كلمة")} (${AppI18n.t("target","المستهدف")} ${min}–${max})`, ok: lengthOk },
+      { label: AppI18n.t("Length","الطول"), value: `${wc} ${AppI18n.t("words","كلمة")} (${AppI18n.t("target","المطلوب")} ${min}–${max})`, ok: lengthOk },
       { label: AppI18n.t("Sentences","الجمل"), value: `${sentences} · ${AppI18n.t("avg length","متوسط الطول")} ${avgLen}` },
       { label: AppI18n.t("Lexical diversity","تنوع المفردات"), value: `${lexicalDiversity}%`, ok: +lexicalDiversity >= 55 },
       { label: AppI18n.t("Advanced vocabulary","مفردات متقدمة"), value: `${advancedWords.length} ${AppI18n.t("hits","كلمة")}`, ok: advancedWords.length >= 3 },
-      { label: AppI18n.t("Discourse markers","روابط الخطاب"), value: usedMarkers.length ? usedMarkers.join(", ") : "—", ok: usedMarkers.length >= 2 },
+      { label: AppI18n.t("Discourse markers","أدوات الربط"), value: usedMarkers.length ? usedMarkers.join(", ") : "—", ok: usedMarkers.length >= 2 },
       { label: AppI18n.t("Passive structures","صيغ مبنية للمجهول"), value: passives, ok: passives >= 1 },
       { label: AppI18n.t("Conditional used","شرطية مستخدمة"), value: conditionals ? "✓" : "—", ok: conditionals },
       { label: AppI18n.t("Cleft sentence","جملة تركيز"), value: cleft ? "✓" : "—", ok: cleft },
@@ -406,7 +462,7 @@ window.AppApp = (() => {
           </div>
         `).join("")}
         <div class="feedback-item" style="color:var(--text-dim);font-size:13px;">
-          ${AppI18n.t("Tip: aim for variety — mix short and long sentences, and try at least one C1 structure (cleft, inversion, or hedged claim).", "نصيحة: نوّع جملك بين القصيرة والطويلة، وحاول استخدام تركيب من C1 (cleft, inversion, hedging).")}
+          ${AppI18n.t("Tip: vary your sentences. Mix short and long. Try at least one C1 structure (cleft, inversion, hedging).", "نصيحة: نوّع جملك بين القصيرة والطويلة، وحاول استخدام تركيب من C1 (تركيز/قلب نحوي/تحفّظ).")}
         </div>
       </div>
     `;
@@ -428,7 +484,7 @@ window.AppApp = (() => {
         const target = btn.dataset.text;
         const resultEl = btn.closest(".pron-target").querySelector(".pron-result");
         resultEl.style.display = "block";
-        resultEl.innerHTML = `<em>${AppI18n.t("Listening... speak now.","أستمع... تكلّم الآن.")}</em>`;
+        resultEl.innerHTML = `<em>${AppI18n.t("Listening… speak now.","أستمع... تكلّم الآن.")}</em>`;
         btn.classList.add("listening");
         AppAudio.listen({
           onResult: (alts) => {
@@ -462,7 +518,6 @@ window.AppApp = (() => {
       const v = list[+voiceSel.value];
       if (v) AppAudio.setVoice(v);
     });
-    // Pre-bind quiz click selection
     document.querySelectorAll("[data-listening]").forEach(c => bindQuiz(c));
   }
 
@@ -502,11 +557,9 @@ window.AppApp = (() => {
     toast(AppI18n.t(`Listening: ${correct}/${l.questions.length}`, `استماع: ${correct}/${l.questions.length}`), "success");
   }
 
-  // ===== CHALLENGE =====
+  // ===== CHALLENGE — QUIZ =====
   let _chState = null;
   function startChallenge() {
-    const target = document.getElementById("view-challenges");
-    target.innerHTML = AppViews.renderChallengeQuiz();
     const questions = AppChallenges.todaysQuestions();
     _chState = { i: 0, questions, correct: 0, started: Date.now(), timer: null };
     renderChallengeStep();
@@ -516,6 +569,7 @@ window.AppApp = (() => {
     const stage = document.getElementById("challenge-stage");
     const fill = document.getElementById("timer-fill");
     const tt = document.getElementById("timer-text");
+    if (!stage || !fill || !tt) return;
     if (_chState.timer) clearInterval(_chState.timer);
 
     if (_chState.i >= _chState.questions.length) {
@@ -526,14 +580,14 @@ window.AppApp = (() => {
         total: _chState.questions.length,
         timeSec: elapsed
       });
-      addXP(_chState.correct * 6 + 20);
+      addXP(_chState.correct * 6 + 30);
       saveProgress();
       refreshHeader();
       stage.innerHTML = `
-        <div style="text-align:center;padding:20px;">
+        <div style="text-align:center;padding:24px 12px;">
           <h2>🎉 ${AppI18n.t("Challenge complete","انتهى التحدي")}</h2>
-          <div style="font-size:42px;font-weight:700;background:linear-gradient(135deg,var(--primary),var(--primary-2));-webkit-background-clip:text;background-clip:text;color:transparent;">${_chState.correct} / ${_chState.questions.length}</div>
-          <p style="color:var(--text-dim);">${AppI18n.t("Time","الوقت")}: ${elapsed}s</p>
+          <div style="font-size:46px;font-weight:800;background:linear-gradient(135deg,var(--primary),var(--primary-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;line-height:1;">${_chState.correct} / ${_chState.questions.length}</div>
+          <p style="color:var(--text-dim);margin-top:6px;">${AppI18n.t("Time","الوقت")}: ${elapsed}s</p>
           <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px;">
             <button class="btn btn-primary" onclick="AppApp.shareScore()">📤 ${AppI18n.t("Share my score","شارك نتيجتي")}</button>
             <button class="btn" onclick="AppApp.go('challenges')">${AppI18n.t("Leaderboard","لوحة الترتيب")}</button>
@@ -546,13 +600,20 @@ window.AppApp = (() => {
     }
 
     const q = _chState.questions[_chState.i];
+    const isListen = q.type === "listen";
     stage.innerHTML = `
-      <div style="color:var(--text-dim);font-size:13px;">${AppI18n.t("Question","سؤال")} ${_chState.i+1} / ${_chState.questions.length}</div>
-      <div class="q-text" style="font-size:18px;margin:10px 0 16px;">${q.q}</div>
+      <div style="color:var(--text-dim);font-size:13px;">${AppI18n.t("Question","السؤال")} ${_chState.i+1} / ${_chState.questions.length}</div>
+      <div class="q-text" style="font-size:17px;margin:10px 0 14px;">${escTextForAttr(q.q)}</div>
+      ${isListen ? `<div style="margin-bottom:14px;">
+        <button class="btn btn-primary" onclick="AppAudio.speak(${JSON.stringify(q.playText).replace(/"/g,'&quot;')}, {rate:0.95})">🔊 ${AppI18n.t("Play again","شغّل مرة أخرى")}</button>
+      </div>` : ""}
       <div class="quiz-options" id="ch-options">
-        ${q.options.map((o,j) => `<button class="quiz-option" data-j="${j}">${o}</button>`).join("")}
+        ${q.options.map((o,j) => `<button class="quiz-option" data-j="${j}">${escTextForAttr(o)}</button>`).join("")}
       </div>
     `;
+    if (isListen) {
+      setTimeout(() => AppAudio.speak(q.playText, { rate: 0.95 }), 200);
+    }
     let remaining = AppChallenges.TIME_PER_Q;
     fill.style.width = "100%";
     tt.textContent = remaining + "s";
@@ -580,23 +641,57 @@ window.AppApp = (() => {
     });
     if (chosen === q.correct) _chState.correct++;
     clearInterval(_chState.timer);
+    AppAudio.stop();
     setTimeout(() => { _chState.i++; renderChallengeStep(); }, 900);
   }
 
   function copyChallengeLink() {
     const url = location.origin + location.pathname;
-    navigator.clipboard?.writeText(url);
+    copyToClipboard(url);
     toast(AppI18n.t("Invite link copied!","تم نسخ رابط الدعوة!"), "success");
   }
 
   function shareScore() {
     const link = AppChallenges.shareUrlForLastScore();
     if (!link) { toast(AppI18n.t("Play the challenge first.","العب التحدي أولًا."), "error"); return; }
-    navigator.clipboard?.writeText(link);
-    toast(AppI18n.t("Score link copied! Send it to friends to add to their leaderboard.","تم نسخ رابط نتيجتك! ارسله لأصدقائك ليضاف لقائمتهم."), "success");
+    copyToClipboard(link);
+    toast(AppI18n.t("Score link copied! Send it to friends.","تم نسخ رابط نتيجتك! ارسله لأصحابك."), "success");
   }
 
-  // ===== XP + LEVEL =====
+  function switchLb(btn, kind) {
+    document.querySelectorAll(".tab[data-lb]").forEach(t => t.classList.toggle("active", t === btn));
+    const c = document.getElementById("lb-container");
+    if (c) c.innerHTML = kind === "typing" ? AppViews.renderTypingLb() : AppViews.renderQuizLb();
+  }
+
+  // ===== TYPING =====
+  function mountTyping() {
+    const txt = AppTyping.todaysText();
+    AppTyping.start(txt.text);
+    const input = document.getElementById("t-input");
+    if (input) {
+      input.addEventListener("input", e => AppTyping.onInput(e.target.value));
+      input.addEventListener("paste", e => e.preventDefault());
+      input.focus();
+    }
+  }
+  function startTyping() {
+    const target = document.getElementById("view-challenges");
+    target.innerHTML = AppViews.renderTypingRace();
+    mountTyping();
+  }
+  function shareTyping() {
+    const link = AppTyping.shareUrlForLastScore();
+    if (!link) { toast(AppI18n.t("Finish a typing run first.","أكمل سباق كتابة أولًا."), "error"); return; }
+    copyToClipboard(link);
+    toast(AppI18n.t("Typing score link copied!","تم نسخ رابط نتيجة الكتابة!"), "success");
+  }
+
+  // ===== HELPERS =====
+  function escTextForAttr(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  }
+
   function addXP(n) { _progress.xp = (_progress.xp || 0) + n; }
   function promoteLevelIfDue() {
     const c1Count = _progress.completedLessons.filter(id => {
@@ -623,7 +718,6 @@ window.AppApp = (() => {
 
   function saveProgress() { localStorage.setItem(STORE_PROGRESS, JSON.stringify(_progress)); }
 
-  // ===== TOAST =====
   let toastTimer = null;
   function toast(msg, kind = "") {
     const el = document.getElementById("toast");
@@ -634,16 +728,17 @@ window.AppApp = (() => {
     toastTimer = setTimeout(() => el.classList.add("hidden"), 3200);
   }
 
-  // expose
   return {
     init, go, openLesson, submitQuiz,
+    openExplanation,
     speak, user: () => _user, progress: () => _progress,
     toast,
     toggleWord, openFlashcards, popWord, closeModal,
     openReading, submitReading,
     openWriting, gradeWriting, readWriting,
     playListening, toggleScript, submitListening,
-    startChallenge, copyChallengeLink, shareScore
+    startChallenge, copyChallengeLink, shareScore, switchLb,
+    startTyping, shareTyping
   };
 })();
 
