@@ -3,65 +3,13 @@ const BloomApp = (function () {
 
   let currentView = 'home';
 
-  // SHA-256 of the access password. Stored as a hash so the plain password
-  // never appears in source. Change this by computing a new SHA-256 hex.
-  const GATE_HASH = '1e7d1e772929d39c523f48a45c0c07f9c2dcae5b41f591672e025367692de91a';
-  const GATE_KEY  = 'bloom.gate.unlocked';
-
-  async function sha256(text) {
-    const buf = new TextEncoder().encode(text);
-    const hash = await crypto.subtle.digest('SHA-256', buf);
-    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
   function init() {
     BloomStore.init();
     i18n.set(BloomStore.getLang());
     applyTheme(BloomStore.getTheme());
+    BloomAuth.init();
     bindUi();
 
-    // Gate first — if already unlocked on this device, skip
-    if (localStorage.getItem(GATE_KEY) === GATE_HASH) {
-      proceedAfterGate();
-    } else {
-      showGate();
-    }
-  }
-
-  function showGate() {
-    const gate = document.getElementById('gate-screen');
-    const form = document.getElementById('gate-form');
-    const input = document.getElementById('gate-pass');
-    const error = document.getElementById('gate-error');
-    const card = gate.querySelector('.gate-card');
-
-    gate.style.display = 'flex';
-    setTimeout(() => input.focus(), 100);
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const v = input.value || '';
-      error.textContent = '';
-      const h = await sha256(v);
-      if (h === GATE_HASH) {
-        localStorage.setItem(GATE_KEY, GATE_HASH);
-        gate.style.transition = 'opacity 0.4s';
-        gate.style.opacity = '0';
-        setTimeout(() => { gate.style.display = 'none'; proceedAfterGate(); }, 400);
-      } else {
-        card.classList.remove('gate-shake');
-        void card.offsetWidth;
-        card.classList.add('gate-shake');
-        error.textContent = i18n.t('Wrong password', 'كلمة سر خاطئة');
-        input.value = ''; input.focus();
-      }
-    });
-  }
-
-  function proceedAfterGate() {
-    BloomAuth.init();
-
-    // Show splash, then enter normal flow
     const splash = document.getElementById('splash');
     if (splash) splash.classList.remove('hidden');
 

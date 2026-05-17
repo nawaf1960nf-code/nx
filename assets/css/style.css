@@ -98,54 +98,6 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 input, select, textarea { font-family: inherit; color: inherit; }
 .hidden { display: none !important; }
 
-/* ───────────────── GATE (private access) ───────────────── */
-.gate-screen {
-  position: fixed; inset: 0; z-index: 10000;
-  display: flex; align-items: center; justify-content: center;
-  padding: 24px;
-  background: linear-gradient(180deg, #ffd9e8 0%, #e0ceff 100%);
-}
-.gate-card {
-  position: relative; z-index: 2;
-  width: 100%; max-width: 380px;
-  padding: 36px 28px 28px;
-  border-radius: var(--r-xl);
-  text-align: center;
-  animation: cardIn 0.5s ease-out;
-}
-.gate-card .mark-sm { margin: 0 auto 8px; }
-.gate-title {
-  font-family: 'Fraunces', serif; font-size: 36px; font-weight: 600;
-  background: linear-gradient(135deg, #e36a99, #9d76d8);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  margin-top: 8px;
-}
-.gate-sub {
-  color: var(--ink-soft); font-size: 13px;
-  letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700;
-  margin: 4px 0 24px;
-}
-.gate-card input {
-  width: 100%; padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: var(--surface-elev);
-  font-size: 18px; text-align: center;
-  letter-spacing: 0.3em;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.gate-card input:focus {
-  outline: none; border-color: var(--pink);
-  box-shadow: 0 0 0 4px rgba(247,140,177,0.15);
-}
-.gate-card .btn { margin-top: 14px; }
-.gate-shake { animation: shake 0.4s ease-in-out; }
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-8px); }
-  75% { transform: translateX(8px); }
-}
-
 /* ───────────────── SPLASH ───────────────── */
 .splash {
   position: fixed; inset: 0; z-index: 9999;
