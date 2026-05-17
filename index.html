@@ -13,37 +13,77 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;500;600;700&family=Lora:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- Welcome modal -->
-  <div id="welcome-modal" class="modal">
-    <div class="modal-content welcome-card">
-      <div class="logo-big">EN<span class="dot">.</span>C1</div>
-      <h1 data-lang-en="Climb to C1" data-lang-ar="ارتقِ إلى مستوى C1">Climb to C1</h1>
-      <p class="welcome-sub" data-lang-en="Your personal path from B1 to C1 — lessons, vocabulary, reading, writing, pronunciation, and friendly challenges." data-lang-ar="منصّتك الشخصية للارتقاء من B1 إلى C1 — دروس، مفردات، قراءة، كتابة، نطق، وتحديات ممتعة مع أصحابك.">
-        Your personal path from B1 to C1 — lessons, vocabulary, reading, writing, pronunciation, and friendly challenges.
-      </p>
-      <div class="form-row">
-        <label data-lang-en="Your name" data-lang-ar="اسمك">Your name</label>
-        <input id="welcome-name" type="text" placeholder="Nawaf" maxlength="24" autocomplete="off" />
+  <!-- Auth screen (login / signup) -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-bg">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
+    </div>
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="logo-big">EN<span class="dot">.</span>C1</div>
+        <h1 data-lang-en="Climb to C1" data-lang-ar="ارتقِ إلى C1">Climb to C1</h1>
+        <p data-lang-en="From B1 to C1 — your personal English journey." data-lang-ar="منصّتك الشخصية من B1 إلى C1.">From B1 to C1 — your personal English journey.</p>
       </div>
-      <div class="form-row">
-        <label data-lang-en="Interface language" data-lang-ar="لغة الواجهة">Interface language</label>
-        <select id="welcome-lang">
-          <option value="en">English</option>
-          <option value="ar">العربية</option>
-        </select>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login" data-lang-en="Login" data-lang-ar="تسجيل دخول">Login</button>
+        <button class="auth-tab" data-tab="signup" data-lang-en="Sign up" data-lang-ar="حساب جديد">Sign up</button>
       </div>
-      <button id="welcome-start" class="btn btn-primary btn-lg" data-lang-en="Start learning" data-lang-ar="ابدأ التعلم">
-        Start learning
-      </button>
-      <p class="tiny-note" data-lang-en="Your progress is saved on this device. Share the site link with friends to challenge them." data-lang-ar="تقدمك محفوظ على جهازك. شارك رابط الموقع مع أصحابك لتتحداهم.">
-        Your progress is saved on this device. Share the site link with friends to challenge them.
+
+      <form id="login-form" class="auth-form active" autocomplete="on">
+        <div class="form-row">
+          <label data-lang-en="Email" data-lang-ar="الإيميل">Email</label>
+          <input type="email" name="email" required placeholder="you@example.com" autocomplete="username" />
+        </div>
+        <div class="form-row">
+          <label data-lang-en="Password" data-lang-ar="كلمة السر">Password</label>
+          <input type="password" name="password" required placeholder="••••••••" autocomplete="current-password" minlength="4" />
+        </div>
+        <button class="btn btn-primary btn-lg" type="submit" data-lang-en="Login" data-lang-ar="دخول">Login</button>
+        <p class="form-error" id="login-error"></p>
+      </form>
+
+      <form id="signup-form" class="auth-form" autocomplete="on">
+        <div class="form-row">
+          <label data-lang-en="Name" data-lang-ar="الاسم">Name</label>
+          <input type="text" name="name" required placeholder="Nawaf" minlength="2" maxlength="24" autocomplete="name" />
+        </div>
+        <div class="form-row">
+          <label data-lang-en="Email (real or fake)" data-lang-ar="الإيميل (حقيقي أو وهمي)">Email (real or fake)</label>
+          <input type="email" name="email" required placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="form-row">
+          <label data-lang-en="Password (4+ characters)" data-lang-ar="كلمة السر (4 أحرف على الأقل)">Password</label>
+          <input type="password" name="password" required placeholder="••••••••" autocomplete="new-password" minlength="4" />
+        </div>
+        <div class="form-row">
+          <label data-lang-en="Interface language" data-lang-ar="لغة الواجهة">Interface language</label>
+          <select name="lang">
+            <option value="en">English</option>
+            <option value="ar" selected>العربية</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-lg" type="submit" data-lang-en="Create account" data-lang-ar="أنشئ الحساب">Create account</button>
+        <p class="form-error" id="signup-error"></p>
+      </form>
+
+      <p class="tiny-note">
+        <span data-lang-en="Your data is stored locally on this device. Each account has its own progress." data-lang-ar="بياناتك محفوظة محليًا على هذا الجهاز. كل حساب له تقدمه المنفصل.">
+          Your data is stored locally on this device.
+        </span>
       </p>
+
+      <div class="auth-langs">
+        <button class="auth-lang-btn" data-lang="en">English</button>
+        <button class="auth-lang-btn active" data-lang="ar">العربية</button>
+      </div>
     </div>
   </div>
 
   <!-- App shell -->
   <div id="app" class="app hidden">
-    <!-- Mobile top bar -->
     <header class="mobile-bar">
       <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
       <div class="logo mobile-logo">EN<span class="dot">.</span>C1</div>
@@ -56,43 +96,29 @@
         <button class="ghost-btn close-sidebar" id="close-sidebar" aria-label="Close">✕</button>
       </div>
       <nav class="nav">
-        <button class="nav-item active" data-view="dashboard">
-          <span class="ico">🏠</span><span data-lang-en="Dashboard" data-lang-ar="الرئيسية">Dashboard</span>
-        </button>
-        <button class="nav-item" data-view="lessons">
-          <span class="ico">📚</span><span data-lang-en="Lessons" data-lang-ar="الدروس">Lessons</span>
-        </button>
-        <button class="nav-item" data-view="explanations">
-          <span class="ico">💡</span><span data-lang-en="Explanations" data-lang-ar="شروحات">Explanations</span>
-        </button>
-        <button class="nav-item" data-view="vocabulary">
-          <span class="ico">🔤</span><span data-lang-en="Vocabulary" data-lang-ar="المفردات">Vocabulary</span>
-        </button>
-        <button class="nav-item" data-view="reading">
-          <span class="ico">📖</span><span data-lang-en="Reading" data-lang-ar="القراءة">Reading</span>
-        </button>
-        <button class="nav-item" data-view="writing">
-          <span class="ico">✍️</span><span data-lang-en="Writing" data-lang-ar="الكتابة">Writing</span>
-        </button>
-        <button class="nav-item" data-view="pronunciation">
-          <span class="ico">🎤</span><span data-lang-en="Pronunciation" data-lang-ar="النطق">Pronunciation</span>
-        </button>
-        <button class="nav-item" data-view="listening">
-          <span class="ico">🎧</span><span data-lang-en="Listening" data-lang-ar="الاستماع">Listening</span>
-        </button>
-        <button class="nav-item" data-view="challenges">
-          <span class="ico">⚔️</span><span data-lang-en="Challenges" data-lang-ar="التحديات">Challenges</span>
-        </button>
+        <button class="nav-item active" data-view="dashboard"><span class="ico">🏠</span><span data-lang-en="Dashboard" data-lang-ar="الرئيسية">Dashboard</span></button>
+        <button class="nav-item" data-view="lessons"><span class="ico">📚</span><span data-lang-en="Lessons" data-lang-ar="الدروس">Lessons</span></button>
+        <button class="nav-item" data-view="explanations"><span class="ico">💡</span><span data-lang-en="Explanations" data-lang-ar="شروحات">Explanations</span></button>
+        <button class="nav-item" data-view="vocabulary"><span class="ico">🔤</span><span data-lang-en="Vocabulary" data-lang-ar="المفردات">Vocabulary</span></button>
+        <button class="nav-item" data-view="reading"><span class="ico">📖</span><span data-lang-en="Reading" data-lang-ar="القراءة">Reading</span></button>
+        <button class="nav-item" data-view="writing"><span class="ico">✍️</span><span data-lang-en="Writing" data-lang-ar="الكتابة">Writing</span></button>
+        <button class="nav-item" data-view="pronunciation"><span class="ico">🎤</span><span data-lang-en="Pronunciation" data-lang-ar="النطق">Pronunciation</span></button>
+        <button class="nav-item" data-view="listening"><span class="ico">🎧</span><span data-lang-en="Listening" data-lang-ar="الاستماع">Listening</span></button>
+        <button class="nav-item" data-view="ai-chat"><span class="ico">🤖</span><span data-lang-en="AI Coach" data-lang-ar="مدرّب AI">AI Coach</span></button>
+        <button class="nav-item highlight" data-view="challenges"><span class="ico">⚔️</span><span data-lang-en="Challenges" data-lang-ar="التحديات">Challenges</span></button>
+        <button class="nav-item" data-view="achievements"><span class="ico">🏆</span><span data-lang-en="Achievements" data-lang-ar="الإنجازات">Achievements</span></button>
+        <button class="nav-item" data-view="profile"><span class="ico">👤</span><span data-lang-en="Profile" data-lang-ar="الملف الشخصي">Profile</span></button>
       </nav>
       <div class="sidebar-footer">
-        <div class="user-chip" id="user-chip">
+        <div class="user-chip" id="user-chip" onclick="AppApp.go('profile')">
           <div class="avatar" id="user-avatar">N</div>
           <div class="user-meta">
             <div class="user-name" id="user-name">—</div>
             <div class="user-level" id="user-level">B1</div>
           </div>
         </div>
-        <button id="theme-toggle" class="ghost-btn" title="Toggle theme">🌓</button>
+        <button id="sound-toggle" class="ghost-btn" title="Sound">🔊</button>
+        <button id="theme-toggle" class="ghost-btn" title="Theme">🌓</button>
       </div>
     </aside>
     <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
@@ -103,10 +129,13 @@
         <div class="topbar-actions">
           <button id="share-btn" class="btn btn-ghost">
             <span>🔗</span>
-            <span data-lang-en="Share link" data-lang-ar="شارك الرابط">Share link</span>
+            <span data-lang-en="Invite" data-lang-ar="ادعُ صديقًا">Invite</span>
           </button>
           <button id="lang-toggle" class="btn btn-ghost">
-            <span>🌐</span><span id="lang-toggle-text">العربية</span>
+            <span>🌐</span><span id="lang-toggle-text">English</span>
+          </button>
+          <button id="logout-btn" class="btn btn-ghost" title="Logout">
+            <span>🚪</span>
           </button>
         </div>
       </header>
@@ -119,24 +148,32 @@
       <section id="view-writing" class="view"></section>
       <section id="view-pronunciation" class="view"></section>
       <section id="view-listening" class="view"></section>
+      <section id="view-ai-chat" class="view"></section>
       <section id="view-challenges" class="view"></section>
+      <section id="view-achievements" class="view"></section>
+      <section id="view-profile" class="view"></section>
     </main>
   </div>
 
-  <!-- Generic modal -->
   <div id="generic-modal" class="modal hidden">
     <div class="modal-content" id="generic-modal-content"></div>
   </div>
 
-  <!-- Toast -->
   <div id="toast" class="toast hidden"></div>
 
   <script src="assets/js/data.js"></script>
   <script src="assets/js/audio.js"></script>
+  <script src="assets/js/sounds.js"></script>
+  <script src="assets/js/confetti.js"></script>
   <script src="assets/js/i18n.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/achievements.js"></script>
+  <script src="assets/js/missions.js"></script>
+  <script src="assets/js/aichat.js"></script>
   <script src="assets/js/views.js"></script>
   <script src="assets/js/challenges.js"></script>
   <script src="assets/js/typing.js"></script>
+  <script src="assets/js/battles.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>

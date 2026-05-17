@@ -1,108 +1,160 @@
-// Main app controller.
+// Main app controller — auth-gated, multi-account.
 window.AppApp = (() => {
-  const STORE_USER = "enc1_user";
-  const STORE_PROGRESS = "enc1_progress";
   const STORE_THEME = "enc1_theme";
 
-  let _user = null;
-  let _progress = null;
   let _currentView = "dashboard";
+  let _dailyXP = 0;
+  let _dailyXpDay = null;
 
   function init() {
     const theme = localStorage.getItem(STORE_THEME) || "dark";
     document.documentElement.setAttribute("data-theme", theme);
 
-    _user = JSON.parse(localStorage.getItem(STORE_USER) || "null");
-    _progress = JSON.parse(localStorage.getItem(STORE_PROGRESS) || "null") || defaultProgress();
-    saveProgress();
+    // Sound toggle init
+    const soundBtn = document.getElementById("sound-toggle");
+    if (soundBtn) soundBtn.textContent = AppSounds.isEnabled() ? "🔊" : "🔇";
 
-    // Incoming shared scores
+    // Import shared scores / battle links from hash
     if (location.hash.startsWith("#score=")) {
       const ok = AppChallenges.importSharedScore(location.hash.slice(7));
-      if (ok) setTimeout(() => toast("🏆 " + AppI18n.t("Friend's quiz score added to your board.","تم إضافة نتيجة صديقك للوحة الترتيب."), "success"), 1200);
+      if (ok) setTimeout(() => toast("🏆 " + AppI18n.t("Friend's quiz score added.","تم إضافة نتيجة صديقك."), "success"), 1500);
       history.replaceState({}, "", location.pathname + location.search);
     }
     if (location.hash.startsWith("#typing=")) {
       const ok = AppTyping.importSharedScore(location.hash.slice(8));
-      if (ok) setTimeout(() => toast("⌨️ " + AppI18n.t("Friend's typing score added.","تم إضافة نتيجة كتابة صديقك."), "success"), 1200);
+      if (ok) setTimeout(() => toast("⌨️ " + AppI18n.t("Friend's typing score added.","تم إضافة نتيجة كتابة صديقك."), "success"), 1500);
+      history.replaceState({}, "", location.pathname + location.search);
+    }
+    let pendingBattle = null;
+    if (location.hash.startsWith("#battle=")) {
+      const res = AppBattles.importFromHash(location.hash.slice(8));
+      if (res) pendingBattle = res;
       history.replaceState({}, "", location.pathname + location.search);
     }
 
-    if (!_user) showWelcome();
-    else launchApp();
-
-    bindGlobalEvents();
+    const u = AppAuth.current();
+    if (!u) showAuth(pendingBattle);
+    else launchApp(pendingBattle);
   }
 
-  function defaultProgress() {
-    return {
-      currentLevel: "B1",
-      xp: 0,
-      streak: 0,
-      lastActiveDay: null,
-      completedLessons: [],
-      knownWords: [],
-      quizScores: {},
-      pronAttempts: []
+  // ===== AUTH FLOW =====
+  function showAuth(pendingBattle) {
+    AppI18n.apply(localStorage.getItem("enc1_pref_lang") || "ar");
+    const authScreen = document.getElementById("auth-screen");
+    authScreen.classList.remove("hidden");
+    document.getElementById("app").classList.add("hidden");
+
+    document.querySelectorAll(".auth-tab").forEach(tab => {
+      tab.onclick = () => {
+        document.querySelectorAll(".auth-tab").forEach(t => t.classList.toggle("active", t === tab));
+        document.querySelectorAll(".auth-form").forEach(f => f.classList.remove("active"));
+        document.getElementById(tab.dataset.tab + "-form").classList.add("active");
+      };
+    });
+
+    document.querySelectorAll(".auth-lang-btn").forEach(b => {
+      b.onclick = () => {
+        document.querySelectorAll(".auth-lang-btn").forEach(x => x.classList.toggle("active", x === b));
+        AppI18n.apply(b.dataset.lang);
+        localStorage.setItem("enc1_pref_lang", b.dataset.lang);
+      };
+    });
+    // Init the active lang button
+    const curLang = AppI18n.get();
+    document.querySelectorAll(".auth-lang-btn").forEach(b => b.classList.toggle("active", b.dataset.lang === curLang));
+
+    document.getElementById("login-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      try {
+        await AppAuth.login({ email: f.email.value, password: f.password.value });
+        AppSounds.chime();
+        launchApp(pendingBattle);
+      } catch (err) {
+        document.getElementById("login-error").textContent = err.message;
+        AppSounds.wrong();
+      }
+    };
+
+    document.getElementById("signup-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      try {
+        await AppAuth.signup({
+          name: f.name.value, email: f.email.value,
+          password: f.password.value, lang: f.lang.value
+        });
+        AppSounds.win();
+        launchApp(pendingBattle);
+      } catch (err) {
+        document.getElementById("signup-error").textContent = err.message;
+        AppSounds.wrong();
+      }
     };
   }
 
-  function showWelcome() {
-    const modal = document.getElementById("welcome-modal");
-    const start = document.getElementById("welcome-start");
-    start.onclick = () => {
-      const name = document.getElementById("welcome-name").value.trim() || "Learner";
-      const lang = document.getElementById("welcome-lang").value;
-      _user = { name, lang, createdAt: Date.now() };
-      localStorage.setItem(STORE_USER, JSON.stringify(_user));
-      AppI18n.apply(lang);
-      modal.classList.add("hidden");
-      launchApp();
-    };
-    AppI18n.apply(document.getElementById("welcome-lang").value);
-    document.getElementById("welcome-lang").addEventListener("change", e => AppI18n.apply(e.target.value));
-  }
-
-  function launchApp() {
-    document.getElementById("welcome-modal").classList.add("hidden");
+  function launchApp(pendingBattle) {
+    document.getElementById("auth-screen").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
-    AppI18n.apply(_user.lang || "en");
+    const u = AppAuth.current();
+    AppI18n.apply(u.lang || "en");
     refreshHeader();
     refreshStreak();
-    go("dashboard");
+    bindGlobalEvents();
+    checkAchievements();
+    if (pendingBattle && pendingBattle.battle) {
+      _currentView = "challenges";
+      const target = document.getElementById("view-challenges");
+      target.innerHTML = AppViews.renderBattleRoom(pendingBattle.battle.code);
+      document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+      target.classList.add("active");
+      setActiveNav("challenges");
+      if (pendingBattle.kind === "result") AppSounds.chime();
+    } else {
+      go("dashboard");
+    }
+  }
+
+  // ===== HELPERS =====
+  function user() { return AppAuth.current(); }
+  function progress() { return AppAuth.current()?.progress || AppAuth.defaultProgress(); }
+
+  function updateProgress(updater) {
+    return AppAuth.updateProgress(updater);
   }
 
   function refreshHeader() {
-    document.getElementById("user-name").textContent = _user.name;
-    document.getElementById("user-level").textContent = _progress.currentLevel;
-    document.getElementById("user-avatar").textContent = (_user.name[0] || "?").toUpperCase();
+    const u = user();
+    if (!u) return;
+    const p = progress();
+    document.getElementById("user-name").textContent = u.name;
+    document.getElementById("user-level").textContent = p.currentLevel;
+    document.getElementById("user-avatar").textContent = (u.name[0] || "?").toUpperCase();
     document.getElementById("greeting").textContent =
-      AppI18n.t(`Hi, ${_user.name}`, `أهلًا، ${_user.name}`);
+      AppI18n.t(`Hi, ${u.name}`, `أهلًا، ${u.name}`);
   }
 
   function bindGlobalEvents() {
     document.querySelectorAll(".nav-item").forEach(btn => {
-      btn.addEventListener("click", () => { go(btn.dataset.view); closeSidebar(); });
+      btn.onclick = () => { go(btn.dataset.view); closeSidebar(); };
     });
-    document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
-    document.getElementById("lang-toggle").addEventListener("click", switchLang);
-    document.getElementById("mobile-lang") && document.getElementById("mobile-lang").addEventListener("click", switchLang);
-    document.getElementById("share-btn").addEventListener("click", () => {
-      const url = location.origin + location.pathname;
-      copyToClipboard(url);
-      toast(AppI18n.t("Link copied! Share it with your friends.","تم نسخ الرابط! شاركه مع أصحابك."), "success");
-    });
-    document.getElementById("generic-modal").addEventListener("click", e => {
+    document.getElementById("theme-toggle").onclick = toggleTheme;
+    document.getElementById("sound-toggle").onclick = toggleSound;
+    document.getElementById("lang-toggle").onclick = switchLang;
+    document.getElementById("mobile-lang").onclick = switchLang;
+    document.getElementById("logout-btn").onclick = confirmLogout;
+    document.getElementById("share-btn").onclick = () => {
+      copyToClipboard(location.origin + location.pathname);
+      toast(AppI18n.t("Link copied! Share it with friends.","تم نسخ الرابط! شاركه مع أصحابك."), "success");
+      updateProgress(p => ({ ...p, bonusShared: true }));
+      checkAchievements();
+    };
+    document.getElementById("generic-modal").onclick = e => {
       if (e.target.id === "generic-modal") closeModal();
-    });
-
-    // Mobile sidebar drawer
-    const ham = document.getElementById("hamburger");
-    const closeBtn = document.getElementById("close-sidebar");
-    const backdrop = document.getElementById("sidebar-backdrop");
-    if (ham) ham.addEventListener("click", openSidebar);
-    if (closeBtn) closeBtn.addEventListener("click", closeSidebar);
-    if (backdrop) backdrop.addEventListener("click", closeSidebar);
+    };
+    document.getElementById("hamburger").onclick = openSidebar;
+    document.getElementById("close-sidebar").onclick = closeSidebar;
+    document.getElementById("sidebar-backdrop").onclick = closeSidebar;
   }
 
   function openSidebar() {
@@ -116,28 +168,11 @@ window.AppApp = (() => {
 
   function switchLang() {
     const next = AppI18n.get() === "en" ? "ar" : "en";
-    _user.lang = next;
-    localStorage.setItem(STORE_USER, JSON.stringify(_user));
+    AppAuth.updateCurrent({ lang: next });
     AppI18n.apply(next);
+    updateProgress(p => ({ ...p, bonusLang: true }));
+    checkAchievements();
     go(_currentView);
-  }
-
-  function copyToClipboard(text) {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
-    } else {
-      fallbackCopy(text);
-    }
-  }
-  function fallbackCopy(text) {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand("copy"); } catch {}
-    document.body.removeChild(ta);
   }
 
   function toggleTheme() {
@@ -147,9 +182,39 @@ window.AppApp = (() => {
     localStorage.setItem(STORE_THEME, next);
   }
 
+  function toggleSound() {
+    const enabled = !AppSounds.isEnabled();
+    AppSounds.setEnabled(enabled);
+    document.getElementById("sound-toggle").textContent = enabled ? "🔊" : "🔇";
+    if (enabled) AppSounds.pop();
+  }
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+    else fallbackCopy(text);
+  }
+  function fallbackCopy(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch {}
+    document.body.removeChild(ta);
+  }
+
+  function confirmLogout() {
+    if (confirm(AppI18n.t("Log out of your account?","تسجيل الخروج من حسابك؟"))) {
+      AppAuth.logout();
+      location.reload();
+    }
+  }
+
+  function setActiveNav(view) {
+    document.querySelectorAll(".nav-item").forEach(n => n.classList.toggle("active", n.dataset.view === view));
+  }
+
   function go(view, opts = {}) {
     _currentView = view;
-    document.querySelectorAll(".nav-item").forEach(n => n.classList.toggle("active", n.dataset.view === view));
+    setActiveNav(view);
     document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
     const target = document.getElementById("view-" + view);
     if (!target) return;
@@ -163,20 +228,23 @@ window.AppApp = (() => {
     else if (view === "writing") target.innerHTML = AppViews.renderWriting();
     else if (view === "pronunciation") { target.innerHTML = AppViews.renderPronunciation(); mountPron(); }
     else if (view === "listening") { target.innerHTML = AppViews.renderListening(); mountListening(); }
+    else if (view === "ai-chat") { target.innerHTML = AppViews.renderAiChat(); mountChat(); }
+    else if (view === "achievements") target.innerHTML = AppViews.renderAchievements();
+    else if (view === "profile") target.innerHTML = AppViews.renderProfile();
     else if (view === "challenges") {
       if (opts.sub === "quiz") { target.innerHTML = AppViews.renderChallengeQuiz(); startChallenge(); }
       else if (opts.sub === "typing") { target.innerHTML = AppViews.renderTypingRace(); mountTyping(); }
+      else if (opts.sub === "battle") target.innerHTML = AppViews.renderBattles();
       else target.innerHTML = AppViews.renderChallenges();
     }
+    AppSounds.pop();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   // ===== AUDIO =====
   function speak(btn, text) {
     if (btn && btn.classList.contains("speaking")) {
-      AppAudio.stop();
-      btn.classList.remove("speaking");
-      return;
+      AppAudio.stop(); btn.classList.remove("speaking"); return;
     }
     document.querySelectorAll(".audio-btn.speaking").forEach(b => b.classList.remove("speaking"));
     btn && btn.classList.add("speaking");
@@ -198,10 +266,11 @@ window.AppApp = (() => {
     if (!container) return;
     container.querySelectorAll(".quiz-question").forEach(qDiv => {
       qDiv.querySelectorAll(".quiz-option").forEach(opt => {
-        opt.addEventListener("click", () => {
+        opt.onclick = () => {
+          AppSounds.pop();
           qDiv.querySelectorAll(".quiz-option").forEach(o => o.classList.remove("selected"));
           opt.classList.add("selected");
-        });
+        };
       });
     });
   }
@@ -225,13 +294,20 @@ window.AppApp = (() => {
       if (q.explain) { exDiv.textContent = "💡 " + q.explain; exDiv.style.display = "block"; }
       if (chosen === q.correct) correct++;
     });
-    _progress.quizScores[lessonId] = { score: correct, total: l.quiz.length, at: Date.now() };
-    if (!_progress.completedLessons.includes(lessonId)) _progress.completedLessons.push(lessonId);
-    addXP(correct * 10 + 20);
+    updateProgress(p => {
+      p.quizScores = p.quizScores || {};
+      p.quizScores[lessonId] = { score: correct, total: l.quiz.length, at: Date.now() };
+      if (!p.completedLessons.includes(lessonId)) p.completedLessons.push(lessonId);
+      return p;
+    });
     promoteLevelIfDue();
-    saveProgress();
+    const xp = correct * 10 + 20;
+    addXP(xp);
+    markMission("do-lesson");
+    correct >= l.quiz.length * 0.7 ? AppSounds.win() : AppSounds.correct();
+    toast(AppI18n.t(`Done! ${correct}/${l.quiz.length} (+${xp} XP)`, `أحسنت! ${correct}/${l.quiz.length} (+${xp} XP)`), "success");
     refreshHeader();
-    toast(AppI18n.t(`Done! ${correct}/${l.quiz.length} correct (+${correct*10+20} XP).`, `أحسنت! ${correct}/${l.quiz.length} صحيحة (+${correct*10+20} XP).`), "success");
+    checkAchievements();
   }
 
   // ===== EXPLANATIONS =====
@@ -241,6 +317,16 @@ window.AppApp = (() => {
     const target = document.getElementById("view-explanations");
     target.classList.add("active");
     target.innerHTML = AppViews.renderExplanationDetail(id);
+    markMission("do-explanation");
+    // Track opened explanations
+    updateProgress(p => {
+      const opened = new Set(p.openedExplanations || []);
+      opened.add(id);
+      p.openedExplanations = Array.from(opened);
+      if (opened.size >= AppData.explanations.length) p.bonusExplanationsAll = true;
+      return p;
+    });
+    checkAchievements();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -249,26 +335,29 @@ window.AppApp = (() => {
     const grid = document.getElementById("vocab-grid");
     const search = document.getElementById("vocab-search");
     const level = document.getElementById("vocab-level");
-    function refresh() { grid.innerHTML = AppViews.renderVocabGrid(search.value, level.value); }
-    search.addEventListener("input", refresh);
-    level.addEventListener("change", refresh);
+    const refresh = () => { grid.innerHTML = AppViews.renderVocabGrid(search.value, level.value); };
+    search.oninput = refresh;
+    level.onchange = refresh;
     refresh();
   }
 
   function toggleWord(w) {
-    const i = _progress.knownWords.indexOf(w);
-    if (i >= 0) _progress.knownWords.splice(i, 1);
-    else { _progress.knownWords.push(w); addXP(5); }
-    saveProgress();
+    let added = false;
+    updateProgress(p => {
+      const idx = p.knownWords.indexOf(w);
+      if (idx >= 0) p.knownWords.splice(idx, 1);
+      else { p.knownWords.push(w); added = true; }
+      return p;
+    });
+    if (added) { addXP(5); AppSounds.pop(); markMission("learn-5-words"); }
     if (_currentView === "vocabulary") {
       const grid = document.getElementById("vocab-grid");
-      if (grid) {
-        const search = document.getElementById("vocab-search");
-        const level = document.getElementById("vocab-level");
-        grid.innerHTML = AppViews.renderVocabGrid(search.value, level.value);
-      }
+      const search = document.getElementById("vocab-search");
+      const level = document.getElementById("vocab-level");
+      if (grid) grid.innerHTML = AppViews.renderVocabGrid(search.value, level.value);
     }
     refreshHeader();
+    checkAchievements();
   }
 
   function openFlashcards() {
@@ -278,9 +367,10 @@ window.AppApp = (() => {
     const content = document.getElementById("generic-modal-content");
     function render() {
       if (i >= words.length) {
+        AppConfetti.fire({ count: 60 });
+        AppSounds.win();
         content.innerHTML = `<div style="text-align:center;padding:20px;">
           <h2>🎉 ${AppI18n.t("Deck complete","انتهت البطاقات")}</h2>
-          <p>${AppI18n.t("Great session!","جلسة ممتازة!")}</p>
           <button class="btn btn-primary" onclick="AppApp.closeModal()">${AppI18n.t("Close","إغلاق")}</button>
         </div>`;
         return;
@@ -311,18 +401,22 @@ window.AppApp = (() => {
           <button class="btn btn-success" onclick="AppApp.fcNext(true)">${AppI18n.t("Knew it ✓","عرفتها ✓")}</button>
         </div>
       `;
-      document.getElementById("fc").addEventListener("click", e => {
-        e.currentTarget.classList.toggle("flipped");
-      });
+      document.getElementById("fc").onclick = e => e.currentTarget.classList.toggle("flipped");
     }
     window.AppApp.fcNext = (known) => {
       const w = words[i];
-      if (known && !_progress.knownWords.includes(w.word)) {
-        _progress.knownWords.push(w.word);
+      if (known) {
+        updateProgress(p => {
+          if (!p.knownWords.includes(w.word)) p.knownWords.push(w.word);
+          return p;
+        });
         addXP(5);
+        AppSounds.correct();
+        markMission("learn-5-words");
+      } else {
+        AppSounds.wrong();
       }
       i++;
-      saveProgress();
       refreshHeader();
       render();
     };
@@ -330,15 +424,15 @@ window.AppApp = (() => {
     render();
   }
 
-  function closeModal() {
-    document.getElementById("generic-modal").classList.add("hidden");
-  }
+  function closeModal() { document.getElementById("generic-modal").classList.add("hidden"); }
 
   function popWord(ev, word) {
     ev.stopPropagation();
     document.querySelectorAll(".popup-tip").forEach(p => p.remove());
     const w = AppData.vocabulary.find(v => v.word.toLowerCase() === word.toLowerCase());
-    const def = w ? `<div class="pt-def">${w.ipa} · ${w.pos}<br>${w.def}<br><span style="font-family:'Cairo';">${w.defAr || ""}</span></div>` : `<div class="pt-def" style="color:var(--text-dim);">${AppI18n.t("No entry. Hear pronunciation:","لا يوجد تعريف. استمع للنطق:")}</div>`;
+    const def = w
+      ? `<div class="pt-def">${w.ipa} · ${w.pos}<br>${w.def}<br><span style="font-family:'Cairo';">${w.defAr||""}</span></div>`
+      : `<div class="pt-def" style="color:var(--text-dim);">${AppI18n.t("No entry. Hear pronunciation:","لا يوجد تعريف. استمع للنطق:")}</div>`;
     const tip = document.createElement("div");
     tip.className = "popup-tip";
     tip.innerHTML = `
@@ -384,17 +478,21 @@ window.AppApp = (() => {
         if (j === q.correct) o.classList.add("correct");
         if (j === chosen && j !== q.correct) o.classList.add("wrong");
       });
-      if (q.explain) {
-        const ex = qDiv.querySelector(".q-explain");
-        ex.textContent = "💡 " + q.explain;
-        ex.style.display = "block";
-      }
       if (chosen === q.correct) correct++;
     });
     addXP(correct * 8);
+    updateProgress(p => {
+      const done = new Set(p.completedReadings || []);
+      done.add(id);
+      p.completedReadings = Array.from(done);
+      if (done.size >= AppData.readings.length) p.bonusReadingsAll = true;
+      return p;
+    });
+    markMission("do-reading");
+    AppSounds.correct();
     toast(AppI18n.t(`Reading: ${correct}/${r.questions.length}`, `قراءة: ${correct}/${r.questions.length}`), "success");
-    saveProgress();
     refreshHeader();
+    checkAchievements();
   }
 
   // ===== WRITING =====
@@ -412,46 +510,38 @@ window.AppApp = (() => {
     const text = document.getElementById("writing-input").value.trim();
     const fb = document.getElementById("writing-feedback");
     if (!text) { fb.innerHTML = `<div class="writing-feedback">${AppI18n.t("Write something first.","اكتب شيئًا أولًا.")}</div>`; return; }
-
     const words = text.split(/\s+/).filter(Boolean);
     const wc = words.length;
     const sentences = text.split(/[.!?]+/).filter(s => s.trim().length).length || 1;
     const avgLen = (wc / sentences).toFixed(1);
     const unique = new Set(words.map(w => w.toLowerCase().replace(/[^\w'-]/g,""))).size;
-    const lexicalDiversity = ((unique / wc) * 100).toFixed(0);
-
-    const advancedWords = words.filter(w => {
+    const lex = ((unique / wc) * 100).toFixed(0);
+    const adv = words.filter(w => {
       const c = w.toLowerCase().replace(/[^\w]/g,"");
       return AppData.vocabulary.some(v => v.word.toLowerCase() === c);
     });
-
     const markers = ["however","moreover","consequently","furthermore","nevertheless","therefore","that said","in addition","on the contrary","hence","accordingly","arguably"];
     const usedMarkers = markers.filter(m => new RegExp("\\b"+m+"\\b", "i").test(text));
-
     const passives = (text.match(/\b(is|are|was|were|be|been|being)\s+\w+ed\b/gi) || []).length;
     const conditionals = /\bif\b.+(would|could|might|will)/i.test(text);
     const cleft = /\bit (was|is)\b.+\bthat\b/i.test(text) || /\bwhat\b.+\bis\b/i.test(text);
     const inversion = /^(Never|Rarely|Seldom|Hardly|Not only|Little|Only|Under no circumstances)\b/im.test(text);
-
     const targetMatch = p.prompt.match(/(\d+)[–-](\d+)\s*words/i);
     const [min, max] = targetMatch ? [+targetMatch[1], +targetMatch[2]] : [120, 220];
     const lengthOk = wc >= min && wc <= max;
-
     const checks = [
-      { label: AppI18n.t("Length","الطول"), value: `${wc} ${AppI18n.t("words","كلمة")} (${AppI18n.t("target","المطلوب")} ${min}–${max})`, ok: lengthOk },
-      { label: AppI18n.t("Sentences","الجمل"), value: `${sentences} · ${AppI18n.t("avg length","متوسط الطول")} ${avgLen}` },
-      { label: AppI18n.t("Lexical diversity","تنوع المفردات"), value: `${lexicalDiversity}%`, ok: +lexicalDiversity >= 55 },
-      { label: AppI18n.t("Advanced vocabulary","مفردات متقدمة"), value: `${advancedWords.length} ${AppI18n.t("hits","كلمة")}`, ok: advancedWords.length >= 3 },
-      { label: AppI18n.t("Discourse markers","أدوات الربط"), value: usedMarkers.length ? usedMarkers.join(", ") : "—", ok: usedMarkers.length >= 2 },
-      { label: AppI18n.t("Passive structures","صيغ مبنية للمجهول"), value: passives, ok: passives >= 1 },
-      { label: AppI18n.t("Conditional used","شرطية مستخدمة"), value: conditionals ? "✓" : "—", ok: conditionals },
-      { label: AppI18n.t("Cleft sentence","جملة تركيز"), value: cleft ? "✓" : "—", ok: cleft },
-      { label: AppI18n.t("Inversion","قلب نحوي"), value: inversion ? "✓" : "—", ok: inversion },
+      { label: AppI18n.t("Length","الطول"), value: `${wc} (${AppI18n.t("target","المطلوب")} ${min}–${max})`, ok: lengthOk },
+      { label: AppI18n.t("Sentences","الجمل"), value: `${sentences} · ${avgLen} ${AppI18n.t("avg","متوسط")}` },
+      { label: AppI18n.t("Diversity","التنوع"), value: `${lex}%`, ok: +lex >= 55 },
+      { label: AppI18n.t("Advanced vocab","مفردات متقدمة"), value: `${adv.length}`, ok: adv.length >= 3 },
+      { label: AppI18n.t("Markers","الروابط"), value: usedMarkers.length ? usedMarkers.join(", ") : "—", ok: usedMarkers.length >= 2 },
+      { label: AppI18n.t("Passives","مبني للمجهول"), value: passives, ok: passives >= 1 },
+      { label: AppI18n.t("Conditional","شرطية"), value: conditionals?"✓":"—", ok: conditionals },
+      { label: AppI18n.t("Cleft","تركيز"), value: cleft?"✓":"—", ok: cleft },
+      { label: AppI18n.t("Inversion","قلب نحوي"), value: inversion?"✓":"—", ok: inversion },
     ];
-
     const score = checks.filter(c => c.ok).length;
     const grade = score >= 7 ? "C1 🟢" : score >= 5 ? "B2 🔵" : "B1 🟡";
-
     fb.innerHTML = `
       <div class="writing-feedback">
         <h3 style="margin:0 0 10px;">${AppI18n.t("Estimated level","المستوى التقديري")}: ${grade}</h3>
@@ -461,26 +551,29 @@ window.AppApp = (() => {
             ${c.ok != null ? (c.ok ? " ✅" : " ⚠️") : ""}
           </div>
         `).join("")}
-        <div class="feedback-item" style="color:var(--text-dim);font-size:13px;">
-          ${AppI18n.t("Tip: vary your sentences. Mix short and long. Try at least one C1 structure (cleft, inversion, hedging).", "نصيحة: نوّع جملك بين القصيرة والطويلة، وحاول استخدام تركيب من C1 (تركيز/قلب نحوي/تحفّظ).")}
-        </div>
       </div>
     `;
     addXP(score * 6 + 10);
-    saveProgress();
+    if (score >= 7) {
+      updateProgress(pr => ({ ...pr, bonusWritingC1: true }));
+      AppConfetti.fire({ count: 80 });
+      AppSounds.win();
+    } else {
+      AppSounds.correct();
+    }
     refreshHeader();
+    checkAchievements();
   }
 
   function readWriting() {
     const text = document.getElementById("writing-input").value.trim();
-    if (!text) return;
-    AppAudio.speak(text);
+    if (text) AppAudio.speak(text);
   }
 
   // ===== PRONUNCIATION =====
   function mountPron() {
     document.querySelectorAll(".mic-trigger").forEach(btn => {
-      btn.addEventListener("click", () => {
+      btn.onclick = () => {
         const target = btn.dataset.text;
         const resultEl = btn.closest(".pron-target").querySelector(".pron-result");
         resultEl.style.display = "block";
@@ -497,15 +590,21 @@ window.AppApp = (() => {
               <div style="margin-top:6px;color:var(--text-dim);">${AppI18n.t("You said","قلت")}: <em>"${best}"</em></div>
               <div style="margin-top:6px;font-size:13px;color:var(--muted);">${AppI18n.t("Target","المطلوب")}: ${target}</div>
             `;
-            _progress.pronAttempts.push({ target, said: best, score: pct, at: Date.now() });
             addXP(Math.round(pct / 10));
-            saveProgress();
+            if (pct >= 90) {
+              updateProgress(p => ({ ...p, bonusPronounceHigh: true }));
+              AppSounds.win();
+              AppConfetti.fire({ count: 40 });
+            } else if (pct >= 60) AppSounds.correct();
+            else AppSounds.wrong();
+            markMission("do-pronunciation");
             refreshHeader();
+            checkAchievements();
           },
-          onError: (err) => { resultEl.innerHTML = `<span style="color:var(--danger);">⚠ ${err}</span>`; },
+          onError: (err) => { resultEl.innerHTML = `<span style="color:var(--danger);">⚠ ${err}</span>`; AppSounds.wrong(); },
           onEnd: () => btn.classList.remove("listening")
         });
-      });
+      };
     });
   }
 
@@ -514,27 +613,21 @@ window.AppApp = (() => {
     const voiceSel = document.getElementById("voice-select");
     const list = AppAudio.listEnglishVoices();
     voiceSel.innerHTML = list.map((v,i) => `<option value="${i}">${v.name} (${v.lang})</option>`).join("") || `<option>${AppI18n.t("Default","افتراضي")}</option>`;
-    voiceSel.addEventListener("change", () => {
-      const v = list[+voiceSel.value];
-      if (v) AppAudio.setVoice(v);
-    });
+    voiceSel.onchange = () => { const v = list[+voiceSel.value]; if (v) AppAudio.setVoice(v); };
     document.querySelectorAll("[data-listening]").forEach(c => bindQuiz(c));
   }
-
   function playListening(id) {
     const l = AppData.listening.find(x => x.id === id);
     if (!l) return;
     const rate = parseFloat(document.getElementById("rate-select").value);
     AppAudio.speak(l.script, { rate });
   }
-
   function toggleScript(id, btn) {
     const el = document.getElementById("script-" + id);
     const open = el.style.display === "none";
     el.style.display = open ? "block" : "none";
     btn.textContent = open ? AppI18n.t("Hide script","إخفاء النص") : AppI18n.t("Show script","إظهار النص");
   }
-
   function submitListening(id) {
     const l = AppData.listening.find(x => x.id === id);
     const container = document.querySelector(`[data-listening="${id}"]`);
@@ -552,16 +645,61 @@ window.AppApp = (() => {
       if (chosen === q.correct) correct++;
     });
     addXP(correct * 8);
-    saveProgress();
+    markMission("do-listening");
+    AppSounds.correct();
     refreshHeader();
+    checkAchievements();
     toast(AppI18n.t(`Listening: ${correct}/${l.questions.length}`, `استماع: ${correct}/${l.questions.length}`), "success");
   }
 
-  // ===== CHALLENGE — QUIZ =====
+  // ===== AI CHAT =====
+  function mountChat() {
+    const input = document.getElementById("chat-input");
+    if (!input) return;
+    input.focus();
+    input.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); sendChat(); } };
+    const msgs = document.getElementById("chat-messages");
+    if (msgs) msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function sendChat() {
+    const input = document.getElementById("chat-input");
+    const msgs = document.getElementById("chat-messages");
+    if (!input || !msgs) return;
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = "";
+    const log = AppAiChat.loadLog();
+    log.push({ role: "user", text });
+    msgs.insertAdjacentHTML("beforeend", `<div class="chat-msg user">${escHtml(text)}</div>`);
+    AppSounds.pop();
+    setTimeout(() => {
+      const r = AppAiChat.reply(text);
+      log.push({ role: "bot", text: r.reply, tips: r.tips });
+      AppAiChat.saveLog(log);
+      msgs.insertAdjacentHTML("beforeend", `<div class="chat-msg bot">${escHtml(r.reply)}</div>${r.tips && r.tips.length ? `<div class="chat-tips">💡 ${r.tips.map(escHtml).join(" · ")}</div>` : ""}`);
+      msgs.scrollTop = msgs.scrollHeight;
+      AppSounds.correct();
+      AppAudio.speak(r.reply, { rate: 0.95 });
+      updateProgress(p => ({ ...p, bonusAiTalked: true }));
+      markMission("chat-ai");
+      addXP(5);
+      checkAchievements();
+    }, 400);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function clearChat() {
+    if (!confirm(AppI18n.t("Clear chat history?","مسح المحادثة؟"))) return;
+    AppAiChat.clear();
+    go("ai-chat");
+  }
+
+  // ===== CHALLENGE QUIZ =====
   let _chState = null;
-  function startChallenge() {
-    const questions = AppChallenges.todaysQuestions();
-    _chState = { i: 0, questions, correct: 0, started: Date.now(), timer: null };
+  function startChallenge(opts) {
+    const questions = opts && opts.questions ? opts.questions : AppChallenges.todaysQuestions();
+    _chState = { i: 0, questions, correct: 0, started: Date.now(), timer: null, battleCode: opts && opts.battleCode || null };
     renderChallengeStep();
   }
 
@@ -574,28 +712,42 @@ window.AppApp = (() => {
 
     if (_chState.i >= _chState.questions.length) {
       const elapsed = Math.round((Date.now() - _chState.started) / 1000);
-      AppChallenges.recordScore({
-        name: _user.name,
-        score: _chState.correct,
-        total: _chState.questions.length,
-        timeSec: elapsed
+      const u = user();
+      if (_chState.battleCode) {
+        AppBattles.recordResult(_chState.battleCode, {
+          name: u.name, type: "quiz", score: _chState.correct,
+          total: _chState.questions.length, timeSec: elapsed
+        });
+      } else {
+        AppChallenges.recordScore({ name: u.name, score: _chState.correct, total: _chState.questions.length, timeSec: elapsed });
+      }
+      updateProgress(p => {
+        if (_chState.correct > (p.bestQuiz || 0)) p.bestQuiz = _chState.correct;
+        return p;
       });
       addXP(_chState.correct * 6 + 30);
-      saveProgress();
-      refreshHeader();
+      markMission("do-challenge");
+      const perfect = _chState.correct === _chState.questions.length;
+      if (perfect) { AppConfetti.fire({ count: 120 }); AppSounds.win(); }
+      else if (_chState.correct >= _chState.questions.length * 0.7) { AppConfetti.fire({ count: 60 }); AppSounds.win(); }
+      else AppSounds.chime();
       stage.innerHTML = `
         <div style="text-align:center;padding:24px 12px;">
           <h2>🎉 ${AppI18n.t("Challenge complete","انتهى التحدي")}</h2>
-          <div style="font-size:46px;font-weight:800;background:linear-gradient(135deg,var(--primary),var(--primary-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;line-height:1;">${_chState.correct} / ${_chState.questions.length}</div>
+          <div style="font-size:46px;font-weight:800;line-height:1;background:linear-gradient(135deg,var(--primary),var(--primary-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;">${_chState.correct} / ${_chState.questions.length}</div>
           <p style="color:var(--text-dim);margin-top:6px;">${AppI18n.t("Time","الوقت")}: ${elapsed}s</p>
           <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px;">
-            <button class="btn btn-primary" onclick="AppApp.shareScore()">📤 ${AppI18n.t("Share my score","شارك نتيجتي")}</button>
-            <button class="btn" onclick="AppApp.go('challenges')">${AppI18n.t("Leaderboard","لوحة الترتيب")}</button>
+            ${_chState.battleCode
+              ? `<button class="btn btn-primary" onclick="AppApp.copyBattleResult('${_chState.battleCode}')">📤 ${AppI18n.t("Share my result","شارك نتيجتي")}</button>
+                 <button class="btn" onclick="AppApp.openBattleRoom('${_chState.battleCode}')">${AppI18n.t("Battle room","غرفة المعركة")}</button>`
+              : `<button class="btn btn-primary" onclick="AppApp.shareScore()">📤 ${AppI18n.t("Share my score","شارك نتيجتي")}</button>
+                 <button class="btn" onclick="AppApp.go('challenges')">${AppI18n.t("Leaderboard","لوحة الترتيب")}</button>`}
           </div>
         </div>
       `;
-      fill.style.width = "0%";
-      tt.textContent = "✓";
+      fill.style.width = "0%"; tt.textContent = "✓";
+      refreshHeader();
+      checkAchievements();
       return;
     }
 
@@ -603,31 +755,26 @@ window.AppApp = (() => {
     const isListen = q.type === "listen";
     stage.innerHTML = `
       <div style="color:var(--text-dim);font-size:13px;">${AppI18n.t("Question","السؤال")} ${_chState.i+1} / ${_chState.questions.length}</div>
-      <div class="q-text" style="font-size:17px;margin:10px 0 14px;">${escTextForAttr(q.q)}</div>
+      <div class="q-text" style="font-size:17px;margin:10px 0 14px;">${escHtml(q.q)}</div>
       ${isListen ? `<div style="margin-bottom:14px;">
         <button class="btn btn-primary" onclick="AppAudio.speak(${JSON.stringify(q.playText).replace(/"/g,'&quot;')}, {rate:0.95})">🔊 ${AppI18n.t("Play again","شغّل مرة أخرى")}</button>
       </div>` : ""}
       <div class="quiz-options" id="ch-options">
-        ${q.options.map((o,j) => `<button class="quiz-option" data-j="${j}">${escTextForAttr(o)}</button>`).join("")}
+        ${q.options.map((o,j) => `<button class="quiz-option" data-j="${j}">${escHtml(o)}</button>`).join("")}
       </div>
     `;
-    if (isListen) {
-      setTimeout(() => AppAudio.speak(q.playText, { rate: 0.95 }), 200);
-    }
+    if (isListen) setTimeout(() => AppAudio.speak(q.playText, { rate: 0.95 }), 200);
     let remaining = AppChallenges.TIME_PER_Q;
-    fill.style.width = "100%";
-    tt.textContent = remaining + "s";
+    fill.style.width = "100%"; tt.textContent = remaining + "s";
     _chState.timer = setInterval(() => {
       remaining--;
       fill.style.width = (remaining / AppChallenges.TIME_PER_Q) * 100 + "%";
       tt.textContent = Math.max(0, remaining) + "s";
-      if (remaining <= 0) {
-        clearInterval(_chState.timer);
-        revealChoice(-1);
-      }
+      if (remaining <= 3 && remaining > 0) AppSounds.tick();
+      if (remaining <= 0) { clearInterval(_chState.timer); revealChoice(-1); }
     }, 1000);
     document.querySelectorAll("#ch-options .quiz-option").forEach(btn => {
-      btn.addEventListener("click", () => revealChoice(+btn.dataset.j));
+      btn.onclick = () => revealChoice(+btn.dataset.j);
     });
   }
 
@@ -639,23 +786,25 @@ window.AppApp = (() => {
       if (j === q.correct) o.classList.add("correct");
       if (j === chosen && j !== q.correct) o.classList.add("wrong");
     });
-    if (chosen === q.correct) _chState.correct++;
+    if (chosen === q.correct) { _chState.correct++; AppSounds.correct(); }
+    else AppSounds.wrong();
     clearInterval(_chState.timer);
     AppAudio.stop();
     setTimeout(() => { _chState.i++; renderChallengeStep(); }, 900);
   }
 
   function copyChallengeLink() {
-    const url = location.origin + location.pathname;
-    copyToClipboard(url);
+    copyToClipboard(location.origin + location.pathname);
     toast(AppI18n.t("Invite link copied!","تم نسخ رابط الدعوة!"), "success");
+    updateProgress(p => ({ ...p, bonusShared: true }));
+    checkAchievements();
   }
 
   function shareScore() {
     const link = AppChallenges.shareUrlForLastScore();
-    if (!link) { toast(AppI18n.t("Play the challenge first.","العب التحدي أولًا."), "error"); return; }
+    if (!link) { toast(AppI18n.t("Play first.","العب أولًا."), "error"); return; }
     copyToClipboard(link);
-    toast(AppI18n.t("Score link copied! Send it to friends.","تم نسخ رابط نتيجتك! ارسله لأصحابك."), "success");
+    toast(AppI18n.t("Score link copied! Send it to friends.","تم نسخ رابط نتيجتك!"), "success");
   }
 
   function switchLb(btn, kind) {
@@ -665,13 +814,18 @@ window.AppApp = (() => {
   }
 
   // ===== TYPING =====
-  function mountTyping() {
-    const txt = AppTyping.todaysText();
+  function mountTyping(opts) {
+    const txt = opts && opts.text ? { text: opts.text, level: "B2" } : AppTyping.todaysText();
     AppTyping.start(txt.text);
+    if (opts && opts.battleCode) {
+      // Hijack the finish handler to record into battle
+      const origFinish = AppTyping;
+      AppTyping._battleCode = opts.battleCode;
+    }
     const input = document.getElementById("t-input");
     if (input) {
-      input.addEventListener("input", e => AppTyping.onInput(e.target.value));
-      input.addEventListener("paste", e => e.preventDefault());
+      input.oninput = e => AppTyping.onInput(e.target.value);
+      input.onpaste = e => e.preventDefault();
       input.focus();
     }
   }
@@ -684,39 +838,199 @@ window.AppApp = (() => {
     const link = AppTyping.shareUrlForLastScore();
     if (!link) { toast(AppI18n.t("Finish a typing run first.","أكمل سباق كتابة أولًا."), "error"); return; }
     copyToClipboard(link);
-    toast(AppI18n.t("Typing score link copied!","تم نسخ رابط نتيجة الكتابة!"), "success");
+    toast(AppI18n.t("Typing score link copied!","تم نسخ رابط النتيجة!"), "success");
+  }
+
+  // ===== BATTLES =====
+  function createBattle(type) {
+    const u = user();
+    const b = AppBattles.create({ type, creatorName: u.name, creatorEmail: u.email });
+    toast(AppI18n.t("Battle created! Code: " + b.code, "تم إنشاء المعركة! الكود: " + b.code), "success");
+    AppSounds.chime();
+    openBattleRoom(b.code);
+  }
+
+  function joinBattle() {
+    const input = document.getElementById("battle-join-code");
+    const code = (input.value || "").trim().toUpperCase();
+    if (code.length < 4) { toast(AppI18n.t("Enter a valid code.","ادخل كود صحيح."), "error"); return; }
+    let b = AppBattles.get(code);
+    if (!b) {
+      // Create empty room with this code (assume quiz default)
+      b = AppBattles.recordResult(code, { name: "__placeholder__", type: "quiz" });
+      // Remove the placeholder
+      delete b.players["__placeholder__"];
+    }
+    openBattleRoom(code);
+  }
+
+  function openBattleRoom(code) {
+    _currentView = "challenges";
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    const target = document.getElementById("view-challenges");
+    target.classList.add("active");
+    target.innerHTML = AppViews.renderBattleRoom(code);
+    setActiveNav("challenges");
+  }
+
+  function copyBattleInvite(code, type) {
+    const url = AppBattles.shareInviteUrl(code, type);
+    copyToClipboard(url);
+    toast(AppI18n.t("Invite link copied! Send to your friend.","تم نسخ الرابط! ارسله لصاحبك."), "success");
+    updateProgress(p => ({ ...p, bonusShared: true }));
+    checkAchievements();
+  }
+
+  function copyBattleResult(code) {
+    const b = AppBattles.get(code);
+    const me = user().name;
+    if (!b || !b.players[me]) { toast(AppI18n.t("Play your turn first.","العب دورك أولًا."), "error"); return; }
+    const url = AppBattles.shareResultUrl(code, b.players[me]);
+    copyToClipboard(url);
+    toast(AppI18n.t("Result link copied! Send to your friend.","تم نسخ رابط نتيجتك!"), "success");
+  }
+
+  function playBattle(code, type) {
+    const target = document.getElementById("view-challenges");
+    if (type === "typing") {
+      const txt = AppBattles.typingTextForCode(code);
+      target.innerHTML = AppViews.renderTypingRace();
+      AppTyping.start(txt.text);
+      AppTyping._battleCode = code;
+      const input = document.getElementById("t-input");
+      if (input) {
+        input.oninput = e => AppTyping.onInput(e.target.value);
+        input.onpaste = e => e.preventDefault();
+        input.focus();
+      }
+    } else {
+      target.innerHTML = AppViews.renderChallengeQuiz();
+      startChallenge({ questions: AppBattles.quizQuestionsForCode(code, 20), battleCode: code });
+    }
+  }
+
+  // Called by typing.js when a run finishes
+  function onTypingFinished(result) {
+    updateProgress(p => {
+      if (result.wpm > (p.bestWpm || 0)) p.bestWpm = result.wpm;
+      return p;
+    });
+    addXP(Math.round(result.wpm / 2) + 10);
+    markMission("do-typing");
+    if (AppTyping._battleCode) {
+      AppBattles.recordResult(AppTyping._battleCode, {
+        name: user().name, type: "typing", wpm: result.wpm, acc: result.acc, time: result.time
+      });
+      // Determine battle outcome and award win
+      const rs = AppBattles.rankings(AppTyping._battleCode);
+      if (rs.length > 1 && rs[0].name === user().name) {
+        updateProgress(p => ({ ...p, battlesWon: (p.battlesWon||0) + 1 }));
+      }
+    }
+    if (result.wpm >= 60) { AppConfetti.fire({ count: 100 }); AppSounds.win(); }
+    else AppSounds.chime();
+    refreshHeader();
+    checkAchievements();
   }
 
   // ===== HELPERS =====
-  function escTextForAttr(s) {
+  function escHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
   }
 
-  function addXP(n) { _progress.xp = (_progress.xp || 0) + n; }
+  function addXP(n) {
+    const today = new Date().toDateString();
+    if (_dailyXpDay !== today) { _dailyXP = 0; _dailyXpDay = today; }
+    _dailyXP += n;
+    updateProgress(p => ({ ...p, xp: (p.xp || 0) + n }));
+    if (_dailyXP >= 100) markMission("earn-100-xp");
+  }
+
+  function markMission(eventId) {
+    updateProgress(p => {
+      const { changed, list } = AppMissions.markIfMatches(p, eventId, _dailyXP);
+      if (changed) {
+        const day = AppMissions.todayKey();
+        p.missions[day] = list;
+        const xpFromMissions = list.filter(m => m.done && m._claimedXp == null).reduce((s, m) => {
+          m._claimedXp = m.xp;
+          return s + m.xp;
+        }, 0);
+        if (xpFromMissions > 0) p.xp = (p.xp || 0) + xpFromMissions;
+        if (!p.bonusFirstMission) p.bonusFirstMission = true;
+        if (list.every(m => m.done)) p.bonusAllMissions = true;
+        // Defer toast slightly to avoid clobbering other toasts
+        setTimeout(() => toast("🎯 " + AppI18n.t("Mission complete!","مهمة منجزة!") + (xpFromMissions ? ` (+${xpFromMissions} XP)` : ""), "success"), 600);
+      }
+      return p;
+    });
+  }
+
   function promoteLevelIfDue() {
-    const c1Count = _progress.completedLessons.filter(id => {
-      const l = AppData.lessons.find(x => x.id === id);
-      return l && l.level === "C1";
-    }).length;
-    const b2Count = _progress.completedLessons.filter(id => {
-      const l = AppData.lessons.find(x => x.id === id);
-      return l && l.level === "B2";
-    }).length;
-    if (c1Count >= 2) _progress.currentLevel = "C1";
-    else if (b2Count >= 2) _progress.currentLevel = "B2";
+    updateProgress(p => {
+      const cnt = (lvl) => p.completedLessons.filter(id => {
+        const l = AppData.lessons.find(x => x.id === id);
+        return l && l.level === lvl;
+      }).length;
+      const c2 = cnt("C2"), c1 = cnt("C1"), b2 = cnt("B2"), b1 = cnt("B1"), a2 = cnt("A2");
+      let newLevel = p.currentLevel;
+      if (c2 >= 2) newLevel = "C2";
+      else if (c1 >= 2) newLevel = "C1";
+      else if (b2 >= 2) newLevel = "B2";
+      else if (b1 >= 2) newLevel = "B1";
+      else if (a2 >= 2) newLevel = "A2";
+      if (newLevel !== p.currentLevel) {
+        p.currentLevel = newLevel;
+        setTimeout(() => {
+          AppSounds.levelUp();
+          AppConfetti.fire({ count: 150, duration: 3500 });
+          toast(AppI18n.t(`🎉 Level up! You are now ${newLevel}.`, `🎉 ارتقيت! مستواك الحين ${newLevel}.`), "success");
+        }, 400);
+      }
+      return p;
+    });
   }
 
   function refreshStreak() {
     const today = new Date().toDateString();
-    const last = _progress.lastActiveDay;
-    if (last === today) return;
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
-    _progress.streak = (last === yesterday ? (_progress.streak || 0) + 1 : 1);
-    _progress.lastActiveDay = today;
-    saveProgress();
+    updateProgress(p => {
+      if (p.lastActiveDay === today) return p;
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      p.streak = (p.lastActiveDay === yesterday ? (p.streak || 0) + 1 : 1);
+      p.lastActiveDay = today;
+      return p;
+    });
   }
 
-  function saveProgress() { localStorage.setItem(STORE_PROGRESS, JSON.stringify(_progress)); }
+  function checkAchievements() {
+    const p = progress();
+    const { newly } = AppAchievements.check(p);
+    if (newly.length) {
+      updateProgress(prog => {
+        const all = new Set(prog.achievements || []);
+        newly.forEach(n => all.add(n.id));
+        prog.achievements = Array.from(all);
+        return prog;
+      });
+      newly.forEach((n, i) => setTimeout(() => showAchievementPopup(n), i * 1200));
+    }
+  }
+
+  function showAchievementPopup(def) {
+    AppSounds.chime();
+    AppConfetti.fire({ count: 50, duration: 2000 });
+    const popup = document.createElement("div");
+    popup.className = "ach-popup";
+    popup.innerHTML = `
+      <span class="ach-popup-icon">${def.icon}</span>
+      <div class="ach-popup-text">
+        <strong>${escHtml(AppI18n.t("Achievement unlocked!","فتحت إنجازًا!"))}</strong>
+        ${escHtml(AppI18n.t(def.title, def.titleAr))}
+      </div>
+    `;
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 3600);
+  }
 
   let toastTimer = null;
   function toast(msg, kind = "") {
@@ -729,16 +1043,19 @@ window.AppApp = (() => {
   }
 
   return {
-    init, go, openLesson, submitQuiz,
+    init, go, user, progress, toast,
+    openLesson, submitQuiz,
     openExplanation,
-    speak, user: () => _user, progress: () => _progress,
-    toast,
+    speak,
     toggleWord, openFlashcards, popWord, closeModal,
     openReading, submitReading,
     openWriting, gradeWriting, readWriting,
     playListening, toggleScript, submitListening,
+    sendChat, clearChat,
     startChallenge, copyChallengeLink, shareScore, switchLb,
-    startTyping, shareTyping
+    startTyping, shareTyping, onTypingFinished,
+    createBattle, joinBattle, openBattleRoom, copyBattleInvite, copyBattleResult, playBattle,
+    confirmLogout
   };
 })();
 

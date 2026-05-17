@@ -121,6 +121,7 @@ window.AppTyping = (() => {
     const result = { wpm, acc, time: Math.round(elapsed), chars: state.correctChars, total: state.text.length };
     saveScore(result);
     showResult(result);
+    if (window.AppApp && typeof AppApp.onTypingFinished === "function") AppApp.onTypingFinished(result);
   }
 
   function showResult(r) {
