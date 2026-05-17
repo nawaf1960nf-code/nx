@@ -1,742 +1,1125 @@
-// All view renderers
-window.AppViews = (() => {
-  const t = (...args) => AppI18n.t(...args);
-  const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
-  const escAttr = s => JSON.stringify(String(s)).replace(/"/g, "&quot;");
+/* Bloom — view renderers for all pages. */
 
-  // ===== DASHBOARD =====
-  function renderDashboard() {
-    const u = AppApp.user();
-    const p = AppApp.progress();
-    const missions = AppMissions.ensureFresh(p);
-    const lessonsTotal = AppData.lessons.length;
+const BloomViews = (function () {
 
-    return `
-      <h2 style="margin:0 0 6px;font-size:22px;">${t("Welcome back","أهلًا بعودتك")}, ${esc(u.name)} 👋</h2>
-      <p style="color:var(--text-dim);margin:0 0 22px;">${t("Small daily reps beat heroic weekly sprints. Let's go.","عشر دقايق يوميًا أحسن من ساعات أسبوعيًا. يلا نبدأ.")}</p>
+  /* ─── HOME / DASHBOARD ──────────────────────────────── */
+  function renderHome() {
+    const u = BloomStore.currentUser(); if (!u) return;
+    const el = document.getElementById('view-home');
+    const stats = BloomStore.stats();
+    const todayDay = todaysWorkout(u);
+    const lang = i18n.get();
+
+    // Rings: workouts this week / streak / xp
+    const planned = (u.program?.days || []).filter(d => !d.rest).length || 5;
+    const doneThisWeek = Object.keys(u.week.completed || {}).length;
+    const weekPct = Math.min(100, Math.round((doneThisWeek / planned) * 100));
+    const streakPct = Math.min(100, Math.round((u.streak / 7) * 100));
+    const levelInfo = BLOOM_DATA.levelForXp(u.xp);
+    const xpPct = levelInfo.pct;
+
+    const coach = BloomAI.homeCoachMessage();
+    const quote = BloomAI.dailyQuote();
+
+    // recent PRs
+    const recentPRs = collectRecentPRs(u).slice(0, 2);
+
+    el.innerHTML = `
+      <div class="greeting-row">
+        <div>
+          <h1>${greet()}, ${escape(u.name)} <span class="greet-emoji">${greetEmoji()}</span></h1>
+        </div>
+      </div>
+      <div class="daily-quote">"${escape(quote)}"</div>
+
+      ${gradientDefs()}
+
+      <div class="rings-row">
+        ${ringTile(i18n.t('Week', 'الأسبوع'), `${doneThisWeek}/${planned}`, weekPct, 'r-pink')}
+        ${ringTile(i18n.t('Streak', 'سلسلة'), `${u.streak}🔥`, streakPct, 'r-purple')}
+        ${ringTile(i18n.t('Level', 'المستوى'), `LV.${levelInfo.current.lvl}`, xpPct, 'r-blue')}
+      </div>
+
+      ${u.streak > 0 ? `
+        <div class="streak-row">
+          <div class="streak-flame">🔥</div>
+          <div>
+            <div class="streak-n">${u.streak} ${i18n.t('day streak', 'يوم متتالي')}</div>
+            <div class="streak-l">${u.streak >= 3 ? i18n.t('Don\'t break the chain ✨', 'لا تكسري السلسلة ✨') : i18n.t('Keep showing up', 'استمري في الحضور')}</div>
+          </div>
+        </div>
+      ` : ''}
+
+      ${todayDay ? renderHeroWorkout(todayDay) : `
+        <div class="card card-glass">
+          <div class="row" style="gap:14px;">
+            <div style="font-size:36px;">🌙</div>
+            <div>
+              <div class="fw-700">${i18n.t('Rest day', 'يوم راحة')}</div>
+              <div class="text-sm text-soft">${i18n.t('Recovery makes you stronger.', 'الراحة تخليكِ أقوى.')}</div>
+            </div>
+          </div>
+        </div>
+      `}
+
+      <div class="ai-tip">
+        <div class="ai-tip-icon">✨</div>
+        <div class="ai-tip-body">
+          <div class="text-xs fw-700" style="opacity:.7;">${escape(coach.name)}</div>
+          <div>${escape(coach.msg)}</div>
+        </div>
+      </div>
 
       <div class="stats-grid">
-        <div class="stat-card"><div class="stat-num">${p.xp || 0}</div><div class="stat-label">${t("Total XP","نقاط الخبرة")}</div></div>
-        <div class="stat-card"><div class="stat-num">${p.streak || 0}🔥</div><div class="stat-label">${t("Day streak","الأيام المتتالية")}</div></div>
-        <div class="stat-card"><div class="stat-num">${(p.completedLessons || []).length}/${lessonsTotal}</div><div class="stat-label">${t("Lessons","الدروس")}</div></div>
-        <div class="stat-card"><div class="stat-num">${(p.knownWords || []).length}</div><div class="stat-label">${t("Words","الكلمات")}</div></div>
-        <div class="stat-card"><div class="stat-num">${p.currentLevel || "B1"}</div><div class="stat-label">${t("Level","المستوى")}</div></div>
-        <div class="stat-card"><div class="stat-num">${(p.achievements || []).length}</div><div class="stat-label">${t("Badges","الشارات")}</div></div>
+        ${statTile(i18n.t('Workouts', 'تمارين'), stats.totalWorkouts, '', 'up')}
+        ${statTile(i18n.t('Total volume', 'الحجم الكلّي'), `${formatNum(stats.totalVolume)} kg`, '', 'up')}
+        ${statTile(i18n.t('Personal records', 'أرقام قياسية'), stats.totalPRs, '', 'up')}
+        ${statTile(i18n.t('XP', 'النقاط'), u.xp, levelInfo.current.name, 'up')}
       </div>
+
+      ${recentPRs.length ? `
+        <div class="section-title"><h2>${i18n.t('Recent PRs', 'أرقام قياسية حديثة')}</h2></div>
+        ${recentPRs.map(pr => `
+          <div class="recent-pr">
+            <div class="pr-medal">🏆</div>
+            <div class="pr-body">
+              <div class="pr-name">${escape(pr.name)}</div>
+              <div class="pr-detail">${pr.weight}kg × ${pr.reps} • ${formatDate(pr.ts)}</div>
+            </div>
+          </div>
+        `).join('')}
+      ` : ''}
 
       <div class="section-title">
-        <h2>🎯 ${t("Today's Missions","مهام اليوم")}</h2>
-        <span style="color:var(--text-dim);font-size:13px;">${missions.filter(m=>m.done).length}/${missions.length} ${t("done","مكتمل")}</span>
+        <h2>${i18n.t('Quick actions', 'إجراءات سريعة')}</h2>
       </div>
-      <div class="missions-list">
-        ${missions.map(m => `
-          <div class="mission-row ${m.done?"done":""}">
-            <div class="mission-icon">${m.done ? "✓" : m.icon}</div>
-            <div class="mission-text">
-              <div class="mission-title">${esc(t(m.title, m.titleAr))}</div>
-              <div class="mission-xp">+${m.xp} XP</div>
-            </div>
-            <div class="mission-status">${m.done?"✅":"⏳"}</div>
-          </div>
-        `).join("")}
-      </div>
-
-      <div class="card" style="margin-top:18px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <strong>${t("Progress to C1","الطريق إلى C1")}</strong>
-          <span style="color:var(--text-dim);font-size:13px;">${Math.round(progressToC1())}%</span>
-        </div>
-        <div class="progress"><div class="progress-fill" style="width:${progressToC1()}%"></div></div>
-      </div>
-
-      <div class="section-title"><h2>⚡ ${t("Quick start","ابدأ بسرعة")}</h2></div>
-      <div class="cards-grid">
-        <div class="lesson-card" onclick="AppApp.go('challenges')">
-          <div style="font-size:30px;">⚔️</div>
-          <h3>${t("Challenges","التحديات")}</h3>
-          <p>${t("Quiz, typing race, or battle a friend.","أسئلة، سباق كتابة، أو معركة مع صاحبك.")}</p>
-        </div>
-        <div class="lesson-card" onclick="AppApp.go('ai-chat')">
-          <div style="font-size:30px;">🤖</div>
-          <h3>${t("AI Coach","مدرّب AI")}</h3>
-          <p>${t("Chat in English with an AI coach. Get tips as you go.","تكلم إنجليزي مع مدرّب يصحّح لك ويرشدك.")}</p>
-        </div>
-        <div class="lesson-card" onclick="AppApp.go('lessons')">
-          <div style="font-size:30px;">📚</div>
-          <h3>${t("Lessons","الدروس")}</h3>
-          <p>${t("Structured path: A1 → C2.","مسار منظم من A1 إلى C2.")}</p>
-        </div>
-        <div class="lesson-card" onclick="AppApp.go('explanations')">
-          <div style="font-size:30px;">💡</div>
-          <h3>${t("Explanations","شروحات")}</h3>
-          <p>${t("Bilingual phrase packs with audio.","عبارات ثنائية اللغة مع الصوت.")}</p>
-        </div>
+      <div class="stats-grid">
+        <button class="card" onclick="BloomApp.go('library')" style="text-align:start;cursor:pointer;">
+          <div style="font-size:28px;">📚</div>
+          <div class="fw-700">${i18n.t('Exercise library', 'مكتبة التمارين')}</div>
+          <div class="text-xs text-soft">${i18n.t('Browse & learn', 'تعلّمي وتصفّحي')}</div>
+        </button>
+        <button class="card" onclick="BloomApp.go('nutrition')" style="text-align:start;cursor:pointer;">
+          <div style="font-size:28px;">💧</div>
+          <div class="fw-700">${i18n.t('Nutrition', 'التغذية')}</div>
+          <div class="text-xs text-soft">${i18n.t('Water & protein', 'ماء وبروتين')}</div>
+        </button>
+        <button class="card" onclick="BloomViews.openMoodCheck()" style="text-align:start;cursor:pointer;">
+          <div style="font-size:28px;">🌷</div>
+          <div class="fw-700">${i18n.t('How are you?', 'كيف حالك؟')}</div>
+          <div class="text-xs text-soft">${i18n.t('Mood & energy', 'المزاج والطاقة')}</div>
+        </button>
+        <button class="card" onclick="BloomApp.go('achievements')" style="text-align:start;cursor:pointer;">
+          <div style="font-size:28px;">🏆</div>
+          <div class="fw-700">${i18n.t('Achievements', 'إنجازاتك')}</div>
+          <div class="text-xs text-soft">${u.unlockedBadges.length}/${BLOOM_DATA.BADGES.length}</div>
+        </button>
       </div>
     `;
   }
 
-  function progressToC1() {
-    const p = AppApp.progress();
-    const lessonW = ((p.completedLessons||[]).length / AppData.lessons.length) * 40;
-    const wordW = ((p.knownWords||[]).length / AppData.vocabulary.length) * 30;
-    const cxp = Math.min((p.xp || 0) / 2000, 1) * 30;
-    return Math.min(100, lessonW + wordW + cxp);
-  }
-
-  // ===== LESSONS =====
-  function lessonCardHTML(l, p) {
-    const done = (p.completedLessons || []).includes(l.id);
+  function renderHeroWorkout(day) {
+    const exCount = day.exercises.length;
+    const est = Math.round(exCount * 8); // ~8 min per exercise
+    const lang = i18n.get();
     return `
-      <div class="lesson-card ${done?"done":""}" onclick="AppApp.openLesson('${l.id}')">
-        <span class="level-badge level-${l.level}">${l.level}</span>
-        <h3>${esc(l.title)}</h3>
-        <p>${esc(l.summary)}</p>
-        <div class="lesson-meta">
-          <span>⏱ ${l.duration} ${t("min","دقيقة")}</span>
-          <span>${l.quiz?.length || 0} ${t("questions","سؤال")}</span>
+      <div class="hero-workout">
+        <div class="hero-tag">${i18n.t('Today\'s session', 'تمرين اليوم')}</div>
+        <div class="hero-title">${escape(lang === 'ar' ? day.nameAr : day.name)} ${day.emoji}</div>
+        <div class="hero-meta">
+          <span>💪 ${exCount} ${i18n.t('exercises', 'تمارين')}</span>
+          <span>⏱️ ~${est} ${i18n.t('min', 'د')}</span>
         </div>
+        <button class="hero-cta" onclick="BloomSession.start('${day.id}')">
+          ${i18n.t('Start workout', 'ابدئي التمرين')} →
+        </button>
       </div>
     `;
   }
 
-  function renderLessons() {
-    const p = AppApp.progress();
-    const levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
-    let html = `<h2 style="margin:0 0 6px;">${t("All Lessons","كل الدروس")}</h2>
-      <p style="color:var(--text-dim);margin:0 0 18px;">${t("Structured path from A1 to C2. Each lesson has explanation, audio examples, and a quiz.","مسار منظم من A1 إلى C2. كل درس فيه شرح، أمثلة بالصوت، واختبار.")}</p>`;
-    for (const lvl of levels) {
-      const ls = AppData.lessons.filter(l => l.level === lvl);
-      if (!ls.length) continue;
-      html += `<div class="section-title"><h2>${lvl}</h2><span style="color:var(--text-dim);font-size:13px;">${ls.length} ${t("lessons","درس")}</span></div>`;
-      html += `<div class="cards-grid">${ls.map(l => lessonCardHTML(l, p)).join("")}</div>`;
+  function ringTile(label, value, pct, cls) {
+    const r = 32, c = 2 * Math.PI * r;
+    const off = c - (c * (pct / 100));
+    return `
+      <div class="ring-tile">
+        <svg class="ring-svg" viewBox="0 0 80 80">
+          <circle class="ring-track" cx="40" cy="40" r="${r}"></circle>
+          <circle class="ring-fill ${cls}" cx="40" cy="40" r="${r}"
+            stroke-dasharray="${c}" stroke-dashoffset="${off}"></circle>
+          <text class="ring-pct" x="50%" y="54%" text-anchor="middle">${pct}%</text>
+        </svg>
+        <div class="ring-val">${value}</div>
+        <div class="ring-lbl">${label}</div>
+      </div>
+    `;
+  }
+  function statTile(label, value, delta, dir) {
+    return `
+      <div class="stat-mini">
+        <div class="stat-mini-lbl">${label}</div>
+        <div class="stat-mini-val">${value}</div>
+        ${delta ? `<div class="stat-mini-delta ${dir}">${delta}</div>` : ''}
+      </div>
+    `;
+  }
+  function gradientDefs() {
+    return `
+      <svg width="0" height="0" style="position:absolute;">
+        <defs>
+          <linearGradient id="g-pink" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#f78cb1"/><stop offset="100%" stop-color="#c4a3f0"/>
+          </linearGradient>
+          <linearGradient id="g-purple" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#c4a3f0"/><stop offset="100%" stop-color="#b8d8ff"/>
+          </linearGradient>
+          <linearGradient id="g-blue" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#ffd28c"/><stop offset="100%" stop-color="#f78cb1"/>
+          </linearGradient>
+          <linearGradient id="g-line" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#f78cb1"/><stop offset="100%" stop-color="#c4a3f0"/>
+          </linearGradient>
+          <linearGradient id="g-area" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#f78cb1" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="#f78cb1" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    `;
+  }
+
+  /* ─── WORKOUTS / WEEKLY SCHEDULE ────────────── */
+  function renderWorkouts() {
+    const u = BloomStore.currentUser(); if (!u) return;
+    const el = document.getElementById('view-workouts');
+    const lang = i18n.get();
+    const days = u.program?.days || [];
+    const todayIdx = todayIndex();
+
+    el.innerHTML = `
+      <h1>${i18n.t('Your week', 'أسبوعك')}</h1>
+      <p class="text-soft text-sm">${escape(lang === 'ar' ? u.program?.nameAr : u.program?.name) || ''}</p>
+
+      ${weekStrip(days, todayIdx, u)}
+
+      <div class="section-title"><h2>${i18n.t('Workouts', 'التمارين')}</h2>
+        <button class="btn btn-ghost btn-sm" onclick="BloomViews.openCustomizeProgram()">${i18n.t('Customize', 'تخصيص')}</button>
+      </div>
+
+      ${days.map((d, i) => {
+        const done = !!u.week.completed[d.id];
+        const isToday = i === todayIdx;
+        const exNames = (d.exercises || []).map(e => {
+          const ex = BLOOM_DATA.findExercise(e.exerciseId);
+          return ex ? (lang === 'ar' ? ex.nameAr : ex.name) : '';
+        }).filter(Boolean);
+        return `
+          <button class="workout-card ${isToday ? 'today' : ''} ${done ? 'done' : ''}" onclick="${d.rest ? '' : `BloomSession.start('${d.id}')`}">
+            <div class="wc-icon">${d.emoji || '💪'}</div>
+            <div class="wc-body">
+              <div class="row-spread">
+                <div class="workout-name">${escape(lang === 'ar' ? d.nameAr : d.name)}</div>
+                ${isToday ? `<div class="workout-tag">${i18n.t('Today', 'اليوم')}</div>` : ''}
+              </div>
+              <div class="workout-meta">
+                ${d.rest
+                  ? i18n.t('Rest & recover 🌙', 'راحة واستشفاء 🌙')
+                  : `${exNames.slice(0,3).join(' · ')}${exNames.length > 3 ? ' · ...' : ''}`}
+              </div>
+            </div>
+          </button>
+        `;
+      }).join('')}
+
+      <div class="spacer-16"></div>
+      <button class="btn btn-secondary btn-block" onclick="BloomViews.openResetWeek()">
+        🔄 ${i18n.t('Reset week manually', 'إعادة ضبط الأسبوع')}
+      </button>
+    `;
+  }
+
+  function weekStrip(days, todayIdx, u) {
+    const labels = i18n.get() === 'ar' ? ['الإث','الثل','الأر','الخم','الجم','السب','الأح'] : ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const nums = weekDatesArray();
+    return `<div class="week-strip">
+      ${days.map((d, i) => `
+        <div class="day-chip ${i === todayIdx ? 'today' : ''} ${u.week.completed[d.id] ? 'done' : ''} ${d.rest ? 'rest' : ''}">
+          <div class="day-chip-l">${labels[i] || ''}</div>
+          <div class="day-chip-n">${nums[i] || ''}</div>
+        </div>
+      `).join('')}
+    </div>`;
+  }
+
+  /* ─── PROGRESS / CHARTS / PRs ─── */
+  let progressTab = 'overview';
+  function renderProgress() {
+    const u = BloomStore.currentUser(); if (!u) return;
+    const el = document.getElementById('view-progress');
+
+    el.innerHTML = `
+      <h1>${i18n.t('Progress', 'تقدّمك')}</h1>
+      <p class="text-soft text-sm">${i18n.t('Your strength story — every rep matters.', 'قصة قوّتك — كل تكرار يهم.')}</p>
+
+      <div class="tab-pills">
+        ${tabPill('overview', i18n.t('Overview', 'نظرة عامة'))}
+        ${tabPill('strength', i18n.t('Strength', 'القوّة'))}
+        ${tabPill('prs',      i18n.t('PRs', 'أرقام قياسية'))}
+        ${tabPill('body',     i18n.t('Body', 'الجسم'))}
+      </div>
+
+      ${gradientDefs()}
+
+      <div id="progress-content"></div>
+    `;
+    el.querySelectorAll('.tab-pill').forEach(t => t.addEventListener('click', () => {
+      progressTab = t.dataset.tab;
+      renderProgress();
+    }));
+    renderProgressTab();
+  }
+  function tabPill(id, label) {
+    return `<button class="tab-pill ${progressTab === id ? 'active' : ''}" data-tab="${id}">${label}</button>`;
+  }
+
+  function renderProgressTab() {
+    const u = BloomStore.currentUser(); if (!u) return;
+    const c = document.getElementById('progress-content');
+    if (!c) return;
+
+    if (progressTab === 'overview') {
+      const stats = BloomStore.stats();
+      const last30 = u.sessions.filter(s => s.endTs > Date.now() - 30 * 86400000);
+      const muscleVol = computeMuscleVolume(last30);
+      const max = Math.max(...Object.values(muscleVol), 1);
+      c.innerHTML = `
+        <div class="chart-card">
+          <h3>${i18n.t('Last 30 days', 'آخر ٣٠ يوم')}</h3>
+          <div class="chart-meta">${last30.length} ${i18n.t('workouts', 'تمارين')} • ${formatNum(stats.totalVolume)} kg ${i18n.t('total', 'إجمالي')}</div>
+          ${weeklyVolumeChart(u)}
+        </div>
+
+        <div class="chart-card">
+          <h3>${i18n.t('Muscle balance', 'توازن العضلات')}</h3>
+          <div class="chart-meta">${i18n.t('Volume per muscle group', 'الحجم لكل مجموعة عضلية')}</div>
+          ${Object.entries(muscleVol).map(([k, v]) => `
+            <div class="bar-row">
+              <div class="bar-lbl">${muscleLabel(k)}</div>
+              <div class="bar-track"><div class="bar-fill" style="width:${Math.round(v/max*100)}%"></div></div>
+              <div class="bar-val">${formatNum(v)}kg</div>
+            </div>
+          `).join('') || `<div class="text-soft text-sm">${i18n.t('Train a few sessions to see your balance.', 'دربي عدة جلسات لتظهر بياناتك.')}</div>`}
+        </div>
+      `;
     }
-    return html;
+    else if (progressTab === 'strength') {
+      const exs = Object.entries(u.records || {})
+        .filter(([id, r]) => r.history && r.history.length >= 2)
+        .sort((a, b) => b[1].history.length - a[1].history.length);
+      if (exs.length === 0) {
+        c.innerHTML = `<div class="card text-soft t-c">${i18n.t('Complete more workouts to see your strength charts ✨', 'أكملي تمارين أكثر لرؤية مخططات قوّتك ✨')}</div>`;
+        return;
+      }
+      c.innerHTML = exs.slice(0, 8).map(([id, r]) => {
+        const ex = BLOOM_DATA.findExercise(id); if (!ex) return '';
+        const series = r.history.slice(-12).map(h => h.weight || 0);
+        const start = series[0], end = series[series.length - 1];
+        const pct = start ? Math.round((end - start) / start * 100) : 0;
+        return `
+          <div class="chart-card">
+            <h3>${escape(i18n.get()==='ar' ? ex.nameAr : ex.name)}</h3>
+            <div class="chart-meta">${pct >= 0 ? '+' : ''}${pct}% • ${i18n.t('best', 'أفضل')} ${r.bestWeight}kg × ${r.bestReps}</div>
+            ${sparkline(series)}
+          </div>
+        `;
+      }).join('');
+    }
+    else if (progressTab === 'prs') {
+      const prs = collectRecentPRs(u);
+      if (prs.length === 0) {
+        c.innerHTML = `
+          <div class="card t-c">
+            <div style="font-size:60px;">🏆</div>
+            <h3>${i18n.t('No PRs yet', 'لا توجد أرقام قياسية بعد')}</h3>
+            <p class="text-soft text-sm">${i18n.t('Push hard — your first PR is coming ✨', 'تحدّي نفسك — أول رقم قياسي قادم ✨')}</p>
+          </div>
+        `;
+        return;
+      }
+      c.innerHTML = `<div class="pr-grid">${prs.slice(0, 12).map((pr, i) => `
+        <div class="pr-card ${i % 3 === 0 ? 'glow' : i % 3 === 1 ? '' : 'cool'}">
+          <div class="pr-medal-big">${i === 0 ? '👑' : '🏆'}</div>
+          <div class="pr-info">
+            <h4>${escape(pr.name)}</h4>
+            <p>${pr.weight}kg × ${pr.reps}</p>
+          </div>
+          <div class="pr-date">${formatDate(pr.ts)}</div>
+        </div>
+      `).join('')}</div>`;
+    }
+    else if (progressTab === 'body') {
+      const last = u.bodyLogs[0];
+      c.innerHTML = `
+        <div class="body-track">
+          <h3>${i18n.t('Log measurements', 'سجّلي قياساتك')}</h3>
+          <div class="chart-meta">${i18n.t('Weekly is plenty — focus on trends.', 'مرة بالأسبوع كافي — ركّزي على الاتجاه.')}</div>
+          <div class="body-grid">
+            <div class="body-input"><label>${i18n.t('Weight (kg)', 'الوزن')}</label><input id="bd-weight" type="number" step="0.1" value="${last?.weight || ''}"/></div>
+            <div class="body-input"><label>${i18n.t('Waist (cm)', 'الخصر')}</label><input id="bd-waist" type="number" value="${last?.waist || ''}"/></div>
+            <div class="body-input"><label>${i18n.t('Hips (cm)', 'الورك')}</label><input id="bd-hips" type="number" value="${last?.hips || ''}"/></div>
+            <div class="body-input"><label>${i18n.t('Bust (cm)', 'الصدر')}</label><input id="bd-bust" type="number" value="${last?.bust || ''}"/></div>
+          </div>
+          <div class="spacer-8"></div>
+          <button class="btn btn-primary btn-block" id="save-body">${i18n.t('Save measurements', 'حفظ القياسات')}</button>
+        </div>
+
+        ${u.bodyLogs.length >= 2 ? `
+          <div class="chart-card">
+            <h3>${i18n.t('Weight trend', 'مخطط الوزن')}</h3>
+            ${sparkline(u.bodyLogs.slice(0, 12).map(b => b.weight || 0).reverse())}
+          </div>
+        ` : ''}
+      `;
+      document.getElementById('save-body').addEventListener('click', () => {
+        BloomStore.logBody({
+          weight: numOr(document.getElementById('bd-weight').value),
+          waist:  numOr(document.getElementById('bd-waist').value),
+          hips:   numOr(document.getElementById('bd-hips').value),
+          bust:   numOr(document.getElementById('bd-bust').value),
+        });
+        BloomApp.toast(i18n.t('Saved ✨', 'تم الحفظ ✨'), 'success');
+        renderProgressTab();
+      });
+    }
   }
 
-  function renderLessonDetail(id) {
-    const l = AppData.lessons.find(x => x.id === id);
-    if (!l) return `<p>${t("Lesson not found.","الدرس غير موجود.")}</p>`;
-    const p = AppApp.progress();
-    const done = (p.completedLessons || []).includes(id);
+  function weeklyVolumeChart(u) {
+    const buckets = new Array(8).fill(0);
+    const now = startOfWeek(new Date()).getTime();
+    u.sessions.forEach(s => {
+      const wDiff = Math.floor((now - startOfWeek(new Date(s.endTs)).getTime()) / (7 * 86400000));
+      if (wDiff >= 0 && wDiff < 8) {
+        s.exercises.forEach(e => e.sets.forEach(set => {
+          buckets[7 - wDiff] += (set.weight || 0) * (set.reps || 0);
+        }));
+      }
+    });
+    return sparkline(buckets, { height: 140 });
+  }
 
-    const sectionsHTML = l.sections.map(s => `
-      <div class="lesson-section">
-        <h3><span>${esc(s.heading)}</span>${s.body ? `<button class="audio-btn audio-btn-sm" onclick="AppApp.speak(this, ${escAttr(s.body)})">🔊</button>` : ""}</h3>
-        ${s.body ? `<p>${esc(s.body)}</p>` : ""}
-        ${(s.examples || []).map(ex => `
-          <div class="example">
-            <div class="ex-text">${esc(ex.en)}<span class="ex-translate">${esc(ex.ar || "")}</span></div>
-            <button class="audio-btn audio-btn-sm" onclick="AppApp.speak(this, ${escAttr(ex.en)})">🔊</button>
-          </div>
-        `).join("")}
-      </div>
-    `).join("");
-
-    const quizHTML = l.quiz && l.quiz.length ? `
-      <div class="lesson-section">
-        <h3>📝 ${t("Check yourself","اختبر نفسك")}</h3>
-        <div id="lesson-quiz" data-id="${l.id}">
-          ${l.quiz.map((q, i) => `
-            <div class="quiz-question" data-i="${i}">
-              <div class="q-text">${i+1}. ${esc(q.q)}</div>
-              <div class="quiz-options">
-                ${q.options.map((opt, j) => `<button class="quiz-option" data-j="${j}">${esc(opt)}</button>`).join("")}
-              </div>
-              <div class="q-explain" style="display:none;color:var(--text-dim);font-size:13px;margin-top:8px;"></div>
-            </div>
-          `).join("")}
-        </div>
-        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="AppApp.submitQuiz('${l.id}')">${t("Submit","سلّم")}</button>
-          <button class="btn" onclick="AppApp.go('lessons')">${t("Back","عودة")}</button>
-        </div>
-      </div>
-    ` : "";
-
+  function sparkline(values, opts = {}) {
+    const w = 320, h = opts.height || 120;
+    const pad = 20;
+    if (!values.length) return '';
+    const max = Math.max(...values, 1);
+    const min = Math.min(...values, 0);
+    const range = max - min || 1;
+    const step = (w - pad * 2) / Math.max(values.length - 1, 1);
+    const points = values.map((v, i) => {
+      const x = pad + i * step;
+      const y = h - pad - ((v - min) / range) * (h - pad * 2);
+      return [x, y];
+    });
+    const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+    const areaD = pathD + ` L${points[points.length - 1][0]},${h - pad} L${points[0][0]},${h - pad} Z`;
     return `
-      <div class="lesson-detail">
-        <span class="level-badge level-${l.level}">${l.level}</span>
-        ${done ? `<span class="level-badge" style="background:rgba(52,211,153,.18);color:var(--success);margin-inline-start:8px;">✓ ${t("Completed","مكتمل")}</span>` : ""}
-        <h1>${esc(l.title)}</h1>
-        <p class="lead">${esc(l.summary)}</p>
-        <button class="btn btn-ghost" onclick="AppApp.go('lessons')">← ${t("All lessons","كل الدروس")}</button>
-        ${sectionsHTML}
-        ${quizHTML}
-      </div>
+      <svg class="chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+        <line class="chart-axis" x1="${pad}" y1="${h - pad}" x2="${w - pad}" y2="${h - pad}"></line>
+        <path class="chart-area" d="${areaD}"></path>
+        <path class="chart-line" d="${pathD}"></path>
+        ${points.map(p => `<circle class="chart-dot" cx="${p[0]}" cy="${p[1]}" r="4"></circle>`).join('')}
+      </svg>
     `;
   }
 
-  // ===== EXPLANATIONS =====
-  function renderExplanations() {
-    return `
-      <h2 style="margin:0 0 6px;">${t("Bilingual Explanations","شروحات ثنائية اللغة")}</h2>
-      <p style="color:var(--text-dim);margin:0 0 18px;">${t("Real-life English phrases with Arabic side-by-side. Tap any phrase to hear it.","عبارات إنجليزية واقعية مع ترجمتها العربية. اضغط أي عبارة لتسمعها.")}</p>
-      <div class="cards-grid">
-        ${AppData.explanations.map(ex => `
-          <div class="lesson-card" onclick="AppApp.openExplanation('${ex.id}')">
-            <div style="font-size:30px;">${ex.icon}</div>
-            <span class="level-badge level-${ex.level}">${ex.level}</span>
-            <h3>${esc(ex.title)}</h3>
-            <p style="color:var(--text-dim);font-size:13px;font-family:'Cairo';">${esc(ex.titleAr)}</p>
-            <div class="lesson-meta"><span>${ex.items.length} ${t("phrases","عبارات")}</span><span>🔊</span></div>
-          </div>
-        `).join("")}
-      </div>
-    `;
+  function computeMuscleVolume(sessions) {
+    const map = { glutes: 0, hamstrings: 0, quads: 0, back: 0, shoulders: 0, chest: 0, arms: 0, core: 0 };
+    sessions.forEach(s => s.exercises.forEach(ex => {
+      const def = BLOOM_DATA.findExercise(ex.exerciseId);
+      const m = def?.muscle || 'core';
+      const vol = ex.sets.reduce((a, set) => a + (set.weight || 0) * (set.reps || 0), 0);
+      map[m] = (map[m] || 0) + vol;
+    }));
+    // filter zero
+    Object.keys(map).forEach(k => { if (map[k] === 0) delete map[k]; });
+    return map;
+  }
+  function muscleLabel(k) {
+    const map = { glutes: '🍑 Glutes', hamstrings: '🌹 Hams', quads: '👑 Quads',
+                  back: '🦋 Back', shoulders: '⭐ Shoulders', chest: '💖 Chest',
+                  arms: '💪 Arms', core: '✨ Core' };
+    const ar = { glutes: '🍑 المؤخرة', hamstrings: '🌹 خلف الفخذ', quads: '👑 أمام الفخذ',
+                 back: '🦋 الظهر', shoulders: '⭐ الأكتاف', chest: '💖 الصدر',
+                 arms: '💪 الأذرع', core: '✨ البطن' };
+    return i18n.get() === 'ar' ? (ar[k] || k) : (map[k] || k);
   }
 
-  function renderExplanationDetail(id) {
-    const ex = AppData.explanations.find(x => x.id === id);
-    if (!ex) return "";
-    return `
-      <button class="btn btn-ghost" onclick="AppApp.go('explanations')">← ${t("Back","عودة")}</button>
-      <div style="display:flex;align-items:center;gap:14px;margin:14px 0 6px;">
-        <span style="font-size:42px;">${ex.icon}</span>
+  /* ─── COACH (AI page) ─── */
+  function renderCoach() {
+    const u = BloomStore.currentUser(); if (!u) return;
+    const el = document.getElementById('view-coach');
+    const coach = BloomAI.homeCoachMessage();
+    const ins = BloomAI.insights();
+    const todayMood = BloomStore.todayMood();
+
+    el.innerHTML = `
+      <div class="coach-hero">
+        <div class="coach-avatar">✨</div>
         <div>
-          <h2 style="margin:0;">${esc(ex.title)}</h2>
-          <p style="margin:2px 0 0;color:var(--text-dim);font-family:'Cairo';">${esc(ex.titleAr)}</p>
+          <div class="coach-name">${i18n.t('Your AI coach', 'مدرّبتك الذكية')}</div>
+          <div class="coach-msg">${escape(coach.msg)}</div>
         </div>
       </div>
-      <div class="exp-card">
-        ${ex.items.map(item => `
-          <div class="exp-item">
-            <div class="exp-row">
-              <button class="audio-btn" onclick="AppApp.speak(this, ${escAttr(item.en)})">🔊</button>
-              <div style="flex:1;min-width:0;">
-                <div class="exp-en">${esc(item.en)}</div>
-                <div class="exp-ar">${esc(item.ar)}</div>
-                ${item.note ? `<div class="exp-note">💡 ${esc(item.note)}</div>` : ""}
+
+      <div class="section-title"><h2>${i18n.t('Today\'s check-in', 'تسجيل اليوم')}</h2></div>
+      ${todayMood ? `
+        <div class="card">
+          <div class="row" style="gap:14px;">
+            <div style="font-size:36px;">${BLOOM_DATA.MOODS.find(m => m.id === todayMood.mood)?.emoji || '🙂'}</div>
+            <div style="flex:1;">
+              <div class="fw-700">${i18n.t('Logged today', 'سجّلتي اليوم')}</div>
+              <div class="text-sm text-soft">
+                ${i18n.t('Energy', 'طاقة')}: ${todayMood.energy}/5 ·
+                ${i18n.t('Sleep', 'نوم')}: ${todayMood.sleep}/5
               </div>
             </div>
-          </div>
-        `).join("")}
-      </div>
-    `;
-  }
-
-  // ===== VOCAB =====
-  function renderVocabulary() {
-    const p = AppApp.progress();
-    return `
-      <h2 style="margin:0 0 6px;">${t("Vocabulary","المفردات")}</h2>
-      <p style="color:var(--text-dim);margin:0 0 16px;">${t("Tap a word to hear it. Mark words you've mastered.","اضغط أي كلمة لتسمعها. علّم الكلمات التي أتقنتها.")}</p>
-      <div class="vocab-toolbar">
-        <div class="form-row" style="margin:0;"><input id="vocab-search" placeholder="${t('Search...','ابحث...')}" /></div>
-        <div class="form-row" style="margin:0;">
-          <select id="vocab-level">
-            <option value="">${t("All levels","كل المستويات")}</option>
-            <option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option>
-            <option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option>
-          </select>
-        </div>
-        <button class="btn btn-primary" onclick="AppApp.openFlashcards()">🎴 ${t("Flashcards","البطاقات")}</button>
-      </div>
-      <div style="margin:6px 0 14px;color:var(--text-dim);font-size:13px;">
-        ${(p.knownWords||[]).length} / ${AppData.vocabulary.length} ${t("mastered","أتقنتها")}
-      </div>
-      <div id="vocab-grid" class="cards-grid"></div>
-    `;
-  }
-
-  function vocabCardHTML(w, known) {
-    return `
-      <div class="vocab-card">
-        <div class="word-head">
-          <div style="min-width:0;flex:1;">
-            <div class="word">${esc(w.word)}</div>
-            <div class="pos">${esc(w.pos)} · <span class="level-badge level-${w.level}" style="padding:1px 6px;">${w.level}</span></div>
-          </div>
-          <div style="display:flex;gap:6px;flex-shrink:0;">
-            <button class="audio-btn audio-btn-sm" onclick="AppApp.speak(this, ${escAttr(w.word)})">🔊</button>
-            <button class="ghost-btn" style="width:32px;height:32px;" onclick="AppApp.toggleWord('${esc(w.word)}')">${known ? "✓" : "+"}</button>
+            <button class="btn btn-ghost btn-sm" onclick="BloomViews.openMoodCheck()">${i18n.t('Update', 'تحديث')}</button>
           </div>
         </div>
-        <div class="ipa">${esc(w.ipa)}</div>
-        <div class="def">${esc(w.def)}</div>
-        <div class="def-ar">${esc(w.defAr || "")}</div>
-        <div class="ex">
-          <span><em>${esc(w.ex)}</em></span>
-          <button class="audio-btn audio-btn-sm" onclick="AppApp.speak(this, ${escAttr(w.ex)})">🔊</button>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderVocabGrid(filter = "", level = "") {
-    const p = AppApp.progress();
-    const f = filter.toLowerCase().trim();
-    const list = AppData.vocabulary.filter(w =>
-      (!level || w.level === level) &&
-      (!f || w.word.toLowerCase().includes(f) || (w.def || "").toLowerCase().includes(f))
-    );
-    if (!list.length) return `<div class="empty-state">${t("No words match.","لا توجد نتائج.")}</div>`;
-    return list.map(w => vocabCardHTML(w, (p.knownWords||[]).includes(w.word))).join("");
-  }
-
-  // ===== READING =====
-  function renderReading() {
-    return `
-      <h2 style="margin:0 0 6px;">${t("Reading","القراءة")}</h2>
-      <p style="color:var(--text-dim);margin:0 0 18px;">${t("Tap any word for a quick definition. Answer comprehension questions at the end.","اضغط أي كلمة لمعرفة معناها. جاوب على أسئلة الفهم في النهاية.")}</p>
-      <div class="cards-grid">
-        ${AppData.readings.map(r => `
-          <div class="lesson-card" onclick="AppApp.openReading('${r.id}')">
-            <span class="level-badge level-${r.level}">${r.level}</span>
-            <h3>${esc(r.title)}</h3>
-            <p>${esc(r.text.slice(0, 120))}…</p>
-            <div class="lesson-meta"><span>⏱ ${r.minutes} ${t("min","دقيقة")}</span><span>${r.questions.length} ${t("questions","سؤال")}</span></div>
+      ` : `
+        <button class="card" style="width:100%;text-align:start;cursor:pointer;" onclick="BloomViews.openMoodCheck()">
+          <div class="row" style="gap:14px;">
+            <div style="font-size:36px;">🌷</div>
+            <div>
+              <div class="fw-700">${i18n.t('How are you feeling?', 'كيف تشعرين اليوم؟')}</div>
+              <div class="text-sm text-soft">${i18n.t('Tap to log mood + energy', 'سجّلي مزاجك وطاقتك')}</div>
+            </div>
           </div>
-        `).join("")}
-      </div>
-    `;
-  }
+        </button>
+      `}
 
-  function renderReadingDetail(id) {
-    const r = AppData.readings.find(x => x.id === id);
-    if (!r) return "";
-    const paragraphs = r.text.split(/\n\s*\n/).map(p => {
-      const html = p.split(/(\s+)/).map(token => {
-        if (/^\s+$/.test(token)) return token;
-        const clean = token.replace(/[^\w'-]/g, "");
-        if (!clean) return esc(token);
-        return `<span class="word-pop" onclick="AppApp.popWord(event, '${esc(clean)}')">${esc(token)}</span>`;
-      }).join("");
-      return `<p>${html}</p>`;
-    }).join("");
+      <div class="section-title"><h2>${i18n.t('Insights for you', 'ملاحظات لك')}</h2></div>
+      ${ins.map(i => `
+        <div class="insight-card">
+          <div class="insight-icon ${i.tone || ''}">${i.icon}</div>
+          <div>
+            <div class="insight-title">${escape(i.title)}</div>
+            <div class="insight-body">${escape(i.body)}</div>
+          </div>
+        </div>
+      `).join('')}
 
-    return `
-      <button class="btn btn-ghost" onclick="AppApp.go('reading')">← ${t("Back","عودة")}</button>
-      <div class="reading-passage">
-        <h2><span>${esc(r.title)}</span><button class="audio-btn audio-btn-sm" onclick="AppApp.speak(this, ${escAttr(r.text)})">🔊</button></h2>
-        ${paragraphs}
-      </div>
+      <div class="section-title"><h2>${i18n.t('What I remember about you', 'ما أتذكره عنك')}</h2></div>
       <div class="card">
-        <h3>${t("Comprehension","الفهم")}</h3>
-        <div id="reading-quiz" data-id="${r.id}">
-          ${r.questions.map((q,i) => `
-            <div class="quiz-question" data-i="${i}">
-              <div class="q-text">${i+1}. ${esc(q.q)}</div>
-              <div class="quiz-options">${q.options.map((o,j) => `<button class="quiz-option" data-j="${j}">${esc(o)}</button>`).join("")}</div>
-            </div>
-          `).join("")}
+        ${memorySummary(u)}
+      </div>
+    `;
+  }
+
+  function memorySummary(u) {
+    const goals = {
+      tone:         { en: '🌸 Tone & sculpt',          ar: '🌸 شد ونحت' },
+      build_muscle: { en: '🍑 Build glutes & curves',  ar: '🍑 بناء المؤخرة والمنحنيات' },
+      lose_fat:     { en: '🔥 Lose fat',               ar: '🔥 فقدان الدهون' },
+      strength:     { en: '💪 Get stronger',           ar: '💪 زيادة القوة' },
+    };
+    const levels = {
+      beginner: { en: 'Beginner', ar: 'مبتدئة' },
+      intermediate: { en: 'Intermediate', ar: 'متوسطة' },
+      advanced: { en: 'Advanced', ar: 'متقدّمة' },
+    };
+    const lang = i18n.get();
+    const goal = u.profile.goal && goals[u.profile.goal] ? goals[u.profile.goal][lang] : '—';
+    const lvl = u.profile.level && levels[u.profile.level] ? levels[u.profile.level][lang] : '—';
+    const focus = (u.profile.focusAreas || []).join(', ') || '—';
+    const totals = BloomStore.stats();
+    return `
+      <div class="list-row" style="margin:0 0 8px;">
+        <div class="li-ico">🎯</div>
+        <div class="li-body"><div class="li-name">${i18n.t('Goal', 'الهدف')}</div><div class="li-sub">${goal}</div></div>
+      </div>
+      <div class="list-row" style="margin:0 0 8px;">
+        <div class="li-ico">📊</div>
+        <div class="li-body"><div class="li-name">${i18n.t('Level', 'المستوى')}</div><div class="li-sub">${lvl}</div></div>
+      </div>
+      <div class="list-row" style="margin:0 0 8px;">
+        <div class="li-ico">🌟</div>
+        <div class="li-body"><div class="li-name">${i18n.t('Focus areas', 'مناطق التركيز')}</div><div class="li-sub">${focus}</div></div>
+      </div>
+      <div class="list-row" style="margin:0 0 8px;">
+        <div class="li-ico">📚</div>
+        <div class="li-body"><div class="li-name">${i18n.t('Sessions remembered', 'جلسات محفوظة')}</div><div class="li-sub">${totals.totalWorkouts} • ${totals.totalPRs} PRs</div></div>
+      </div>
+      <div class="list-row" style="margin:0;">
+        <div class="li-ico">💝</div>
+        <div class="li-body"><div class="li-name">${i18n.t('Favorite muscle', 'العضلة المفضلة')}</div><div class="li-sub">${favoriteMuscle(u) || '—'}</div></div>
+      </div>
+    `;
+  }
+  function favoriteMuscle(u) {
+    if (!u.sessions.length) return null;
+    const map = {};
+    u.sessions.forEach(s => s.exercises.forEach(e => {
+      const def = BLOOM_DATA.findExercise(e.exerciseId);
+      if (!def) return;
+      map[def.muscle] = (map[def.muscle] || 0) + 1;
+    }));
+    const top = Object.entries(map).sort((a,b) => b[1] - a[1])[0];
+    return top ? muscleLabel(top[0]) : null;
+  }
+
+  /* ─── MOOD CHECK MODAL ─── */
+  function openMoodCheck() {
+    const u = BloomStore.currentUser(); if (!u) return;
+    const cur = BloomStore.todayMood() || {};
+    const mc = document.getElementById('modal-card');
+    mc.innerHTML = `
+      <div class="sheet-handle"></div>
+      <h2 class="modal-h2">${i18n.t('How are you today?', 'كيف حالك اليوم؟')}</h2>
+      <p class="modal-sub">${i18n.t('Your coach adapts based on how you feel.', 'مدرّبتك تتكيّف حسب حالتك.')}</p>
+
+      <div class="form-row">
+        <label>${i18n.t('Mood', 'المزاج')}</label>
+        <div class="mood-grid" id="mood-grid">
+          ${BLOOM_DATA.MOODS.map(m => `
+            <button class="mood-btn ${cur.mood === m.id ? 'selected' : ''}" data-id="${m.id}">
+              <span class="e">${m.emoji}</span>
+              <span class="l">${i18n.get() === 'ar' ? m.ar : m.en}</span>
+            </button>
+          `).join('')}
         </div>
-        <button class="btn btn-primary" style="margin-top:12px;" onclick="AppApp.submitReading('${r.id}')">${t("Submit","سلّم")}</button>
+      </div>
+
+      ${rangeRow('energy', i18n.t('Energy', 'الطاقة'), cur.energy || 3, '🔋')}
+      ${rangeRow('sleep', i18n.t('Sleep quality', 'جودة النوم'), cur.sleep || 3, '🌙')}
+      ${rangeRow('motivation', i18n.t('Motivation', 'الحماس'), cur.motivation || 3, '🔥')}
+
+      <button class="btn btn-primary btn-block btn-lg" id="save-mood">${i18n.t('Save', 'حفظ')}</button>
+    `;
+    BloomApp.openModal();
+
+    let selectedMood = cur.mood || 'okay';
+    mc.querySelectorAll('.mood-btn').forEach(b => b.addEventListener('click', () => {
+      selectedMood = b.dataset.id;
+      mc.querySelectorAll('.mood-btn').forEach(x => x.classList.toggle('selected', x.dataset.id === selectedMood));
+    }));
+
+    mc.querySelectorAll('input[type=range]').forEach(r => {
+      const lbl = mc.querySelector(`[data-range-out="${r.name}"]`);
+      const upd = () => { if (lbl) lbl.textContent = r.value; };
+      r.addEventListener('input', upd); upd();
+    });
+
+    mc.querySelector('#save-mood').addEventListener('click', () => {
+      const energy = +mc.querySelector('input[name=energy]').value;
+      const sleep = +mc.querySelector('input[name=sleep]').value;
+      const motivation = +mc.querySelector('input[name=motivation]').value;
+      BloomStore.logMood({ mood: selectedMood, energy, sleep, motivation });
+      BloomApp.closeModal();
+      BloomApp.toast(i18n.t('Got it ✨ I\'ll adjust today.', 'تمام ✨ راح أعدّل تمرين اليوم.'), 'success');
+      // refresh views
+      if (document.getElementById('view-home').classList.contains('active')) renderHome();
+      if (document.getElementById('view-coach').classList.contains('active')) renderCoach();
+    });
+  }
+
+  function rangeRow(name, label, value, emoji) {
+    return `
+      <div class="form-row">
+        <label>${label} ${emoji} <span data-range-out="${name}">${value}</span>/5</label>
+        <input type="range" name="${name}" min="1" max="5" step="1" value="${value}" style="width:100%; accent-color: #f78cb1;" />
       </div>
     `;
   }
 
-  // ===== WRITING =====
-  function renderWriting() {
-    return `
-      <h2 style="margin:0 0 6px;">${t("Writing","الكتابة")}</h2>
-      <p style="color:var(--text-dim);margin:0 0 18px;">${t("Pick a prompt, write, then get instant feedback.","اختر موضوعًا، اكتب، وستحصل على تقييم فوري.")}</p>
-      <div class="cards-grid">
-        ${AppData.writingPrompts.map(p => `
-          <div class="lesson-card" onclick="AppApp.openWriting('${p.id}')">
-            <span class="level-badge level-${p.level}">${p.level}</span>
-            <h3>${esc(p.title)}</h3>
-            <p>${esc(p.prompt.slice(0,140))}…</p>
+  /* ─── PROFILE ─── */
+  function renderProfile() {
+    const u = BloomStore.currentUser(); if (!u) return;
+    const el = document.getElementById('view-profile');
+    const lvl = BLOOM_DATA.levelForXp(u.xp);
+    const lang = i18n.get();
+
+    el.innerHTML = `
+      <div class="profile-header">
+        <div class="avatar avatar-lg">${escape((u.name || 'B').slice(0,1).toUpperCase())}</div>
+        <div class="profile-name">${escape(u.name)}</div>
+        <div class="profile-tag">${escape(u.email)}</div>
+      </div>
+
+      <div class="level-card">
+        <div class="level-tag">${i18n.t('Level', 'المستوى')} ${lvl.current.lvl}</div>
+        <div class="level-name">${lang === 'ar' ? lvl.current.nameAr : lvl.current.name}</div>
+        <div class="xp-track"><div class="xp-fill" style="width:${lvl.pct}%"></div></div>
+        <div class="xp-meta">
+          <span>${u.xp} XP</span>
+          <span>${lvl.next ? `${lvl.next.xp - u.xp} ${i18n.t('XP to', 'نقطة إلى')} ${lang === 'ar' ? lvl.next.nameAr : lvl.next.name}` : i18n.t('Max level', 'أقصى مستوى')}</span>
+        </div>
+      </div>
+
+      <div class="section-title"><h2>${i18n.t('Account', 'الحساب')}</h2></div>
+      <button class="list-row" style="width:100%;" onclick="BloomViews.openEditProfile()">
+        <div class="li-ico">👤</div>
+        <div class="li-body"><div class="li-name">${i18n.t('Edit profile', 'تعديل الملف')}</div>
+        <div class="li-sub">${u.profile.weight ? `${u.profile.weight}kg · ${u.profile.height || '—'}cm` : i18n.t('Add your details', 'أضيفي تفاصيلك')}</div></div>
+        <div class="li-arrow">›</div>
+      </button>
+      <button class="list-row" style="width:100%;" onclick="BloomApp.go('achievements')">
+        <div class="li-ico">🏆</div>
+        <div class="li-body"><div class="li-name">${i18n.t('Achievements', 'الإنجازات')}</div>
+        <div class="li-sub">${u.unlockedBadges.length}/${BLOOM_DATA.BADGES.length} ${i18n.t('unlocked', 'مفتوحة')}</div></div>
+        <div class="li-arrow">›</div>
+      </button>
+      <button class="list-row" style="width:100%;" onclick="BloomApp.go('library')">
+        <div class="li-ico">📚</div>
+        <div class="li-body"><div class="li-name">${i18n.t('Exercise library', 'مكتبة التمارين')}</div>
+        <div class="li-sub">${BLOOM_DATA.EXERCISES.length} ${i18n.t('exercises', 'تمرين')}</div></div>
+        <div class="li-arrow">›</div>
+      </button>
+      <button class="list-row" style="width:100%;" onclick="BloomApp.go('nutrition')">
+        <div class="li-ico">💧</div>
+        <div class="li-body"><div class="li-name">${i18n.t('Nutrition', 'التغذية')}</div>
+        <div class="li-sub">${i18n.t('Water, protein & calories', 'ماء، بروتين، سعرات')}</div></div>
+        <div class="li-arrow">›</div>
+      </button>
+
+      <div class="section-title"><h2>${i18n.t('Preferences', 'التفضيلات')}</h2></div>
+      <button class="list-row" style="width:100%;" onclick="BloomApp.toggleTheme()">
+        <div class="li-ico">${BloomStore.getTheme() === 'dark' ? '🌙' : '☀️'}</div>
+        <div class="li-body"><div class="li-name">${i18n.t('Theme', 'المظهر')}</div>
+        <div class="li-sub">${BloomStore.getTheme() === 'dark' ? i18n.t('Dark mode', 'الوضع الليلي') : i18n.t('Light mode', 'الوضع الفاتح')}</div></div>
+        <div class="li-arrow">›</div>
+      </button>
+      <button class="list-row" style="width:100%;" onclick="BloomApp.toggleLang()">
+        <div class="li-ico">🌐</div>
+        <div class="li-body"><div class="li-name">${i18n.t('Language', 'اللغة')}</div>
+        <div class="li-sub">${lang === 'ar' ? 'العربية' : 'English'}</div></div>
+        <div class="li-arrow">›</div>
+      </button>
+      <button class="list-row" style="width:100%;" onclick="BloomViews.openPrefs()">
+        <div class="li-ico">⚙️</div>
+        <div class="li-body"><div class="li-name">${i18n.t('Workout preferences', 'تفضيلات التمرين')}</div>
+        <div class="li-sub">${i18n.t('Rest time, auto progression…', 'وقت الراحة، التقدم التلقائي…')}</div></div>
+        <div class="li-arrow">›</div>
+      </button>
+
+      <div class="spacer-16"></div>
+      <button class="btn btn-danger btn-block" onclick="BloomApp.logout()">${i18n.t('Sign out', 'تسجيل الخروج')}</button>
+      <div class="spacer-24"></div>
+      <div class="t-c text-faint text-xs">Bloom v1.0 · ${i18n.t('Made with', 'صُنع بـ')} 💖</div>
+    `;
+  }
+
+  function openEditProfile() {
+    const u = BloomStore.currentUser();
+    const mc = document.getElementById('modal-card');
+    mc.innerHTML = `
+      <div class="sheet-handle"></div>
+      <h2 class="modal-h2">${i18n.t('Edit profile', 'تعديل الملف')}</h2>
+      <div class="form-row">
+        <label>${i18n.t('Name', 'الاسم')}</label>
+        <input id="ep-name" value="${escape(u.name)}" />
+      </div>
+      <div class="form-row">
+        <label>${i18n.t('Age', 'العمر')}</label>
+        <input id="ep-age" type="number" value="${u.profile.age || ''}" />
+      </div>
+      <div class="form-row">
+        <label>${i18n.t('Weight (kg)', 'الوزن (كجم)')}</label>
+        <input id="ep-weight" type="number" step="0.1" value="${u.profile.weight || ''}" />
+      </div>
+      <div class="form-row">
+        <label>${i18n.t('Height (cm)', 'الطول (سم)')}</label>
+        <input id="ep-height" type="number" value="${u.profile.height || ''}" />
+      </div>
+      <button class="btn btn-primary btn-block btn-lg" id="ep-save">${i18n.t('Save', 'حفظ')}</button>
+    `;
+    BloomApp.openModal();
+    mc.querySelector('#ep-save').addEventListener('click', () => {
+      BloomStore.update(u => {
+        u.name = mc.querySelector('#ep-name').value || u.name;
+        u.profile.age = numOr(mc.querySelector('#ep-age').value);
+        u.profile.weight = numOr(mc.querySelector('#ep-weight').value);
+        u.profile.height = numOr(mc.querySelector('#ep-height').value);
+      });
+      BloomApp.closeModal();
+      BloomApp.toast(i18n.t('Saved ✨', 'تم الحفظ ✨'), 'success');
+      renderProfile();
+      BloomApp.refreshTopbar();
+    });
+  }
+
+  function openPrefs() {
+    const u = BloomStore.currentUser();
+    const mc = document.getElementById('modal-card');
+    mc.innerHTML = `
+      <div class="sheet-handle"></div>
+      <h2 class="modal-h2">${i18n.t('Workout preferences', 'تفضيلات التمرين')}</h2>
+      <div class="form-row">
+        <label>${i18n.t('Default rest time (seconds)', 'وقت الراحة (ثواني)')}</label>
+        <input id="pf-rest" type="number" min="15" max="300" value="${u.prefs.restDefault}" />
+      </div>
+      <div class="form-row">
+        <label class="row" style="cursor:pointer;">
+          <input id="pf-auto" type="checkbox" ${u.prefs.autoProgression ? 'checked' : ''} style="width:auto;"/>
+          <span>${i18n.t('Auto-suggest progressive overload', 'اقتراحات تقدم تلقائي')}</span>
+        </label>
+      </div>
+      <div class="form-row">
+        <label class="row" style="cursor:pointer;">
+          <input id="pf-sound" type="checkbox" ${u.prefs.soundOn ? 'checked' : ''} style="width:auto;"/>
+          <span>${i18n.t('Sounds & haptics', 'الأصوات والاهتزاز')}</span>
+        </label>
+      </div>
+      <button class="btn btn-primary btn-block btn-lg" id="pf-save">${i18n.t('Save', 'حفظ')}</button>
+    `;
+    BloomApp.openModal();
+    mc.querySelector('#pf-save').addEventListener('click', () => {
+      BloomStore.update(u => {
+        u.prefs.restDefault = +mc.querySelector('#pf-rest').value || 60;
+        u.prefs.autoProgression = mc.querySelector('#pf-auto').checked;
+        u.prefs.soundOn = mc.querySelector('#pf-sound').checked;
+      });
+      BloomApp.closeModal();
+      BloomApp.toast(i18n.t('Saved ✨', 'تم الحفظ ✨'), 'success');
+    });
+  }
+
+  function openResetWeek() {
+    const mc = document.getElementById('modal-card');
+    mc.innerHTML = `
+      <div class="sheet-handle"></div>
+      <h2 class="modal-h2">${i18n.t('Reset this week?', 'إعادة ضبط الأسبوع؟')}</h2>
+      <p class="modal-sub">${i18n.t('Clears your completed days for this week. Your history stays.', 'يمسح الأيام المكتملة فقط لهذا الأسبوع. سجلّك يبقى محفوظ.')}</p>
+      <div class="row" style="gap:8px;">
+        <button class="btn btn-ghost" style="flex:1;" onclick="BloomApp.closeModal()">${i18n.t('Cancel', 'إلغاء')}</button>
+        <button class="btn btn-primary" style="flex:1;" id="confirm-reset">${i18n.t('Reset', 'إعادة ضبط')}</button>
+      </div>
+    `;
+    BloomApp.openModal();
+    mc.querySelector('#confirm-reset').addEventListener('click', () => {
+      BloomStore.update(u => { u.week.completed = {}; u.week.startTs = startOfWeek(new Date()).getTime(); });
+      BloomApp.closeModal();
+      renderWorkouts();
+      BloomApp.toast(i18n.t('Week reset ✨', 'تمت إعادة الضبط ✨'), 'success');
+    });
+  }
+
+  function openCustomizeProgram() {
+    const u = BloomStore.currentUser();
+    const mc = document.getElementById('modal-card');
+    const lang = i18n.get();
+    mc.innerHTML = `
+      <div class="sheet-handle"></div>
+      <h2 class="modal-h2">${i18n.t('Customize program', 'تخصيص البرنامج')}</h2>
+      <p class="modal-sub">${i18n.t('Edit exercises, sets and reps for each day.', 'عدّلي التمارين والمجموعات والتكرارات لكل يوم.')}</p>
+      <div id="customize-list"></div>
+    `;
+    BloomApp.openModal();
+    const list = mc.querySelector('#customize-list');
+    u.program.days.forEach((d, di) => {
+      if (d.rest) return;
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.marginBottom = '10px';
+      card.innerHTML = `<h3>${escape(lang === 'ar' ? d.nameAr : d.name)} ${d.emoji}</h3>`;
+      d.exercises.forEach((ex, ei) => {
+        const def = BLOOM_DATA.findExercise(ex.exerciseId);
+        const row = document.createElement('div');
+        row.style.cssText = 'display:grid;grid-template-columns:1fr 60px 60px 60px;gap:6px;align-items:center;margin-top:8px;';
+        row.innerHTML = `
+          <div class="text-sm fw-700">${def ? escape(lang === 'ar' ? def.nameAr : def.name) : ex.exerciseId}</div>
+          <input type="number" min="1" max="10" value="${ex.sets}" data-field="sets" style="padding:8px;text-align:center;border:1px solid var(--line);border-radius:8px;background:var(--surface);"/>
+          <input type="number" min="1" max="50" value="${ex.reps}" data-field="reps" style="padding:8px;text-align:center;border:1px solid var(--line);border-radius:8px;background:var(--surface);"/>
+          <input type="number" min="0" step="0.5" value="${ex.weight}" data-field="weight" style="padding:8px;text-align:center;border:1px solid var(--line);border-radius:8px;background:var(--surface);"/>
+        `;
+        row.querySelectorAll('input').forEach(inp => {
+          inp.addEventListener('change', () => {
+            BloomStore.update(uu => {
+              const v = +inp.value;
+              uu.program.days[di].exercises[ei][inp.dataset.field] = isNaN(v) ? 0 : v;
+            });
+          });
+        });
+        card.appendChild(row);
+      });
+      list.appendChild(card);
+    });
+    const close = document.createElement('button');
+    close.className = 'btn btn-primary btn-block btn-lg';
+    close.textContent = i18n.t('Done', 'تم');
+    close.style.marginTop = '12px';
+    close.onclick = () => { BloomApp.closeModal(); renderWorkouts(); };
+    list.appendChild(close);
+  }
+
+  /* ─── LIBRARY ─── */
+  let libFilter = 'all';
+  let libQuery = '';
+  function renderLibrary() {
+    const el = document.getElementById('view-library');
+    const lang = i18n.get();
+    el.innerHTML = `
+      <div class="session-header">
+        <button class="session-close" onclick="BloomApp.go('home')">←</button>
+        <div class="session-title"><h2>${i18n.t('Exercise library', 'مكتبة التمارين')}</h2></div>
+      </div>
+      <div class="search-row">
+        <span class="s-ico">🔍</span>
+        <input id="lib-search" placeholder="${i18n.t('Search…', 'ابحثي…')}" value="${libQuery}"/>
+      </div>
+      <div class="chip-row" id="lib-chips">
+        ${['all','glutes','hamstrings','quads','back','shoulders','chest','arms','core'].map(c => `
+          <button class="chip ${libFilter === c ? 'active' : ''}" data-filter="${c}">${muscleLabel(c) === c ? (c === 'all' ? (i18n.t('All','الكل')) : c) : muscleLabel(c)}</button>
+        `).join('')}
+      </div>
+      <div class="library-grid" id="lib-grid"></div>
+    `;
+    el.querySelector('#lib-search').addEventListener('input', (e) => { libQuery = e.target.value; renderLibGrid(); });
+    el.querySelectorAll('#lib-chips .chip').forEach(c => c.addEventListener('click', () => {
+      libFilter = c.dataset.filter; renderLibrary();
+    }));
+    renderLibGrid();
+  }
+  function renderLibGrid() {
+    const grid = document.getElementById('lib-grid');
+    if (!grid) return;
+    const lang = i18n.get();
+    const list = BLOOM_DATA.EXERCISES.filter(e => {
+      const ok = libFilter === 'all' || e.muscle === libFilter;
+      const q = libQuery.toLowerCase();
+      const okQ = !q || e.name.toLowerCase().includes(q) || e.nameAr.toLowerCase().includes(q) || e.target.toLowerCase().includes(q);
+      return ok && okQ;
+    });
+    grid.innerHTML = list.map((e, i) => `
+      <button class="lib-card" onclick="BloomViews.openExerciseDetail('${e.id}')">
+        <div class="lib-thumb c-${(i % 4) + 1}">${e.emoji}</div>
+        <div class="lib-name">${escape(lang === 'ar' ? e.nameAr : e.name)}</div>
+        <div class="lib-target">${e.target}</div>
+      </button>
+    `).join('') || `<div class="text-soft" style="grid-column:span 2;text-align:center;padding:24px;">${i18n.t('No exercises found', 'لا توجد تمارين')}</div>`;
+  }
+  function openExerciseDetail(id) {
+    const ex = BLOOM_DATA.findExercise(id); if (!ex) return;
+    const u = BloomStore.currentUser();
+    const lang = i18n.get();
+    const mc = document.getElementById('modal-card');
+    const rec = u?.records?.[id];
+    mc.innerHTML = `
+      <div class="sheet-handle"></div>
+      <div class="ex-detail-head">
+        <div class="ex-detail-emoji">${ex.emoji}</div>
+        <h2>${escape(lang === 'ar' ? ex.nameAr : ex.name)}</h2>
+        <p class="text-soft" style="margin-top:4px;">${ex.target}</p>
+      </div>
+
+      ${rec && rec.bestWeight > 0 ? `
+        <div class="recent-pr" style="margin-bottom:16px;">
+          <div class="pr-medal">🏆</div>
+          <div class="pr-body">
+            <div class="pr-name">${i18n.t('Your best', 'أفضل أداء')}</div>
+            <div class="pr-detail">${rec.bestWeight}kg × ${rec.bestReps}</div>
           </div>
-        `).join("")}
+        </div>
+      ` : ''}
+
+      <div class="ex-detail-section">
+        <h3>💡 ${i18n.t('Tips', 'نصائح')}</h3>
+        <ul>${ex.tips.map(t => `<li>${escape(t)}</li>`).join('')}</ul>
+      </div>
+      <div class="ex-detail-section">
+        <h3>⚠️ ${i18n.t('Common mistakes', 'أخطاء شائعة')}</h3>
+        <ul>${ex.mistakes.map(t => `<li>${escape(t)}</li>`).join('')}</ul>
+      </div>
+      <div class="ex-detail-section">
+        <h3>👑 ${i18n.t('For women', 'للنساء')}</h3>
+        <ul>${ex.women.map(t => `<li>${escape(t)}</li>`).join('')}</ul>
+      </div>
+      <div class="ex-detail-section">
+        <h3>🔁 ${i18n.t('Alternatives', 'بدائل')}</h3>
+        <ul>${ex.alts.map(t => `<li>${escape(t)}</li>`).join('')}</ul>
       </div>
     `;
+    BloomApp.openModal();
   }
 
-  function renderWritingDetail(id) {
-    const p = AppData.writingPrompts.find(x => x.id === id);
-    if (!p) return "";
-    return `
-      <button class="btn btn-ghost" onclick="AppApp.go('writing')">← ${t("Back","عودة")}</button>
-      <h2 style="margin:8px 0 6px;">${esc(p.title)} <span class="level-badge level-${p.level}">${p.level}</span></h2>
-      <div class="card"><p style="line-height:1.7;margin:0;">${esc(p.prompt)}</p></div>
-      <div class="card writing-area">
+  /* ─── NUTRITION ─── */
+  function renderNutrition() {
+    const u = BloomStore.currentUser();
+    const el = document.getElementById('view-nutrition');
+    const water = BloomStore.todayWater();
+    const nutri = BloomStore.todayNutri();
+    const goalProtein = Math.round((u.profile.weight || 60) * 1.6);
+    const goalCalories = Math.round((u.profile.weight || 60) * 30);
+
+    el.innerHTML = `
+      <div class="session-header">
+        <button class="session-close" onclick="BloomApp.go('home')">←</button>
+        <div class="session-title"><h2>${i18n.t('Nutrition', 'التغذية')}</h2></div>
+      </div>
+
+      <div class="nutri-row">
+        <div class="nutri-tile">
+          <div class="nutri-emoji">💧</div>
+          <div class="nutri-val">${water}/8</div>
+          <div class="nutri-lbl">${i18n.t('Water', 'ماء')}</div>
+        </div>
+        <div class="nutri-tile">
+          <div class="nutri-emoji">🥚</div>
+          <div class="nutri-val">${nutri.protein || 0}g</div>
+          <div class="nutri-lbl">${i18n.t('Protein', 'بروتين')} / ${goalProtein}g</div>
+        </div>
+        <div class="nutri-tile">
+          <div class="nutri-emoji">🍓</div>
+          <div class="nutri-val">${nutri.calories || 0}</div>
+          <div class="nutri-lbl">${i18n.t('Cal', 'سعرات')} / ${goalCalories}</div>
+        </div>
+      </div>
+
+      <div class="card-glass" style="margin-top:14px;">
+        <h3>💧 ${i18n.t('Water tracker', 'متابعة الماء')}</h3>
+        <p class="text-sm text-soft">${i18n.t('Tap a drop to log a glass.', 'اضغطي على القطرة لتسجيل كوب.')}</p>
+        <div class="water-tracker" id="water-row">
+          ${Array.from({length: 8}).map((_, i) => `<span class="water-drop ${i < water ? 'filled' : ''}" data-i="${i}">💧</span>`).join('')}
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px;">
+        <h3>🥚 ${i18n.t('Protein & calories', 'بروتين وسعرات')}</h3>
         <div class="form-row">
-          <label>${t("Your answer","إجابتك")}</label>
-          <textarea id="writing-input" placeholder="${t('Start writing here...','ابدأ الكتابة هنا...')}"></textarea>
+          <label>${i18n.t('Protein today (g)', 'البروتين اليوم (جم)')}</label>
+          <input id="nutri-p" type="number" min="0" value="${nutri.protein || 0}"/>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="AppApp.gradeWriting('${p.id}')">${t("Get feedback","احصل على تقييم")}</button>
-          <button class="btn" onclick="AppApp.readWriting()">🔊 ${t("Read aloud","اقرأ بصوت")}</button>
+        <div class="form-row">
+          <label>${i18n.t('Calories today (kcal)', 'السعرات اليوم')}</label>
+          <input id="nutri-c" type="number" min="0" value="${nutri.calories || 0}"/>
         </div>
-        <div id="writing-feedback"></div>
+        <button class="btn btn-primary btn-block" id="nutri-save">${i18n.t('Save', 'حفظ')}</button>
+      </div>
+
+      <div class="card" style="margin-top:14px;background:var(--grad-cool);color:var(--ink);">
+        <h3>✨ ${i18n.t('Smart suggestions', 'اقتراحات ذكية')}</h3>
+        ${nutriSuggestions(u, water, nutri, goalProtein).map(s => `<div class="row" style="gap:8px;margin-top:6px;"><span>${s.icon}</span><span class="text-sm">${escape(s.text)}</span></div>`).join('')}
       </div>
     `;
+
+    el.querySelectorAll('.water-drop').forEach(d => d.addEventListener('click', () => {
+      const i = +d.dataset.i;
+      const newCount = i + 1 === BloomStore.todayWater() ? i : i + 1;
+      BloomStore.setWater(newCount);
+      renderNutrition();
+      if (newCount === 8) {
+        BloomApp.toast(i18n.t('8 glasses ✨ hydration queen!', '٨ كؤوس ✨ ملكة الترطيب!'), 'success');
+      }
+    }));
+    el.querySelector('#nutri-save').addEventListener('click', () => {
+      BloomStore.setNutri({
+        protein: numOr(el.querySelector('#nutri-p').value) || 0,
+        calories: numOr(el.querySelector('#nutri-c').value) || 0,
+      });
+      BloomApp.toast(i18n.t('Saved ✨', 'تم الحفظ ✨'), 'success');
+      renderNutrition();
+    });
   }
 
-  // ===== PRONUNCIATION =====
-  function renderPronunciation() {
-    const supported = AppAudio.isRecognitionSupported();
-    return `
-      <h2 style="margin:0 0 6px;">${t("Pronunciation","النطق")}</h2>
-      <p style="color:var(--text-dim);margin:0 0 18px;">${t("Listen, repeat, get a similarity score.","استمع، كرر، واحصل على نسبة تطابق.")}</p>
-      ${!supported ? `<div class="card" style="border-color:var(--warn);"><strong>⚠️ ${t("Speech recognition needs Chrome (desktop or Android).","التعرف على الصوت يحتاج Chrome.")}</strong></div>` : ""}
-      <div class="cards-grid">
-        ${AppData.pronunciation.map(p => `
-          <div class="pron-target">
-            <span class="level-badge level-${p.level}">${p.level}</span>
-            <div class="target-text">${esc(p.text)}</div>
-            <div style="color:var(--text-dim);font-size:13px;">${t("Focus","التركيز")}: ${esc(p.focus)}</div>
-            <button class="btn btn-ghost" style="margin:8px 4px;" onclick="AppApp.speak(this, ${escAttr(p.text)})">🔊 ${t("Hear","استمع")}</button>
-            <button class="btn btn-primary mic-trigger" style="margin:8px 4px;" data-text="${esc(p.text)}">🎤 ${t("Speak","تكلّم")}</button>
-            <div class="pron-result" style="display:none;"></div>
-          </div>
-        `).join("")}
-      </div>
-    `;
+  function nutriSuggestions(u, water, nutri, goalP) {
+    const out = [];
+    if (water < 4) out.push({ icon: '💧', text: i18n.t('You\'re behind on water. Drink a glass now 💕', 'متأخّرة بالماء. اشربي كوب الحين 💕') });
+    if ((nutri.protein || 0) < goalP * 0.6) out.push({ icon: '🍳', text: i18n.t(`Aim for ${goalP}g protein today — eggs, yogurt, chicken.`, `استهدفي ${goalP} جم بروتين — بيض، زبادي، دجاج.`) });
+    if (out.length === 0) out.push({ icon: '🌸', text: i18n.t('You\'re on track today, beautiful ✨', 'ماشية على المسار اليوم يا جميلة ✨') });
+    return out;
   }
 
-  // ===== LISTENING =====
-  function renderListening() {
-    return `
-      <h2 style="margin:0 0 6px;">${t("Listening","الاستماع")}</h2>
-      <p style="color:var(--text-dim);margin:0 0 18px;">${t("Press play, listen, then answer. Change voice or speed if you want.","اضغط تشغيل، استمع، ثم أجب. غيّر الصوت أو السرعة لو حبيت.")}</p>
-      <div class="card" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
-        <span style="color:var(--text-dim);font-size:13px;">${t("Voice","الصوت")}</span>
-        <select id="voice-select" style="padding:8px 12px;background:var(--panel-2);border:1px solid var(--border);color:var(--text);border-radius:8px;"></select>
-        <span style="color:var(--text-dim);font-size:13px;">${t("Speed","السرعة")}</span>
-        <select id="rate-select" style="padding:8px 12px;background:var(--panel-2);border:1px solid var(--border);color:var(--text);border-radius:8px;">
-          <option value="0.75">0.75x</option><option value="0.9">0.9x</option>
-          <option value="1" selected>1x</option><option value="1.15">1.15x</option>
-        </select>
+  /* ─── ACHIEVEMENTS ─── */
+  function renderAchievements() {
+    const u = BloomStore.currentUser();
+    const el = document.getElementById('view-achievements');
+    const stats = BloomStore.stats();
+    const lang = i18n.get();
+    el.innerHTML = `
+      <div class="session-header">
+        <button class="session-close" onclick="BloomApp.go('home')">←</button>
+        <div class="session-title"><h2>${i18n.t('Achievements', 'إنجازات')}</h2></div>
       </div>
-      <div>
-        ${AppData.listening.map(l => `
-          <div class="listening-card">
-            <span class="level-badge level-${l.level}">${l.level}</span>
-            <h3 style="margin:6px 0;">${esc(l.title)}</h3>
-            <div class="listening-controls">
-              <button class="btn btn-primary" onclick="AppApp.playListening('${l.id}')">▶ ${t("Play","تشغيل")}</button>
-              <button class="btn" onclick="AppAudio.stop()">⏹ ${t("Stop","إيقاف")}</button>
-              <button class="btn btn-ghost" onclick="AppApp.toggleScript('${l.id}', this)">${t("Show script","إظهار النص")}</button>
-            </div>
-            <div id="script-${l.id}" style="display:none;font-style:italic;color:var(--text-dim);line-height:1.7;margin:10px 0;">${esc(l.script)}</div>
-            <div data-listening="${l.id}">
-              ${l.questions.map((q,i) => `
-                <div class="quiz-question" data-i="${i}">
-                  <div class="q-text">${i+1}. ${esc(q.q)}</div>
-                  <div class="quiz-options">${q.options.map((o,j)=>`<button class="quiz-option" data-j="${j}">${esc(o)}</button>`).join("")}</div>
-                </div>
-              `).join("")}
-            </div>
-            <button class="btn btn-primary" style="margin-top:10px;" onclick="AppApp.submitListening('${l.id}')">${t("Submit","سلّم")}</button>
-          </div>
-        `).join("")}
-      </div>
-    `;
-  }
-
-  // ===== AI CHAT =====
-  function renderAiChat() {
-    const log = AppAiChat.loadLog();
-    return `
-      <h2 style="margin:0 0 6px;">${t("AI English Coach","مدرّب الإنجليزي")} 🤖</h2>
-      <p style="color:var(--text-dim);margin:0 0 14px;">${t("Practice your English. The coach replies in English and gives you tips.","تمرّن إنجليزي. المدرّب يرد بالإنجليزي ويعطيك نصائح.")}</p>
-      <div class="chat-container">
-        <div id="chat-messages" class="chat-messages">
-          ${log.length === 0 ? `
-            <div class="chat-msg bot">${t("Hi! I'm your English coach. Type a message in English and let's start. 👋","أهلًا! أنا مدرّبك للإنجليزي. اكتب لي رسالة بالإنجليزي ونبدأ. 👋")}</div>
-          ` : log.map(m => `
-            <div class="chat-msg ${m.role}">${esc(m.text)}</div>
-            ${m.tips && m.tips.length ? `<div class="chat-tips">💡 ${m.tips.map(esc).join(" · ")}</div>` : ""}
-          `).join("")}
-        </div>
-        <div class="chat-input-row">
-          <input id="chat-input" placeholder="${t('Type in English...','اكتب بالإنجليزي...')}" autocomplete="off" />
-          <button onclick="AppApp.sendChat()">${t("Send","أرسل")}</button>
-        </div>
-      </div>
-      <div style="margin-top:10px;display:flex;gap:8px;">
-        <button class="btn btn-ghost" onclick="AppApp.clearChat()">🗑 ${t("Clear chat","مسح المحادثة")}</button>
-      </div>
-    `;
-  }
-
-  // ===== CHALLENGES =====
-  function renderChallenges() {
-    return `
-      <h2 style="margin:0 0 6px;">${t("Challenges","التحديات")}</h2>
-      <p style="color:var(--text-dim);margin:0 0 18px;">${t("Three modes: solo quiz, typing race, or a 1v1 battle with friends.","ثلاثة أوضاع: تحدّي فردي، سباق كتابة، أو معركة مع صاحبك.")}</p>
-
-      <div class="challenge-pick">
-        <div class="pick-card" onclick="AppApp.go('challenges', {sub:'quiz'})">
-          <div class="pick-icon">🎯</div>
-          <h3>${t("Daily Quiz","تحدي اليوم")}</h3>
-          <p>${t("20 timed questions: grammar, vocab, listening, and more.","20 سؤال موقّت متنوع: قواعد، مفردات، استماع.")}</p>
-          <div class="pick-meta">⏱ ~5 ${t("min","دقايق")} · 20 ${t("questions","سؤال")}</div>
-          <button class="btn btn-primary" style="margin-top:8px;">${t("Start","ابدأ")}</button>
-        </div>
-        <div class="pick-card" onclick="AppApp.go('challenges', {sub:'typing'})">
-          <div class="pick-icon">⌨️</div>
-          <h3>${t("Typing Race","سباق الكتابة")}</h3>
-          <p>${t("60-second speed-typing test. Highest WPM wins.","اختبار كتابة سريعة في 60 ثانية. الأسرع يفوز.")}</p>
-          <div class="pick-meta">⏱ 60s · WPM + ${t("accuracy","دقة")}</div>
-          <button class="btn btn-primary" style="margin-top:8px;">${t("Start","ابدأ")}</button>
-        </div>
-        <div class="pick-card" onclick="AppApp.go('challenges', {sub:'battle'})">
-          <div class="pick-icon">⚔️</div>
-          <h3>${t("Battle a Friend","عارك صاحبك")}</h3>
-          <p>${t("Create a code, share it, both play the same questions, compare scores.","سوّ كود، شاركه، تلعبون نفس الأسئلة، وتقارنون النتائج.")}</p>
-          <div class="pick-meta">🔗 ${t("Multi-player","متعدّد اللاعبين")}</div>
-          <button class="btn btn-primary" style="margin-top:8px;">${t("Open","افتح")}</button>
-        </div>
-      </div>
-
-      <div class="section-title">
-        <h2>🏆 ${t("Today's Leaderboards","لوحات صدارة اليوم")}</h2>
-        <button class="btn btn-ghost" onclick="AppApp.copyChallengeLink()">🔗 ${t("Invite friends","ادعُ أصحابك")}</button>
-      </div>
-
-      <div class="tabs">
-        <button class="tab active" data-lb="quiz" onclick="AppApp.switchLb(this, 'quiz')">🎯 ${t("Quiz","الأسئلة")}</button>
-        <button class="tab" data-lb="typing" onclick="AppApp.switchLb(this, 'typing')">⌨️ ${t("Typing","الكتابة")}</button>
-      </div>
-      <div id="lb-container">${renderQuizLb()}</div>
-    `;
-  }
-
-  function renderQuizLb() {
-    const lb = AppChallenges.leaderboard();
-    if (!lb.length) return `<div class="empty-state">${t("No quiz scores today. Be the first.","لا توجد نتائج اليوم. كن الأول.")}</div>`;
-    return `<div class="leaderboard">${lb.map((row,i) => `
-      <div class="lb-row ${row.you ? 'you':''}">
-        <div class="rank rank-${i+1}">${i+1}</div>
-        <div><div class="name">${esc(row.name)} ${row.you ? `<span style="color:var(--primary);font-size:11px;">(${t("you","أنت")})</span>` : ""}</div></div>
-        <div class="score">${row.score}/${row.total} · ${row.timeSec}s</div>
-      </div>
-    `).join("")}</div>`;
-  }
-
-  function renderTypingLb() {
-    const lb = AppTyping.leaderboard();
-    if (!lb.length) return `<div class="empty-state">${t("No typing scores today. Be the first.","لا توجد نتائج اليوم. كن الأول.")}</div>`;
-    return `<div class="leaderboard">${lb.map((row,i) => `
-      <div class="lb-row ${row.you ? 'you':''}">
-        <div class="rank rank-${i+1}">${i+1}</div>
-        <div><div class="name">${esc(row.name)} ${row.you ? `<span style="color:var(--primary);font-size:11px;">(${t("you","أنت")})</span>` : ""}</div></div>
-        <div class="score">${row.wpm} WPM · ${row.acc}%</div>
-      </div>
-    `).join("")}</div>`;
-  }
-
-  function renderChallengeQuiz() {
-    return `
-      <button class="btn btn-ghost" onclick="AppApp.go('challenges')">← ${t("Back","عودة")}</button>
-      <div class="challenge-quiz" id="challenge-quiz" style="margin-top:12px;">
-        <div class="timer">
-          <span>⏱</span>
-          <div class="timer-bar"><div class="timer-bar-fill" id="timer-fill"></div></div>
-          <span class="timer-text" id="timer-text">--</span>
-        </div>
-        <div id="challenge-stage"></div>
-      </div>
-    `;
-  }
-
-  function renderTypingRace() {
-    const txt = AppTyping.todaysText();
-    return `
-      <button class="btn btn-ghost" onclick="AppApp.go('challenges')">← ${t("Back","عودة")}</button>
-      <h2 style="margin:12px 0 6px;">⌨️ ${t("Typing Race","سباق الكتابة")} <span class="level-badge level-${txt.level}">${txt.level}</span></h2>
-      <p style="color:var(--text-dim);margin:0 0 14px;font-size:13px;">${t("Start typing to begin the timer. 60 seconds.","ابدأ الكتابة عشان يشتغل الموقت. 60 ثانية.")}</p>
-      <div id="typing-stage">
-        <div class="typing-stats">
-          <div class="stat"><div class="stat-v" id="t-time">${AppTyping.DURATION}s</div><div class="stat-l">${t("Time","الوقت")}</div></div>
-          <div class="stat"><div class="stat-v" id="t-wpm">0</div><div class="stat-l">WPM</div></div>
-          <div class="stat"><div class="stat-v" id="t-acc">100%</div><div class="stat-l">${t("Accuracy","الدقة")}</div></div>
-          <div class="stat"><div class="stat-v" id="t-chars">0/${txt.text.length}</div><div class="stat-l">${t("Chars","الحروف")}</div></div>
-        </div>
-        <div class="typing-display" id="t-display"></div>
-        <input type="text" class="typing-input" id="t-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="${t('Type here…','اكتب هنا…')}" />
-        <div class="typing-actions">
-          <button class="btn" onclick="AppApp.startTyping()">🔄 ${t("Restart","إعادة")}</button>
-          <button class="btn btn-ghost" onclick="AppApp.go('challenges')">${t("Cancel","إلغاء")}</button>
-        </div>
-      </div>
-    `;
-  }
-
-  // ===== BATTLES =====
-  function renderBattles() {
-    const recent = AppBattles.recentBattles(5);
-    return `
-      <button class="btn btn-ghost" onclick="AppApp.go('challenges')">← ${t("Back","عودة")}</button>
-      <h2 style="margin:12px 0 6px;">⚔️ ${t("Battle a Friend","عارك صاحبك")}</h2>
-      <p style="color:var(--text-dim);margin:0 0 14px;font-size:13px;">${t("Create a battle, share the code, both play same questions, compare scores.","سوّ معركة، شارك الكود، تلعبون نفس الأسئلة، تقارنون النتائج.")}</p>
-
-      <div class="challenge-pick">
-        <div class="pick-card">
-          <div class="pick-icon">🆕</div>
-          <h3>${t("Create new battle","معركة جديدة")}</h3>
-          <p>${t("Pick a type and get a 6-letter code to share.","اختر النوع وراح يطلع لك كود من 6 حروف.")}</p>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-            <button class="btn btn-primary" onclick="AppApp.createBattle('quiz')">🎯 ${t("Quiz","أسئلة")}</button>
-            <button class="btn btn-primary" onclick="AppApp.createBattle('typing')">⌨️ ${t("Typing","كتابة")}</button>
-          </div>
-        </div>
-        <div class="pick-card">
-          <div class="pick-icon">🔑</div>
-          <h3>${t("Join with code","ادخل بالكود")}</h3>
-          <p>${t("Got a code from a friend? Enter it here.","عندك كود من صاحبك؟ ادخله هنا.")}</p>
-          <div class="battle-join-form">
-            <input id="battle-join-code" placeholder="XXXXXX" maxlength="6" />
-            <button class="btn btn-primary" onclick="AppApp.joinBattle()">${t("Join","ادخل")}</button>
-          </div>
-        </div>
-      </div>
-
-      ${recent.length ? `
-      <div class="section-title"><h2>${t("Recent battles","المعارك الأخيرة")}</h2></div>
-      <div class="cards-grid">
-        ${recent.map(b => {
-          const rs = AppBattles.rankings(b.code);
+      <p class="text-soft text-sm">${u.unlockedBadges.length}/${BLOOM_DATA.BADGES.length} ${i18n.t('unlocked', 'مفتوحة')}</p>
+      <div class="badge-grid">
+        ${BLOOM_DATA.BADGES.map((b, i) => {
+          const unlocked = u.unlockedBadges.includes(b.id);
           return `
-            <div class="lesson-card" onclick="AppApp.openBattleRoom('${b.code}')">
-              <span class="level-badge level-${b.type === 'typing' ? 'C1' : 'B2'}">${b.type === 'typing' ? '⌨️ Typing' : '🎯 Quiz'}</span>
-              <h3>${t("Code","كود")}: ${esc(b.code)}</h3>
-              <p>${Object.keys(b.players).length} ${t("players","لاعبين")}</p>
-              ${rs[0] ? `<div class="lesson-meta"><span>🥇 ${esc(rs[0].name)}</span></div>` : ""}
+            <div class="badge-card ${unlocked ? '' : 'locked'}">
+              <div class="badge-icon c-${b.color}">${b.icon}</div>
+              <div class="badge-name">${escape(lang === 'ar' ? b.nameAr : b.name)}</div>
+              <div class="badge-desc">${escape(lang === 'ar' ? b.descAr : b.desc)}</div>
             </div>
           `;
-        }).join("")}
-      </div>` : ""}
-    `;
-  }
-
-  function renderBattleRoom(code) {
-    const b = AppBattles.get(code);
-    if (!b) return `<button class="btn btn-ghost" onclick="AppApp.go('challenges')">← ${t("Back","عودة")}</button><div class="empty-state">${t("Battle not found.","المعركة غير موجودة.")}</div>`;
-    const me = AppApp.user().name;
-    const rankings = AppBattles.rankings(code);
-    const myResult = b.players[me];
-
-    return `
-      <button class="btn btn-ghost" onclick="AppApp.go('challenges')">← ${t("Back","عودة")}</button>
-      <div class="battle-room" style="margin-top:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-          <div>
-            <h3>${b.type === 'typing' ? '⌨️ Typing Battle' : '🎯 Quiz Battle'}</h3>
-            <div style="color:var(--text-dim);font-size:13px;">${t("Battle code","كود المعركة")}</div>
-          </div>
-          <div class="battle-code">${esc(b.code)}</div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
-          ${!myResult ? `<button class="btn btn-primary" onclick="AppApp.playBattle('${b.code}', '${b.type}')">▶ ${t("Play my turn","العب دوري")}</button>` : ""}
-          <button class="btn" onclick="AppApp.copyBattleInvite('${b.code}', '${b.type}')">🔗 ${t("Copy invite link","انسخ رابط الدعوة")}</button>
-          ${myResult ? `<button class="btn" onclick="AppApp.copyBattleResult('${b.code}')">📤 ${t("Share my result","شارك نتيجتي")}</button>` : ""}
-        </div>
-
-        <div class="battle-players">
-          <strong style="font-size:14px;">${t("Players & scores","اللاعبون والنتائج")}:</strong>
-          ${rankings.length ? rankings.map((p, i) => `
-            <div class="lb-row ${p.name === me ? 'you' : ''}">
-              <div class="rank rank-${i+1}">${i+1}</div>
-              <div><div class="name">${esc(p.name)} ${p.name === me ? `<span style="color:var(--primary);font-size:11px;">(${t("you","أنت")})</span>` : ""}</div></div>
-              <div class="score">${b.type === 'typing' ? `${p.wpm} WPM · ${p.acc}%` : `${p.score}/${p.total} · ${p.timeSec}s`}</div>
-            </div>
-          `).join("") : `<div class="empty-state" style="padding:16px;">${t("No results yet. Be the first!","لا توجد نتائج بعد. كن الأول!")}</div>`}
-        </div>
-
-        <div style="margin-top:18px;padding:14px;background:var(--panel-2);border-radius:var(--radius-sm);font-size:13px;line-height:1.7;color:var(--text-dim);">
-          <strong>📖 ${t("How it works","كيف تشتغل")}:</strong><br>
-          1. ${t("Share the invite link with your friend.","شارك رابط الدعوة مع صاحبك.")}<br>
-          2. ${t("They click it → they're in your battle room.","يضغط الرابط → يدخل في غرفة المعركة.")}<br>
-          3. ${t("Each player runs their turn (same questions).","كل واحد يخوض دوره (نفس الأسئلة).")}<br>
-          4. ${t("After playing, copy your 'result link' and send back.","بعد ما تخلص، انسخ رابط نتيجتك وأرسله.")}<br>
-          5. ${t("Click their link → their score appears here too.","اضغط رابطهم → نتيجتهم تظهر هنا.")}
-        </div>
+        }).join('')}
       </div>
     `;
   }
 
-  // ===== ACHIEVEMENTS =====
-  function renderAchievements() {
-    const earned = new Set((AppApp.progress().achievements) || []);
-    return `
-      <h2 style="margin:0 0 6px;">🏆 ${t("Achievements","الإنجازات")}</h2>
-      <p style="color:var(--text-dim);margin:0 0 14px;">${earned.size} / ${AppAchievements.DEFS.length} ${t("unlocked","مفتوحة")}</p>
-      <div class="ach-grid">
-        ${AppAchievements.DEFS.map(d => `
-          <div class="ach-card ${earned.has(d.id)?"earned":"locked"}">
-            <span class="ach-icon">${d.icon}</span>
-            <div class="ach-title">${esc(t(d.title, d.titleAr))}</div>
-            <div class="ach-desc">${esc(t(d.desc, d.descAr))}</div>
-          </div>
-        `).join("")}
-      </div>
-    `;
+  /* ─── HELPERS ─── */
+  function escape(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+  function numOr(v) { const n = +v; return isNaN(n) ? null : n; }
+  function formatNum(n) { return Math.round(n).toLocaleString(i18n.get() === 'ar' ? 'ar-EG' : 'en-US'); }
+  function formatDate(ts) {
+    const d = new Date(ts);
+    const today = new Date();
+    const diff = Math.floor((today - d) / 86400000);
+    if (diff === 0) return i18n.t('Today', 'اليوم');
+    if (diff === 1) return i18n.t('Yesterday', 'أمس');
+    if (diff < 7) return `${diff}${i18n.t('d ago', ' يوم')}`;
+    return d.toLocaleDateString(i18n.get() === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric' });
   }
-
-  // ===== PROFILE =====
-  function renderProfile() {
-    const u = AppApp.user();
-    const p = AppApp.progress();
-    const accounts = AppAuth.listAccountsForLeaderboard().sort((a,b) => b.xp - a.xp);
-
-    return `
-      <h2 style="margin:0 0 6px;">👤 ${t("Profile","الملف الشخصي")}</h2>
-      <div class="profile-hero">
-        <div class="avatar avatar-lg">${esc(u.name[0].toUpperCase())}</div>
-        <div class="info">
-          <h2>${esc(u.name)}</h2>
-          <div class="email">${esc(u.email)}</div>
-          <span class="level-pill">${p.currentLevel || "B1"}</span>
-        </div>
-      </div>
-
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-num">${p.xp || 0}</div><div class="stat-label">${t("Total XP","نقاط الخبرة")}</div></div>
-        <div class="stat-card"><div class="stat-num">${p.streak || 0}🔥</div><div class="stat-label">${t("Streak","المتواصلة")}</div></div>
-        <div class="stat-card"><div class="stat-num">${(p.completedLessons||[]).length}</div><div class="stat-label">${t("Lessons","الدروس")}</div></div>
-        <div class="stat-card"><div class="stat-num">${(p.knownWords||[]).length}</div><div class="stat-label">${t("Words","الكلمات")}</div></div>
-        <div class="stat-card"><div class="stat-num">${p.bestWpm || 0}</div><div class="stat-label">${t("Best WPM","أفضل سرعة")}</div></div>
-        <div class="stat-card"><div class="stat-num">${p.bestQuiz || 0}</div><div class="stat-label">${t("Best quiz","أفضل تحدي")}</div></div>
-        <div class="stat-card"><div class="stat-num">${(p.achievements||[]).length}</div><div class="stat-label">${t("Badges","الشارات")}</div></div>
-        <div class="stat-card"><div class="stat-num">${p.battlesWon || 0}</div><div class="stat-label">${t("Battles won","معارك مكسوبة")}</div></div>
-      </div>
-
-      ${accounts.length > 1 ? `
-        <div class="section-title"><h2>🌍 ${t("Local leaderboard","لوحة الجهاز")}</h2></div>
-        <div class="leaderboard">
-          ${accounts.slice(0,10).map((a,i) => `
-            <div class="lb-row ${a.email === u.email ? 'you' : ''}">
-              <div class="rank rank-${i+1}">${i+1}</div>
-              <div><div class="name">${esc(a.name)} ${a.email === u.email ? `<span style="color:var(--primary);font-size:11px;">(${t("you","أنت")})</span>` : ""}</div><div class="when">${a.level} · ${a.streak}🔥</div></div>
-              <div class="score">${a.xp} XP</div>
-            </div>
-          `).join("")}
-        </div>
-      ` : ""}
-
-      <div class="section-title"><h2>🏆 ${t("Recent achievements","آخر الإنجازات")}</h2></div>
-      ${(p.achievements || []).length ? `
-        <div class="ach-grid">
-          ${(p.achievements||[]).slice(-8).reverse().map(id => {
-            const d = AppAchievements.find(id);
-            return d ? `<div class="ach-card earned"><span class="ach-icon">${d.icon}</span><div class="ach-title">${esc(t(d.title, d.titleAr))}</div></div>` : "";
-          }).join("")}
-        </div>
-        <button class="btn btn-ghost" style="margin-top:12px;" onclick="AppApp.go('achievements')">${t("See all achievements","شف كل الإنجازات")} →</button>
-      ` : `<div class="empty-state">${t("No achievements yet. Keep going!","لا توجد إنجازات بعد. واصل!")}</div>`}
-
-      <div class="section-title"><h2>⚙️ ${t("Account","الحساب")}</h2></div>
-      <div class="card">
-        <button class="btn btn-danger" onclick="AppApp.confirmLogout()">${t("Log out","تسجيل خروج")}</button>
-      </div>
-    `;
+  function todayIndex() {
+    const day = new Date().getDay(); // 0=Sun..6=Sat
+    return (day === 0 ? 6 : day - 1); // Mon-based
+  }
+  function todaysWorkout(u) {
+    const days = u.program?.days || [];
+    const idx = todayIndex();
+    const d = days[idx];
+    if (!d || d.rest || u.week.completed[d.id]) return null;
+    return d;
+  }
+  function weekDatesArray() {
+    const monday = startOfWeek(new Date());
+    return Array.from({length: 7}, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      return d.getDate();
+    });
+  }
+  function greet() {
+    const h = new Date().getHours();
+    if (h < 12) return i18n.t('Good morning', 'صباح الخير');
+    if (h < 18) return i18n.t('Good afternoon', 'مساء النور');
+    return i18n.t('Good evening', 'مساء الخير');
+  }
+  function greetEmoji() {
+    const h = new Date().getHours();
+    if (h < 12) return '🌸';
+    if (h < 18) return '☀️';
+    return '🌙';
+  }
+  function collectRecentPRs(u) {
+    const prs = [];
+    Object.entries(u.records || {}).forEach(([id, r]) => {
+      if (!r.history) return;
+      let prev = 0;
+      r.history.forEach(h => {
+        if ((h.weight || 0) > prev && h.weight > 0) {
+          const ex = BLOOM_DATA.findExercise(id);
+          prs.push({ id, name: ex ? (i18n.get() === 'ar' ? ex.nameAr : ex.name) : id, weight: h.weight, reps: h.reps, ts: h.ts });
+          prev = h.weight;
+        }
+      });
+    });
+    prs.sort((a, b) => b.ts - a.ts);
+    return prs;
   }
 
   return {
-    renderDashboard, progressToC1,
-    renderLessons, renderLessonDetail,
-    renderExplanations, renderExplanationDetail,
-    renderVocabulary, vocabCardHTML, renderVocabGrid,
-    renderReading, renderReadingDetail,
-    renderWriting, renderWritingDetail,
-    renderPronunciation, renderListening,
-    renderAiChat,
-    renderChallenges, renderChallengeQuiz, renderTypingRace,
-    renderQuizLb, renderTypingLb,
-    renderBattles, renderBattleRoom,
-    renderAchievements, renderProfile
+    renderHome, renderWorkouts, renderProgress, renderCoach, renderProfile,
+    renderLibrary, renderNutrition, renderAchievements,
+    openMoodCheck, openEditProfile, openPrefs, openResetWeek, openCustomizeProgram, openExerciseDetail,
+    gradientDefs
   };
 })();
