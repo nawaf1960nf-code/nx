@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAnthropic, CLAUDE_MODEL } from "@/lib/anthropic";
 import { CATEGORY_BY_ID } from "@/lib/categories-data";
-import { fetchTopicImage } from "@/lib/images";
 
 export const runtime = "nodejs";
 
@@ -17,16 +16,13 @@ interface QuestionResponse {
   answer: string;
   acceptableAnswers: string[];
   hint: string;
-  imageQuery?: string;
-  imageUrl?: string | null;
 }
 
 const DIFFICULTY_GUIDE = {
-  200: "سؤال سهل ومباشر، يعرفه الجميع تقريباً",
-  400: "سؤال متوسط الصعوبة، يحتاج إلمام جيد بالفئة",
-  600: "سؤال صعب، للمتعمقين والمتخصصين في الفئة",
+  200: "سهل جداً، يعرفه ٩٠٪ من الناس. أساسيات الفئة فقط.",
+  400: "متوسط، يحتاج معرفة جيدة بالفئة، ليس سؤال عادي للجميع.",
+  600: "صعب، للمتعمقين فقط - معلومة دقيقة أو نادرة.",
 } as const;
-
 
 export async function POST(req: Request) {
   try {
@@ -49,49 +45,65 @@ export async function POST(req: Request) {
         answer: "إجابة وهمية",
         acceptableAnswers: ["إجابة وهمية", "اجابة وهمية"],
         hint: "هذا تلميح وهمي.",
-        imageUrl: null,
       };
       return NextResponse.json(mock);
     }
 
-    const systemPrompt = `أنت مولّد أسئلة لعبة جماعية عربية اسمها "نون عين". مهمتك توليد سؤال واحد بالفصحى الواضحة المفهومة لجميع العرب.
+    const systemPrompt = `أنت مولّد أسئلة لعبة جماعية عربية اسمها "نون عين". مهمتك توليد سؤال واحد ممتع وواضح.
 
-قواعد صارمة:
-1. السؤال يكون في فئة محددة بصعوبة محددة.
-2. الإجابة قصيرة (كلمة أو كلمتين عادة، ٤ كلمات حد أقصى).
-3. الإجابة قاطعة وموثقة، ليست رأياً شخصياً.
-4. تجنّب الأسئلة المكررة من القائمة المُعطاة.
-5. تجنّب الأسئلة الحساسة سياسياً أو دينياً.
-6. لا تستخدم تواريخ بعد ${new Date().getFullYear()}.
-7. أعطِ تلميحاً ذكياً لا يكشف الإجابة لكن يقرّبها.
-8. أعطِ مرادفات مقبولة للإجابة (بدائل صحيحة بنفس المعنى).
-9. اقترح imageQuery مناسب بالإنجليزية (٢-٤ كلمات) لجلب صورة من Pexels تُثري السؤال بصرياً بدون كشف الإجابة.
+📋 قواعد الأسلوب:
+1. السؤال بالعربية الفصحى البسيطة المفهومة، أو يدخل فيها مصطلح إنجليزي شائع إذا الفئة تستدعي ذلك (مثل: GTA, One Piece, FIFA).
+2. الإجابة لازم تكون **قصيرة وسهلة وعامية** - اسم شخص، اسم لعبة، كلمة وحدة، رقم - مو شرح طويل.
+3. ممنوع الإجابات المعقّدة أو الأكاديمية. مثال:
+   ✅ "ليفاي" (وليس "الكابتن ليفاي أكرمان قائد الفرقة الاستطلاعية")
+   ✅ "ماين كرافت" (وليس "لعبة الـ sandbox الشهيرة من شركة Mojang")
+   ✅ "٤" (وليس "أربعة وأربعون ألف عام")
+4. الإجابة قاطعة وموثقة، ما تكون رأي.
+5. ما تستخدم تواريخ بعد ${new Date().getFullYear()}.
 
-أعد ردك كـ JSON صرف، بدون markdown ولا تعليقات:
+📊 درجات الصعوبة:
+- 200 نقطة = سؤال جداً سهل (Easy mode)
+- 400 نقطة = سؤال متوسط (Medium mode)
+- 600 نقطة = سؤال صعب (Hard mode)
+
+⚠️ تجنّب:
+- الأسئلة الحساسة سياسياً أو دينياً.
+- الأسئلة المكررة من القائمة المعطاة.
+- الإجابات المركّبة الطويلة (أكثر من ٣ كلمات نادراً).
+- الأسئلة العامة بدون موضوع محدد.
+
+🧠 التلميح:
+- لا يكشف الإجابة لكن يقرّبها.
+- بسيط ومباشر.
+
+🔄 المرادفات المقبولة:
+- الاسم بالعربي والإنجليزي إن وُجد.
+- أشكال كتابية مختلفة (مثلاً: ليفاي/ليفي/Levi).
+- اسم مختصر وكامل.
+
+أعد ردك كـ JSON صرف فقط، بدون markdown ولا تعليقات:
 {
   "text": "نص السؤال",
-  "answer": "الإجابة الأساسية",
-  "acceptableAnswers": ["الإجابة الأساسية", "بديل مقبول 1", "بديل مقبول 2"],
-  "hint": "تلميح ذكي",
-  "imageQuery": "english search query for thematic image"
+  "answer": "الإجابة القصيرة العامية",
+  "acceptableAnswers": ["الإجابة", "بديل 1", "بديل 2"],
+  "hint": "تلميح قصير ومباشر"
 }`;
 
     const userPrompt = `الفئة: ${category.name}
 وصف الفئة: ${category.description}
 الصعوبة: ${difficulty} نقطة (${DIFFICULTY_GUIDE[difficulty]})
-اللغة: ${language === "ar" ? "العربية" : "الإنجليزية"}
 
 ${
   recentlyAsked.length > 0
-    ? `الأسئلة المُستبعدة (لا تكررها):\n- ${recentlyAsked.slice(-15).join("\n- ")}`
+    ? `أسئلة مُستبعدة (لا تكررها):\n- ${recentlyAsked.slice(-15).join("\n- ")}`
     : ""
 }
 
-أعطني سؤالاً واحداً جديداً.`;
+أعطني سؤالاً واحداً جديداً بإجابة قصيرة وعامية.`;
 
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 700,
+      max_tokens: 600,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     });
@@ -108,10 +120,6 @@ ${
     }
 
     const parsed = JSON.parse(jsonMatch[0]) as QuestionResponse;
-
-    // جلب صورة موضوعية من Wikipedia (آمنة، لا تكشف الإجابة)
-    const imageQuery = parsed.imageQuery || category.imageQuery || category.name;
-    parsed.imageUrl = await fetchTopicImage(imageQuery, category.name);
 
     return NextResponse.json(parsed);
   } catch (error) {

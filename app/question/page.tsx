@@ -44,7 +44,6 @@ interface QuestionData {
   answer: string;
   acceptableAnswers: string[];
   hint: string;
-  imageUrl?: string | null;
 }
 
 const ANSWER_TIME = 60;
@@ -390,18 +389,6 @@ function QuestionScreen() {
 
         {/* بطاقة السؤال */}
         <div className="bg-white rounded-3xl border-2 border-ink-100 overflow-hidden mb-4 min-h-[280px]">
-          {!loading && !switching && questionData?.imageUrl && (
-            <div className="relative w-full aspect-[16/9] bg-ink-100">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={questionData.imageUrl}
-                alt="صورة موضوعية"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-            </div>
-          )}
-
           <div className="p-6 md:p-10 flex items-center justify-center text-center">
             {loading || switching ? (
               <div className="flex flex-col items-center gap-3 text-ink-500">

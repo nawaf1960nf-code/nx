@@ -46,6 +46,7 @@ export default function PickPage() {
 
   const [activeTeam, setActiveTeam] = useState<ActiveTeam>("team_a");
   const [activeGroup, setActiveGroup] = useState<CategoryGroup>("party_games");
+  const [categoryImages, setCategoryImages] = useState<Record<string, string | null>>({});
 
   useEffect(() => setMounted(true), []);
 
@@ -58,6 +59,23 @@ export default function PickPage() {
     () => CATEGORIES.filter((c) => c.group === activeGroup),
     [activeGroup],
   );
+
+  // جلب صور التصنيفات الظاهرة (مع كاش)
+  useEffect(() => {
+    visibleCats.forEach((cat) => {
+      if (categoryImages[cat.id] !== undefined) return;
+      // ضع قيمة null كعلامة "جارٍ التحميل" لمنع التكرار
+      setCategoryImages((prev) => ({ ...prev, [cat.id]: null }));
+      fetch(`/api/category-image?id=${cat.id}`)
+        .then((r) => r.json())
+        .then((data: { url: string | null }) => {
+          setCategoryImages((prev) => ({ ...prev, [cat.id]: data.url }));
+        })
+        .catch(() => {
+          setCategoryImages((prev) => ({ ...prev, [cat.id]: null }));
+        });
+    });
+  }, [visibleCats]); // eslint-disable-line
 
   if (!mounted) return null;
 
@@ -258,8 +276,20 @@ export default function PickPage() {
                       cat.gradient,
                     )}
                   />
-                  {/* تأثير زجاجي */}
-                  <div className="absolute inset-0 bg-black/10" />
+
+                  {/* صورة Wikipedia كخلفية إن وُجدت */}
+                  {categoryImages[cat.id] && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={categoryImages[cat.id]!}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay"
+                      loading="lazy"
+                    />
+                  )}
+
+                  {/* تأثير تدرج داكن للقراءة */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
                   {/* المحتوى */}
                   <div className="relative h-full flex flex-col justify-between p-3">
