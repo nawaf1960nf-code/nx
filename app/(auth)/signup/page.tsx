@@ -22,7 +22,7 @@ export default function SignupPage() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -43,7 +43,14 @@ export default function SignupPage() {
       return;
     }
 
-    router.push(`/verify?email=${encodeURIComponent(email)}`);
+    // لو التحقق بالإيميل معطّل في Supabase، المستخدم يُسجّل دخوله مباشرة
+    if (data.session) {
+      router.push("/setup");
+      router.refresh();
+    } else {
+      // التحقق بالإيميل مفعّل، انتقل لصفحة إدخال الرمز
+      router.push(`/verify?email=${encodeURIComponent(email)}`);
+    }
   };
 
   return (
