@@ -8,6 +8,8 @@ import { useGameStore } from "@/lib/store";
 import { CATEGORY_BY_ID } from "@/lib/categories-data";
 import { HOOK_BY_ID } from "@/lib/hooks-data";
 import { TEAM_COLORS, cn, formatPoints } from "@/lib/utils";
+import { speak, stopSpeaking, isSupported } from "@/lib/speech";
+import { Volume2, VolumeX } from "lucide-react";
 import {
   Clock,
   Loader2,
@@ -22,20 +24,19 @@ import type { QuestionDifficulty, HookId } from "@/lib/types";
 interface ParsedCell {
   categoryId: string;
   difficulty: QuestionDifficulty;
-  team: "team_a" | "team_b";
 }
 
 function parseCellId(cellId: string | null): ParsedCell | null {
   if (!cellId) return null;
   const parts = cellId.split("_");
-  if (parts.length < 4) return null;
-  const teamSuffix = parts.slice(-2).join("_");
-  const diff = Number(parts[parts.length - 3]) as QuestionDifficulty;
-  const categoryId = parts.slice(0, parts.length - 3).join("_");
+  if (parts.length < 2) return null;
+  const lastPart = parts[parts.length - 1];
+  const diff = Number(lastPart);
+  if (!diff || ![200, 400, 600].includes(diff)) return null;
+  const categoryId = parts.slice(0, -1).join("_");
   return {
     categoryId,
-    difficulty: diff,
-    team: teamSuffix as "team_a" | "team_b",
+    difficulty: diff as QuestionDifficulty,
   };
 }
 
@@ -68,6 +69,7 @@ function QuestionScreen() {
 
   const teamA = useGameStore((s) => s.teamA);
   const teamB = useGameStore((s) => s.teamB);
+  const currentTurn = useGameStore((s) => s.currentTurn);
   const settings = useGameStore((s) => s.settings);
   const addScore = useGameStore((s) => s.addScore);
   const subtractScore = useGameStore((s) => s.subtractScore);
@@ -96,8 +98,9 @@ function QuestionScreen() {
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const activeTeam = parsed?.team === "team_a" ? teamA : teamB;
-  const otherTeam = parsed?.team === "team_a" ? teamB : teamA;
+  // الفريق صاحب الدور = الفريق الفعّال (مو من الـ cellId)
+  const activeTeam = currentTurn === "team_a" ? teamA : teamB;
+  const otherTeam = currentTurn === "team_a" ? teamB : teamA;
   const colorObj =
     TEAM_COLORS.find((c) => c.id === activeTeam.color) ?? TEAM_COLORS[0];
 
@@ -128,6 +131,23 @@ function QuestionScreen() {
   useEffect(() => {
     fetchQuestion();
   }, [parsed?.categoryId, parsed?.difficulty]); // eslint-disable-line
+
+  // الراوي الصوتي: يقرأ السؤال تلقائياً لما يجي
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  useEffect(() => {
+    if (!questionData || loading || switching) return;
+    if (stage !== "answering") return;
+    if (!voiceEnabled || !isSupported()) return;
+    // تأخير صغير قبل القراءة
+    const t = setTimeout(() => speak(questionData.text), 600);
+    return () => {
+      clearTimeout(t);
+      stopSpeaking();
+    };
+  }, [questionData, loading, switching, voiceEnabled, stage]);
+
+  // أوقف الصوت عند المغادرة
+  useEffect(() => () => stopSpeaking(), []);
 
   // مؤقت العد
   useEffect(() => {
@@ -237,7 +257,7 @@ function QuestionScreen() {
   const finishQuestion = () => {
     if (!cellId || !parsed) return;
     markQuestionAnswered(cellId);
-    setCurrentTurn(parsed.team === "team_a" ? "team_b" : "team_a");
+    setCurrentTurn(currentTurn === "team_a" ? "team_b" : "team_a");
     setStage("judged");
     setTimeout(() => router.push("/game"), 800);
   };
@@ -298,14 +318,33 @@ function QuestionScreen() {
     <main className="min-h-screen bg-mesh">
       <header className="px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
         <Logo size="sm" />
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<ArrowLeft className="w-4 h-4" />}
-          onClick={() => router.push("/game")}
-        >
-          عودة للوحة
-        </Button>
+        <div className="flex items-center gap-2">
+          {isSupported() && (
+            <button
+              onClick={() => {
+                setVoiceEnabled((v) => !v);
+                if (voiceEnabled) stopSpeaking();
+                else if (questionData) speak(questionData.text);
+              }}
+              className="w-10 h-10 rounded-full bg-white border-2 border-ink-200 hover:border-ink-400 flex items-center justify-center transition"
+              title={voiceEnabled ? "أوقف الراوي" : "شغّل الراوي"}
+            >
+              {voiceEnabled ? (
+                <Volume2 className="w-4 h-4 text-primary-600" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-ink-400" />
+              )}
+            </button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<ArrowLeft className="w-4 h-4" />}
+            onClick={() => router.push("/game")}
+          >
+            عودة
+          </Button>
+        </div>
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-6">

@@ -4,11 +4,12 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/Button";
+import { UserMenu } from "@/components/UserMenu";
 import { useGameStore } from "@/lib/store";
 import { CATEGORY_BY_ID } from "@/lib/categories-data";
 import { HOOK_BY_ID } from "@/lib/hooks-data";
 import { TEAM_COLORS, cn, formatPoints } from "@/lib/utils";
-import { Home, X } from "lucide-react";
+import { Home, X, ArrowRight } from "lucide-react";
 import type { QuestionDifficulty } from "@/lib/types";
 
 const DIFFICULTIES: QuestionDifficulty[] = [200, 400, 600];
@@ -17,6 +18,7 @@ export default function GameBoardPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [categoryImages, setCategoryImages] = useState<Record<string, string | null>>({});
 
   const teamA = useGameStore((s) => s.teamA);
   const teamB = useGameStore((s) => s.teamB);
@@ -33,7 +35,8 @@ export default function GameBoardPage() {
     [teamA.selectedCategories, teamB.selectedCategories],
   );
 
-  const totalCells = allCategories.length * 6; // 6 خلايا لكل تصنيف (3 نقاط × فريقين)
+  // كل تصنيف = ٣ خلايا (٢٠٠، ٤٠٠، ٦٠٠) بدون فصل بين الفريقين
+  const totalCells = allCategories.length * 3;
   const finishedCells = answeredQuestions.length;
 
   useEffect(() => {
@@ -43,14 +46,28 @@ export default function GameBoardPage() {
     }
   }, [mounted, finishedCells, totalCells, router, setPhase]);
 
+  // جلب صور التصنيفات
+  useEffect(() => {
+    allCategories.forEach((catId) => {
+      if (categoryImages[catId] !== undefined) return;
+      setCategoryImages((prev) => ({ ...prev, [catId]: null }));
+      fetch(`/api/category-image?id=${catId}`)
+        .then((r) => r.json())
+        .then((data: { url: string | null }) => {
+          setCategoryImages((prev) => ({ ...prev, [catId]: data.url }));
+        })
+        .catch(() => undefined);
+    });
+  }, [allCategories]); // eslint-disable-line
+
   if (!mounted) return null;
 
   const activeTeam = currentTurn === "team_a" ? teamA : teamB;
   const activeColor =
     TEAM_COLORS.find((c) => c.id === activeTeam.color) ?? TEAM_COLORS[0];
 
-  const onCellClick = (categoryId: string, diff: QuestionDifficulty, team: "team_a" | "team_b") => {
-    const cellId = `${categoryId}_${diff}_${team}`;
+  const onCellClick = (categoryId: string, diff: QuestionDifficulty) => {
+    const cellId = `${categoryId}_${diff}`;
     if (answeredQuestions.includes(cellId)) return;
     setSelectedCell(cellId);
     router.push(`/question?cell=${cellId}`);
@@ -67,24 +84,42 @@ export default function GameBoardPage() {
       <header className="px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center gap-4">
           <Logo size="sm" />
-          <div
-            className="hidden sm:flex items-center gap-2 px-4 py-1.5 rounded-full font-bold text-white text-sm"
-            style={{ backgroundColor: activeColor.hex }}
-          >
-            دور: {activeTeam.name}
-          </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<X className="w-4 h-4" />}
-          onClick={() => setShowExitConfirm(true)}
-        >
-          إنهاء اللعبة
-        </Button>
+        <div className="flex items-center gap-2">
+          <UserMenu />
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<X className="w-4 h-4" />}
+            onClick={() => setShowExitConfirm(true)}
+          >
+            إنهاء
+          </Button>
+        </div>
       </header>
 
-      {/* لوحة النتائج العلوية */}
+      {/* مؤشر الدور البارز */}
+      <div className="max-w-7xl mx-auto px-6 mb-4">
+        <div
+          className="rounded-3xl p-4 flex items-center justify-between shadow-lg"
+          style={{
+            backgroundColor: activeColor.hex,
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
+            <div>
+              <div className="text-white/80 text-xs font-bold">دور الآن</div>
+              <div className="text-white text-xl md:text-2xl font-black">
+                {activeTeam.name}
+              </div>
+            </div>
+          </div>
+          <ArrowRight className="w-6 h-6 text-white/50 animate-bounce" />
+        </div>
+      </div>
+
+      {/* لوحة النتائج */}
       <div className="max-w-7xl mx-auto px-6 mb-6">
         <div className="grid grid-cols-2 gap-3">
           <TeamBar team={teamA} active={currentTurn === "team_a"} />
@@ -93,22 +128,22 @@ export default function GameBoardPage() {
       </div>
 
       {/* شبكة التصنيفات */}
-      <div className="max-w-7xl mx-auto px-4 pb-32">
+      <div className="max-w-7xl mx-auto px-4 pb-40">
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
           {allCategories.map((catId) => (
-            <CategoryColumn
+            <CategoryCard
               key={catId}
               categoryId={catId}
               answeredQuestions={answeredQuestions}
-              teamA={teamA}
-              teamB={teamB}
+              activeColor={activeColor.hex}
+              coverImage={categoryImages[catId]}
               onCellClick={onCellClick}
             />
           ))}
         </div>
       </div>
 
-      {/* شريط الهوكات السفلي */}
+      {/* شريط الهوكات */}
       <div className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-ink-100">
         <div className="max-w-7xl mx-auto px-4 py-3 grid grid-cols-2 gap-3">
           <TeamHooksBar team={teamA} active={currentTurn === "team_a"} />
@@ -152,43 +187,54 @@ function TeamBar({
   team,
   active,
 }: {
-  team: { name: string; color: string; score: number };
+  team: { name: string; color: string; avatar: string; score: number };
   active: boolean;
 }) {
   const color = TEAM_COLORS.find((c) => c.id === team.color) ?? TEAM_COLORS[0];
   return (
     <div
       className={cn(
-        "rounded-2xl p-4 transition-all",
-        active ? "shadow-xl scale-[1.02]" : "opacity-70",
+        "rounded-2xl p-3 md:p-4 transition-all",
+        active ? "shadow-xl scale-[1.02]" : "opacity-80",
       )}
       style={{
         backgroundColor: active ? color.hex : "white",
         border: `2px solid ${color.hex}`,
       }}
     >
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <div
             className={cn(
-              "text-sm font-bold mb-1",
-              active ? "text-white/80" : "text-ink-500",
+              "w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-2xl md:text-3xl shrink-0",
+              active ? "bg-white/20" : "",
             )}
+            style={active ? undefined : { backgroundColor: `${color.hex}20` }}
           >
-            {active ? "🎯 دور الآن" : "بانتظار"}
+            {team.avatar || "🎯"}
           </div>
-          <div
-            className={cn(
-              "text-xl font-black",
-              active ? "text-white" : "text-ink-800",
-            )}
-          >
-            {team.name}
+          <div className="min-w-0">
+            <div
+              className={cn(
+                "text-[10px] md:text-xs font-bold mb-0.5 truncate",
+                active ? "text-white/80" : "text-ink-500",
+              )}
+            >
+              {active ? "يلعب الآن" : "بانتظار"}
+            </div>
+            <div
+              className={cn(
+                "text-sm md:text-lg font-black truncate",
+                active ? "text-white" : "text-ink-800",
+              )}
+            >
+              {team.name}
+            </div>
           </div>
         </div>
         <div
           className={cn(
-            "text-4xl font-black tabular-nums",
+            "text-xl md:text-3xl font-black tabular-nums shrink-0",
             active ? "text-white" : "",
           )}
           style={active ? undefined : { color: color.hex }}
@@ -200,91 +246,76 @@ function TeamBar({
   );
 }
 
-function CategoryColumn({
+function CategoryCard({
   categoryId,
   answeredQuestions,
-  teamA,
-  teamB,
+  activeColor,
+  coverImage,
   onCellClick,
 }: {
   categoryId: string;
   answeredQuestions: string[];
-  teamA: { color: string };
-  teamB: { color: string };
-  onCellClick: (
-    catId: string,
-    diff: QuestionDifficulty,
-    team: "team_a" | "team_b",
-  ) => void;
+  activeColor: string;
+  coverImage: string | null | undefined;
+  onCellClick: (catId: string, diff: QuestionDifficulty) => void;
 }) {
   const cat = CATEGORY_BY_ID[categoryId];
   if (!cat) return null;
 
   return (
-    <div className="bg-white rounded-3xl border-2 border-ink-100 overflow-hidden">
-      {/* رأس البطاقة */}
-      <div className="p-3 text-center bg-gradient-to-br from-primary-50 to-white border-b border-ink-100">
-        <div className="text-3xl mb-1">{cat.icon}</div>
-        <div className="font-black text-sm md:text-base text-ink-800 leading-tight">
-          {cat.name}
+    <div className="bg-white rounded-3xl border-2 border-ink-100 overflow-hidden shadow-sm">
+      {/* رأس البطاقة بصورة + tدرج */}
+      <div
+        className={cn(
+          "relative h-20 md:h-24 flex items-end p-3 overflow-hidden bg-gradient-to-br",
+          cat.gradient,
+        )}
+      >
+        {coverImage && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={coverImage}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover opacity-50"
+            loading="lazy"
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/10" />
+        <div className="relative flex items-center gap-2">
+          <span className="text-2xl drop-shadow-lg">{cat.icon}</span>
+          <span className="font-black text-sm md:text-base text-white leading-tight drop-shadow-md">
+            {cat.name}
+          </span>
         </div>
       </div>
 
       {/* الخلايا */}
-      <div className="p-2 space-y-1">
-        {DIFFICULTIES.map((diff) => (
-          <div key={diff} className="grid grid-cols-2 gap-1">
-            <Cell
-              answered={answeredQuestions.includes(
-                `${categoryId}_${diff}_team_a`,
+      <div className="p-2 grid grid-cols-3 gap-1.5">
+        {DIFFICULTIES.map((diff) => {
+          const cellId = `${categoryId}_${diff}`;
+          const answered = answeredQuestions.includes(cellId);
+          return (
+            <button
+              key={diff}
+              onClick={() => onCellClick(categoryId, diff)}
+              disabled={answered}
+              className={cn(
+                "py-3 md:py-4 rounded-xl font-black text-base md:text-lg transition-all",
+                "disabled:opacity-25 disabled:cursor-not-allowed disabled:line-through",
+                !answered && "hover:scale-105 active:scale-95 hover:shadow-md",
               )}
-              points={diff}
-              color={TEAM_COLORS.find((c) => c.id === teamA.color)?.hex || "#00c853"}
-              onClick={() => onCellClick(categoryId, diff, "team_a")}
-            />
-            <Cell
-              answered={answeredQuestions.includes(
-                `${categoryId}_${diff}_team_b`,
-              )}
-              points={diff}
-              color={TEAM_COLORS.find((c) => c.id === teamB.color)?.hex || "#e53935"}
-              onClick={() => onCellClick(categoryId, diff, "team_b")}
-            />
-          </div>
-        ))}
+              style={
+                answered
+                  ? { backgroundColor: "#f4f5f8", color: "#9aa1b8" }
+                  : { backgroundColor: `${activeColor}15`, color: activeColor }
+              }
+            >
+              {formatPoints(diff)}
+            </button>
+          );
+        })}
       </div>
     </div>
-  );
-}
-
-function Cell({
-  answered,
-  points,
-  color,
-  onClick,
-}: {
-  answered: boolean;
-  points: number;
-  color: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={answered}
-      className={cn(
-        "py-3 rounded-xl font-black text-base md:text-lg transition-all",
-        "disabled:opacity-25 disabled:cursor-not-allowed disabled:line-through",
-        !answered && "hover:scale-105 active:scale-95",
-      )}
-      style={
-        answered
-          ? { backgroundColor: "#f4f5f8", color: "#9aa1b8" }
-          : { backgroundColor: `${color}15`, color }
-      }
-    >
-      {formatPoints(points)}
-    </button>
   );
 }
 
@@ -304,10 +335,10 @@ function TeamHooksBar({
       )}
       style={active ? { borderColor: color.hex } : undefined}
     >
-      <div className="text-xs font-bold text-ink-500 mb-1 px-1">
+      <div className="text-xs font-bold text-ink-500 mb-1 px-1 truncate">
         {team.name}
       </div>
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-1.5 flex-wrap">
         {team.hooks.map((hookId) => {
           const hook = HOOK_BY_ID[hookId];
           if (!hook) return null;
@@ -317,7 +348,7 @@ function TeamHooksBar({
               key={hookId}
               title={hook.name}
               className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center text-lg transition",
+                "w-9 h-9 rounded-xl flex items-center justify-center text-lg transition",
                 used ? "bg-ink-100 opacity-40 grayscale" : "",
               )}
               style={used ? undefined : { backgroundColor: `${hook.color}20` }}

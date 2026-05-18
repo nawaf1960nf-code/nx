@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// /card مفتوح للجميع (الجوال يفتحه بعد مسح QR بدون تسجيل)
 const PROTECTED_PATHS = [
   "/setup",
   "/pick",

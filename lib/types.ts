@@ -49,13 +49,17 @@ export interface Category {
   featured?: boolean;
   gameMode?: GameMode;
   gradient: string;
-  imageQuery?: string;
+  wikiTitle?: string;        // اسم المقال بالضبط على ويكيبيديا الإنجليزية
+  wikiTitleAr?: string;      // اسم المقال بالضبط على ويكيبيديا العربية
+  coverImage?: string;       // رابط صورة محدد (يتجاوز ويكي)
+  imageQuery?: string;       // استعلام بحث احتياطي
 }
 
 export interface Team {
   id: "team_a" | "team_b";
   name: string;
   color: string;
+  avatar: string;
   playersCount: number;
   score: number;
   hooks: HookId[];

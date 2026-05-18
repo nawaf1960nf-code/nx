@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { fetchTopicImage } from "@/lib/images";
+import { fetchCategoryImage } from "@/lib/images";
 import { CATEGORY_BY_ID } from "@/lib/categories-data";
 
 export const runtime = "nodejs";
 
-// كاش بسيط في الذاكرة لتقليل طلبات Wikipedia
+// كاش في الذاكرة (ينعكس عبر warm starts)
 const cache = new Map<string, { url: string | null; expires: number }>();
-const CACHE_TTL = 24 * 60 * 60 * 1000; // ٢٤ ساعة
+const CACHE_TTL = 24 * 60 * 60 * 1000;
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -21,14 +21,17 @@ export async function GET(req: Request) {
     return NextResponse.json({ url: null }, { status: 404 });
   }
 
-  // تحقق من الكاش
   const cached = cache.get(categoryId);
   if (cached && cached.expires > Date.now()) {
     return NextResponse.json({ url: cached.url });
   }
 
-  const query = category.imageQuery || category.name;
-  const url = await fetchTopicImage(query, category.name);
+  const url = await fetchCategoryImage({
+    coverImage: category.coverImage,
+    wikiTitle: category.wikiTitle,
+    wikiTitleAr: category.wikiTitleAr,
+    query: category.imageQuery ?? category.name,
+  });
 
   cache.set(categoryId, {
     url,

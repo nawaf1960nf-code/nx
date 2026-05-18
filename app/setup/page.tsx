@@ -7,8 +7,21 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/Button";
 import { UserMenu } from "@/components/UserMenu";
 import { useGameStore } from "@/lib/store";
-import { TEAM_COLORS, cn } from "@/lib/utils";
-import { ArrowLeft, ChevronLeft, Users, Brain, Hand, Layers } from "lucide-react";
+import {
+  TEAM_COLORS,
+  TEAM_AVATARS,
+  TEAM_NAME_PRESETS,
+  cn,
+} from "@/lib/utils";
+import {
+  ArrowLeft,
+  ChevronLeft,
+  Users,
+  Brain,
+  Hand,
+  Layers,
+  Shuffle,
+} from "lucide-react";
 import type { JudgingMode } from "@/lib/types";
 
 export default function SetupPage() {
@@ -21,6 +34,7 @@ export default function SetupPage() {
 
   const setTeamName = useGameStore((s) => s.setTeamName);
   const setTeamColor = useGameStore((s) => s.setTeamColor);
+  const setTeamAvatar = useGameStore((s) => s.setTeamAvatar);
   const setTeamPlayersCount = useGameStore((s) => s.setTeamPlayersCount);
   const setJudgingMode = useGameStore((s) => s.setJudgingMode);
   const setPhase = useGameStore((s) => s.setPhase);
@@ -39,9 +53,21 @@ export default function SetupPage() {
     router.push("/pick");
   };
 
+  // عشوائي للفريق
+  const randomize = (team: "team_a" | "team_b") => {
+    const usedColor = team === "team_a" ? teamB.color : teamA.color;
+    const availableColors = TEAM_COLORS.filter((c) => c.id !== usedColor);
+    const randomColor = availableColors[Math.floor(Math.random() * availableColors.length)];
+    const randomAvatar = TEAM_AVATARS[Math.floor(Math.random() * TEAM_AVATARS.length)];
+    const randomName = TEAM_NAME_PRESETS[Math.floor(Math.random() * TEAM_NAME_PRESETS.length)];
+
+    setTeamName(team, randomName);
+    setTeamColor(team, randomColor.id);
+    setTeamAvatar(team, randomAvatar);
+  };
+
   return (
     <main className="min-h-screen bg-mesh">
-      {/* الهيدر */}
       <header className="px-6 py-5 flex items-center justify-between max-w-7xl mx-auto">
         <Logo size="md" />
         <div className="flex items-center gap-3">
@@ -55,32 +81,37 @@ export default function SetupPage() {
       </header>
 
       <div className="max-w-5xl mx-auto px-6 py-8">
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <h1 className="text-4xl md:text-5xl font-black mb-3">
             جهّز <span className="text-primary-500">الفرق</span>
           </h1>
           <p className="text-ink-500 text-lg">
-            اسم كل فريق، لونه، وعدد لاعبيه
+            اختر شخصية لكل فريق ولونه واسمه
           </p>
         </div>
 
-        {/* بطاقتا الفريقين */}
-        <div className="grid md:grid-cols-2 gap-6 mb-10">
+        <div className="grid md:grid-cols-2 gap-5 mb-10">
           <TeamCard
             label="الفريق الأول"
             team={teamA}
             otherColor={teamB.color}
+            otherAvatar={teamB.avatar}
             onName={(v) => setTeamName("team_a", v)}
             onColor={(c) => setTeamColor("team_a", c)}
+            onAvatar={(a) => setTeamAvatar("team_a", a)}
             onPlayers={(n) => setTeamPlayersCount("team_a", n)}
+            onRandomize={() => randomize("team_a")}
           />
           <TeamCard
             label="الفريق الثاني"
             team={teamB}
             otherColor={teamA.color}
+            otherAvatar={teamA.avatar}
             onName={(v) => setTeamName("team_b", v)}
             onColor={(c) => setTeamColor("team_b", c)}
+            onAvatar={(a) => setTeamAvatar("team_b", a)}
             onPlayers={(n) => setTeamPlayersCount("team_b", n)}
+            onRandomize={() => randomize("team_b")}
           />
         </div>
 
@@ -118,7 +149,6 @@ export default function SetupPage() {
           </div>
         </div>
 
-        {/* زر التالي */}
         <div className="flex justify-end">
           <Button
             size="xl"
@@ -146,50 +176,128 @@ function TeamCard({
   label,
   team,
   otherColor,
+  otherAvatar,
   onName,
   onColor,
+  onAvatar,
   onPlayers,
+  onRandomize,
 }: {
   label: string;
-  team: { name: string; color: string; playersCount: number };
+  team: { name: string; color: string; avatar: string; playersCount: number };
   otherColor: string;
+  otherAvatar: string;
   onName: (v: string) => void;
   onColor: (c: string) => void;
+  onAvatar: (a: string) => void;
   onPlayers: (n: number) => void;
+  onRandomize: () => void;
 }) {
   const colorObj = TEAM_COLORS.find((c) => c.id === team.color) ?? TEAM_COLORS[0];
 
   return (
-    <div className="bg-white border-2 border-ink-100 rounded-3xl p-6 space-y-5">
+    <div
+      className="rounded-3xl p-5 space-y-4 border-2 shadow-lg transition-all"
+      style={{
+        borderColor: colorObj.hex,
+        background: `linear-gradient(135deg, white 0%, ${colorObj.hex}08 100%)`,
+      }}
+    >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-bold text-ink-400">{label}</span>
         <span
-          className="w-8 h-8 rounded-full shrink-0 ring-4 ring-offset-2 ring-offset-white"
-          style={{ backgroundColor: colorObj.hex, boxShadow: `0 0 0 4px ${colorObj.hex}30` }}
-        />
+          className="px-3 py-1 rounded-full text-xs font-black text-white"
+          style={{ backgroundColor: colorObj.hex }}
+        >
+          {label}
+        </span>
+        <button
+          onClick={onRandomize}
+          className="text-ink-400 hover:text-ink-700 transition flex items-center gap-1 text-sm font-bold"
+        >
+          <Shuffle className="w-4 h-4" />
+          عشوائي
+        </button>
       </div>
 
-      {/* اسم الفريق */}
+      {/* الأفاتار الكبير */}
+      <div className="flex justify-center">
+        <div
+          className="w-24 h-24 rounded-3xl flex items-center justify-center text-6xl shadow-lg"
+          style={{ backgroundColor: `${colorObj.hex}25` }}
+        >
+          {team.avatar}
+        </div>
+      </div>
+
+      {/* اختيار الأفاتار */}
       <div>
-        <label className="block text-sm font-bold text-ink-600 mb-2">
+        <label className="block text-xs font-bold text-ink-500 mb-2">
+          الشخصية
+        </label>
+        <div className="grid grid-cols-6 gap-2">
+          {TEAM_AVATARS.map((a) => {
+            const usedByOther = a === otherAvatar;
+            const isActive = a === team.avatar;
+            return (
+              <button
+                key={a}
+                onClick={() => onAvatar(a)}
+                disabled={usedByOther}
+                className={cn(
+                  "aspect-square rounded-xl text-2xl transition flex items-center justify-center",
+                  isActive
+                    ? "scale-110 shadow-md"
+                    : "hover:scale-105 bg-white/50",
+                  usedByOther && "opacity-25 cursor-not-allowed grayscale",
+                )}
+                style={
+                  isActive
+                    ? { backgroundColor: colorObj.hex, color: "white" }
+                    : undefined
+                }
+              >
+                {a}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* الاسم مع اقتراحات */}
+      <div>
+        <label className="block text-xs font-bold text-ink-500 mb-2">
           اسم الفريق
         </label>
         <input
           type="text"
           value={team.name}
           onChange={(e) => onName(e.target.value)}
-          className="w-full px-4 py-3 border-2 border-ink-200 rounded-xl text-lg font-bold focus:border-primary-500 focus:outline-none transition"
-          placeholder="مثلاً: الأبطال"
+          className="w-full px-4 py-3 border-2 border-ink-200 rounded-xl text-lg font-bold focus:outline-none transition"
+          style={{
+            borderColor: team.name ? colorObj.hex : undefined,
+          }}
+          placeholder="اكتب اسم"
           maxLength={20}
         />
+        <div className="flex gap-1.5 mt-2 overflow-x-auto pb-1">
+          {TEAM_NAME_PRESETS.slice(0, 8).map((name) => (
+            <button
+              key={name}
+              onClick={() => onName(name)}
+              className="shrink-0 text-xs bg-white border border-ink-200 hover:border-ink-400 rounded-full px-3 py-1 font-bold text-ink-600 transition"
+            >
+              {name}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* اللون */}
+      {/* الألوان */}
       <div>
-        <label className="block text-sm font-bold text-ink-600 mb-2">
+        <label className="block text-xs font-bold text-ink-500 mb-2">
           اللون
         </label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {TEAM_COLORS.map((c) => {
             const isUsed = c.id === otherColor;
             const isActive = c.id === team.color;
@@ -198,16 +306,16 @@ function TeamCard({
                 key={c.id}
                 onClick={() => onColor(c.id)}
                 disabled={isUsed}
-                title={isUsed ? "مستخدم من الفريق الثاني" : c.name}
+                title={isUsed ? "مستخدم" : c.name}
                 className={cn(
-                  "w-12 h-12 rounded-2xl transition-all relative",
-                  "disabled:opacity-30 disabled:cursor-not-allowed",
-                  isActive && "scale-110 ring-4 ring-offset-2 ring-ink-300",
+                  "w-10 h-10 rounded-xl transition-all relative",
+                  "disabled:opacity-20 disabled:cursor-not-allowed",
+                  isActive && "scale-110 ring-4 ring-offset-2 ring-ink-900/30",
                 )}
                 style={{ backgroundColor: c.hex }}
               >
                 {isActive && (
-                  <span className="absolute inset-0 flex items-center justify-center text-white text-xl font-black">
+                  <span className="absolute inset-0 flex items-center justify-center text-white text-lg font-black">
                     ✓
                   </span>
                 )}
@@ -219,8 +327,8 @@ function TeamCard({
 
       {/* عدد اللاعبين */}
       <div>
-        <label className="block text-sm font-bold text-ink-600 mb-2">
-          <Users className="inline w-4 h-4 ml-1" />
+        <label className="block text-xs font-bold text-ink-500 mb-2">
+          <Users className="inline w-3 h-3 ml-1" />
           عدد اللاعبين
         </label>
         <div className="flex items-center gap-3">

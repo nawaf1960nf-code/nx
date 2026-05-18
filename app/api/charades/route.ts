@@ -1,68 +1,83 @@
 import { NextResponse } from "next/server";
 import { getAnthropic, CLAUDE_MODEL } from "@/lib/anthropic";
+import { fetchTopicImage } from "@/lib/images";
 
 export const runtime = "nodejs";
 
 interface RequestBody {
   difficulty: 200 | 400 | 600;
-  drawMode?: boolean;
   recentlyAsked?: string[];
 }
 
 interface CharadesResponse {
   word: string;
   category: string;
+  englishName: string;
+  imageUrl: string | null;
   hint?: string;
 }
 
 const DIFFICULTY_GUIDE = {
-  200: "كلمة شائعة جداً وسهلة (مثل: قطة، سيارة)",
-  400: "كلمة متوسطة (مثل: طبيب أسنان، كرة طائرة)",
-  600: "كلمة صعبة أو مركّبة (مثل: قطار سريع، عالم فيزياء)",
+  200: "كلمة جداً سهلة، يعرفها الجميع: فاكهة شائعة، حيوان مألوف، أداة منزلية، أو لعبة أطفال.",
+  400: "كلمة متوسطة الصعوبة: مهنة، رياضة، شخصية مشهورة (مغني، ممثل، رياضي)، فيلم شهير، طبق طعام.",
+  600: "كلمة صعبة وفريدة: معلَم سياحي عالمي، عملية/مفهوم، حدث تاريخي، أو ظاهرة طبيعية.",
 } as const;
+
+const CATEGORIES_BY_DIFFICULTY = {
+  200: ["فاكهة", "حيوان", "لعبة أطفال", "أداة منزلية", "رياضة شائعة"],
+  400: ["فيلم شهير", "مغني", "ممثل", "رياضي", "مهنة", "طبق طعام"],
+  600: ["معلَم سياحي", "حدث تاريخي", "اختراع", "ظاهرة طبيعية", "شخصية أدبية"],
+};
 
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as RequestBody;
-    const { difficulty, drawMode = false, recentlyAsked = [] } = body;
+    const { difficulty, recentlyAsked = [] } = body;
 
     const anthropic = getAnthropic();
 
     if (!anthropic) {
       const fallback: CharadesResponse = {
-        word: drawMode ? "بيتزا" : "تمساح",
+        word: difficulty === 200 ? "تمساح" : difficulty === 400 ? "ميسي" : "برج إيفل",
+        englishName: difficulty === 200 ? "Crocodile" : difficulty === 400 ? "Lionel Messi" : "Eiffel Tower",
         category: "حيوانات",
+        imageUrl: null,
         hint: "[وضع تجريبي]",
       };
       return NextResponse.json(fallback);
     }
 
-    const systemPrompt = `أنت مولّد كلمات للعبة "اشرح بدون كلام" (نمط charades) أو "ارسم وخمن" (نمط pictionary) باللغة العربية.
+    const categories = CATEGORIES_BY_DIFFICULTY[difficulty];
 
-قواعد:
-1. أعطِ كلمة واحدة فقط، تكون فعل أو شيء قابل ${drawMode ? "للرسم" : "للتمثيل"}.
-2. الكلمة عربية فصحى مفهومة في كل الدول العربية.
-3. تجنّب الكلمات الحساسة أو المسيئة.
-4. تجنّب الكلمات المُكررة من القائمة.
-5. التصنيف من: حيوانات، مأكولات، أفعال، مهن، رياضات، أفلام مشهورة، أشياء يومية.
+    const systemPrompt = `أنت مولّد كلمات للعبة "اشرح بدون كلام". اللاعب يشوف صورة وكلمة على جواله ويمثّلها بدون كلام، والباقي يخمّنون.
 
-أعد JSON صرف:
+📋 القواعد:
+1. أعطِ كلمة واحدة فقط - شي محسوس قابل للتمثيل بصرياً.
+2. الكلمة عربية مفهومة في كل الدول العربية.
+3. تجنّب الكلمات المسيئة أو الحساسة.
+4. تجنّب الكلمات المكررة من القائمة.
+5. أعطِ نسخة إنجليزية / لاتينية للكلمة (للبحث عن صورة).
+6. اختر التصنيف من القائمة المُعطاة.
+
+أعد JSON صرف فقط:
 {
-  "word": "الكلمة",
+  "word": "الكلمة بالعربي",
+  "englishName": "الكلمة بالإنجليزية (للبحث في ويكي)",
   "category": "التصنيف",
-  "hint": "تلميح اختياري قصير (لمن يعرض الكلمة فقط)"
+  "hint": "تلميح اختياري قصير لو احتاج"
 }`;
 
-    const userPrompt = `صعوبة: ${difficulty} (${DIFFICULTY_GUIDE[difficulty]})
-النمط: ${drawMode ? "رسم وتخمين (pictionary)" : "تمثيل بدون كلام (charades)"}
+    const userPrompt = `صعوبة: ${difficulty}
+الوصف: ${DIFFICULTY_GUIDE[difficulty]}
+التصنيفات المسموحة: ${categories.join("، ")}
 
 ${
   recentlyAsked.length > 0
-    ? `كلمات مُستبعدة:\n- ${recentlyAsked.slice(-15).join("\n- ")}`
+    ? `كلمات مُستبعدة:\n- ${recentlyAsked.slice(-20).join("\n- ")}`
     : ""
 }
 
-أعطني كلمة جديدة الآن.`;
+أعطني كلمة واحدة جديدة الآن.`;
 
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
@@ -82,8 +97,15 @@ ${
       );
     }
 
-    const parsed = JSON.parse(jsonMatch[0]) as CharadesResponse;
-    return NextResponse.json(parsed);
+    const parsed = JSON.parse(jsonMatch[0]) as Omit<CharadesResponse, "imageUrl">;
+
+    // جلب صورة من ويكي حسب الاسم الإنجليزي
+    const imageUrl = await fetchTopicImage(
+      parsed.englishName,
+      parsed.word,
+    );
+
+    return NextResponse.json({ ...parsed, imageUrl });
   } catch (error) {
     console.error("Charades generation error:", error);
     return NextResponse.json(

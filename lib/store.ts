@@ -1,12 +1,13 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { GameState, Team, HookId, Question, JudgingMode } from "./types";
-import { TEAM_COLORS } from "./utils";
+import { TEAM_COLORS, TEAM_AVATARS, TEAM_NAME_PRESETS } from "./utils";
 
-const makeEmptyTeam = (id: "team_a" | "team_b", color: string): Team => ({
+const makeEmptyTeam = (id: "team_a" | "team_b", color: string, avatar: string, defaultName: string): Team => ({
   id,
-  name: id === "team_a" ? "الفريق الأول" : "الفريق الثاني",
+  name: defaultName,
   color,
+  avatar,
   playersCount: 2,
   score: 0,
   hooks: [],
@@ -16,8 +17,8 @@ const makeEmptyTeam = (id: "team_a" | "team_b", color: string): Team => ({
 
 const INITIAL_STATE: GameState = {
   phase: "landing",
-  teamA: makeEmptyTeam("team_a", TEAM_COLORS[0].id),
-  teamB: makeEmptyTeam("team_b", TEAM_COLORS[1].id),
+  teamA: makeEmptyTeam("team_a", TEAM_COLORS[0].id, TEAM_AVATARS[0], TEAM_NAME_PRESETS[0]),
+  teamB: makeEmptyTeam("team_b", TEAM_COLORS[1].id, TEAM_AVATARS[1], TEAM_NAME_PRESETS[2]),
   settings: {
     judgingMode: "ai",
     language: "ar",
@@ -37,6 +38,7 @@ interface GameStore extends GameState {
   // إعدادات الفرق
   setTeamName: (team: "team_a" | "team_b", name: string) => void;
   setTeamColor: (team: "team_a" | "team_b", color: string) => void;
+  setTeamAvatar: (team: "team_a" | "team_b", avatar: string) => void;
   setTeamPlayersCount: (team: "team_a" | "team_b", count: number) => void;
 
   // إعدادات اللعبة
@@ -79,6 +81,14 @@ export const useGameStore = create<GameStore>()(
           [team === "team_a" ? "teamA" : "teamB"]: {
             ...(team === "team_a" ? s.teamA : s.teamB),
             color,
+          },
+        })),
+
+      setTeamAvatar: (team, avatar) =>
+        set((s) => ({
+          [team === "team_a" ? "teamA" : "teamB"]: {
+            ...(team === "team_a" ? s.teamA : s.teamB),
+            avatar,
           },
         })),
 
