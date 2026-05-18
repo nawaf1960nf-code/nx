@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAnthropic, CLAUDE_MODEL } from "@/lib/anthropic";
 import { CATEGORY_BY_ID } from "@/lib/categories-data";
+import { fetchTopicImage } from "@/lib/images";
 
 export const runtime = "nodejs";
 
@@ -26,28 +27,6 @@ const DIFFICULTY_GUIDE = {
   600: "سؤال صعب، للمتعمقين والمتخصصين في الفئة",
 } as const;
 
-async function fetchPexelsImage(query: string): Promise<string | null> {
-  const pexelsKey = process.env.PEXELS_API_KEY;
-  if (!pexelsKey) return null;
-  try {
-    const res = await fetch(
-      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=10&orientation=landscape`,
-      {
-        headers: { Authorization: pexelsKey },
-        next: { revalidate: 3600 },
-      },
-    );
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      photos?: Array<{ src: { large: string } }>;
-    };
-    const photos = data.photos ?? [];
-    if (photos.length === 0) return null;
-    return photos[Math.floor(Math.random() * photos.length)].src.large;
-  } catch {
-    return null;
-  }
-}
 
 export async function POST(req: Request) {
   try {
@@ -130,9 +109,9 @@ ${
 
     const parsed = JSON.parse(jsonMatch[0]) as QuestionResponse;
 
-    // محاولة جلب صورة موضوعية (آمنة، لا تكشف الإجابة)
+    // جلب صورة موضوعية من Wikipedia (آمنة، لا تكشف الإجابة)
     const imageQuery = parsed.imageQuery || category.imageQuery || category.name;
-    parsed.imageUrl = await fetchPexelsImage(imageQuery);
+    parsed.imageUrl = await fetchTopicImage(imageQuery, category.name);
 
     return NextResponse.json(parsed);
   } catch (error) {
