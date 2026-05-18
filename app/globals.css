@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@theme {
+  /* لوحة ألوان نون عين */
+  --color-primary-50: #e8f7ee;
+  --color-primary-100: #c5ead4;
+  --color-primary-200: #9fdcb8;
+  --color-primary-300: #75ce9b;
+  --color-primary-400: #54c486;
+  --color-primary-500: #00c853;
+  --color-primary-600: #00b649;
+  --color-primary-700: #00a03e;
+  --color-primary-800: #008a34;
+  --color-primary-900: #006622;
+
+  --color-ink-50: #f4f5f8;
+  --color-ink-100: #e5e7ef;
+  --color-ink-200: #c5cad8;
+  --color-ink-300: #9aa1b8;
+  --color-ink-400: #6c7491;
+  --color-ink-500: #4a5170;
+  --color-ink-600: #353a55;
+  --color-ink-700: #262a3f;
+  --color-ink-800: #1a1f36;
+  --color-ink-900: #0f1226;
+
+  --color-gold-400: #ffd54f;
+  --color-gold-500: #ffd700;
+  --color-gold-600: #ffb300;
+
+  --color-warn-500: #ff6f00;
+  --color-danger-500: #e53935;
+
+  --font-display: "Tajawal", "IBM Plex Arabic", system-ui, sans-serif;
+  --font-body: "Tajawal", "IBM Plex Arabic", system-ui, sans-serif;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #1a1f36;
+}
+
+html {
+  font-family: var(--font-body);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* تأثيرات حركية */
+@keyframes float-up {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 200, 83, 0.4); }
+  50% { box-shadow: 0 0 0 16px rgba(0, 200, 83, 0); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+.animate-float-up { animation: float-up 0.5s ease-out forwards; }
+.animate-pulse-glow { animation: pulse-glow 2s infinite; }
+.animate-shake { animation: shake 0.4s ease-in-out; }
+
+/* خلفية متدرجة بسيطة */
+.bg-mesh {
+  background-image:
+    radial-gradient(at 20% 10%, rgba(0, 200, 83, 0.10) 0px, transparent 50%),
+    radial-gradient(at 80% 90%, rgba(255, 215, 0, 0.08) 0px, transparent 50%);
+}
