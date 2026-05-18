@@ -27,6 +27,7 @@ import {
   Sparkles,
   Gift,
   Ticket,
+  Trash2,
 } from "lucide-react";
 
 type ActiveTeam = "team_a" | "team_b";
@@ -91,18 +92,7 @@ export default function PickPage() {
     setStartError(null);
     setStarting(true);
     try {
-      const res = await fetch("/api/credits/consume", { method: "POST" });
-      if (res.status === 402) {
-        // ما عنده رصيد
-        router.push("/redeem");
-        return;
-      }
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setStartError(data.error || "تعذّر بدء اللعبة");
-        return;
-      }
-      await refreshCredits();
+      // وضع الاختبار: تجاوز فحص الرصيد كلياً والذهاب مباشرة للتحميل
       setPhase("preloading");
       router.push("/preload");
     } finally {
@@ -110,8 +100,17 @@ export default function PickPage() {
     }
   };
 
-  const isFirstFreeGame = credits?.has_free_play === true;
-  const hasCredits = credits?.has_credits === true;
+  const handleResetAll = () => {
+    // امسح اختيارات الفريقين كلها (تصنيفات + قدرات + هوكس مستخدمة)
+    teamA.selectedCategories.forEach((c) => toggleCategory("team_a", c));
+    teamB.selectedCategories.forEach((c) => toggleCategory("team_b", c));
+    teamA.hooks.forEach((h) => toggleHook("team_a", h));
+    teamB.hooks.forEach((h) => toggleHook("team_b", h));
+  };
+
+  // في وضع الاختبار، السماح دائماً بالبدء
+  const isFirstFreeGame = false;
+  const hasCredits = true;
 
   return (
     <main className="min-h-screen bg-mesh pb-44">
@@ -174,6 +173,17 @@ export default function PickPage() {
             </Link>
           </div>
         )}
+
+        {/* شريط أدوات: إعادة تعيين */}
+        <div className="flex items-center justify-end mb-3">
+          <button
+            onClick={handleResetAll}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-ink-500 hover:text-red-600 px-3 py-1.5 rounded-full border border-ink-200 hover:border-red-300 hover:bg-red-50 transition"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            إعادة تعيين كل الاختيارات
+          </button>
+        </div>
 
         {/* تبويبات الفرق */}
         <div className="bg-white rounded-3xl border-2 border-ink-100 p-2 mb-6 grid grid-cols-2 gap-2">

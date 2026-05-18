@@ -1,18 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// /card مفتوح للجميع (الجوال يفتحه بعد مسح QR بدون تسجيل)
-const PROTECTED_PATHS = [
-  "/setup",
-  "/pick",
-  "/preload",
-  "/game",
-  "/question",
-  "/charades",
-  "/results",
-  "/redeem",
-  "/admin",
-];
+// نظام تسجيل الدخول معطّل مؤقتاً للاختبار السريع.
+// راح يبقى محمياً فقط: لوحة الأدمن وصفحات الأكواد
+const PROTECTED_PATHS = ["/admin"];
 const AUTH_PATHS = ["/login", "/signup", "/verify"];
 
 export async function proxy(request: NextRequest) {
