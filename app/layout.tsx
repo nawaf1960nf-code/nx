@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Tajawal } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
+import { CreditsProvider } from "@/lib/credits-context";
 import "./globals.css";
 
 const tajawal = Tajawal({
@@ -32,7 +33,9 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" className={`${tajawal.variable} h-full`}>
       <body className="min-h-full antialiased bg-white text-ink-800">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <CreditsProvider>{children}</CreditsProvider>
+        </AuthProvider>
       </body>
     </html>
   );

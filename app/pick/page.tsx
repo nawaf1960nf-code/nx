@@ -7,6 +7,7 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/Button";
 import { UserMenu } from "@/components/UserMenu";
 import { useGameStore } from "@/lib/store";
+import { useCredits } from "@/lib/credits-context";
 import {
   CATEGORIES,
   CATEGORY_GROUPS,
@@ -23,6 +24,9 @@ import {
   Zap,
   Image as ImageIcon,
   Volume2,
+  Sparkles,
+  Gift,
+  Ticket,
 } from "lucide-react";
 
 type ActiveTeam = "team_a" | "team_b";
@@ -30,12 +34,15 @@ type ActiveTeam = "team_a" | "team_b";
 export default function PickPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
   const teamA = useGameStore((s) => s.teamA);
   const teamB = useGameStore((s) => s.teamB);
   const toggleCategory = useGameStore((s) => s.toggleCategory);
   const toggleHook = useGameStore((s) => s.toggleHook);
   const setPhase = useGameStore((s) => s.setPhase);
+  const { credits, refresh: refreshCredits } = useCredits();
 
   const [activeTeam, setActiveTeam] = useState<ActiveTeam>("team_a");
   const [activeGroup, setActiveGroup] = useState<CategoryGroup>("party_games");
@@ -62,10 +69,31 @@ export default function PickPage() {
     teamB.hooks.length === HOOKS_PER_TEAM;
   const canStart = aDone && bDone;
 
-  const handleStart = () => {
-    setPhase("board");
-    router.push("/game");
+  const handleStart = async () => {
+    setStartError(null);
+    setStarting(true);
+    try {
+      const res = await fetch("/api/credits/consume", { method: "POST" });
+      if (res.status === 402) {
+        // ما عنده رصيد
+        router.push("/redeem");
+        return;
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setStartError(data.error || "تعذّر بدء اللعبة");
+        return;
+      }
+      await refreshCredits();
+      setPhase("board");
+      router.push("/game");
+    } finally {
+      setStarting(false);
+    }
   };
+
+  const isFirstFreeGame = credits?.has_free_play === true;
+  const hasCredits = credits?.has_credits === true;
 
   return (
     <main className="min-h-screen bg-mesh pb-44">
@@ -87,6 +115,48 @@ export default function PickPage() {
       </header>
 
       <div className="max-w-6xl mx-auto px-4 md:px-6">
+        {/* بانر اللعبة الأولى المجانية */}
+        {isFirstFreeGame && (
+          <div className="bg-gradient-to-l from-gold-500 to-amber-600 text-ink-900 rounded-3xl p-5 mb-6 shadow-xl shadow-gold-500/30 relative overflow-hidden">
+            <div className="absolute -top-8 -left-8 text-9xl opacity-10">🎁</div>
+            <div className="relative flex items-center gap-4">
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg">
+                <Gift className="w-7 h-7 text-amber-600" />
+              </div>
+              <div>
+                <div className="font-black text-lg md:text-xl mb-0.5">
+                  لعبتك الأولى المجانية! 🎉
+                </div>
+                <div className="text-sm md:text-base opacity-90">
+                  اخترنا لك تجربة كاملة بدون أي تكلفة. استمتع وأبهر أصحابك!
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* تنبيه: ما عنده رصيد */}
+        {credits && !hasCredits && (
+          <div className="bg-red-50 border-2 border-red-300 rounded-3xl p-5 mb-6 flex items-center gap-4">
+            <div className="w-14 h-14 bg-red-500 rounded-2xl flex items-center justify-center shrink-0">
+              <Ticket className="w-7 h-7 text-white" />
+            </div>
+            <div className="flex-1">
+              <div className="font-black text-lg text-red-800 mb-0.5">
+                ما عندك رصيد ألعاب
+              </div>
+              <div className="text-sm text-red-700">
+                أضف كود لتلعب جولة جديدة
+              </div>
+            </div>
+            <Link href="/redeem">
+              <Button size="sm" variant="danger">
+                أدخل كود
+              </Button>
+            </Link>
+          </div>
+        )}
+
         {/* تبويبات الفرق */}
         <div className="bg-white rounded-3xl border-2 border-ink-100 p-2 mb-6 grid grid-cols-2 gap-2">
           <TeamTab
@@ -317,6 +387,11 @@ export default function PickPage() {
 
       {/* شريط سفلي */}
       <div className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-ink-100 shadow-2xl">
+        {startError && (
+          <div className="bg-red-100 text-red-700 text-sm font-bold px-4 py-2 text-center">
+            {startError}
+          </div>
+        )}
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex gap-3">
             <TeamSummary team={teamA} done={aDone} />
@@ -325,10 +400,24 @@ export default function PickPage() {
           <Button
             size="lg"
             onClick={handleStart}
-            disabled={!canStart}
-            icon={<ChevronLeft className="w-5 h-5" />}
+            disabled={!canStart || starting || !hasCredits}
+            loading={starting}
+            icon={
+              !starting &&
+              (isFirstFreeGame ? (
+                <Sparkles className="w-5 h-5" />
+              ) : (
+                <ChevronLeft className="w-5 h-5" />
+              ))
+            }
           >
-            {canStart ? "ابدأ اللعبة!" : "أكمل الاختيارات"}
+            {!canStart
+              ? "أكمل الاختيارات"
+              : !hasCredits
+                ? "ما عندك رصيد"
+                : isFirstFreeGame
+                  ? "ابدأ لعبتك المجانية!"
+                  : "ابدأ اللعبة!"}
           </Button>
         </div>
       </div>
