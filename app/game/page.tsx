@@ -9,7 +9,7 @@ import { useGameStore } from "@/lib/store";
 import { CATEGORY_BY_ID } from "@/lib/categories-data";
 import { HOOK_BY_ID } from "@/lib/hooks-data";
 import { TEAM_COLORS, cn, formatPoints } from "@/lib/utils";
-import { Home, X, ArrowRight } from "lucide-react";
+import { Home, X, ArrowRight, Plus, Minus } from "lucide-react";
 import type { QuestionDifficulty } from "@/lib/types";
 
 const DIFFICULTIES: QuestionDifficulty[] = [200, 400, 600];
@@ -27,6 +27,8 @@ export default function GameBoardPage() {
   const answeredQuestions = useGameStore((s) => s.answeredQuestions);
   const setSelectedCell = useGameStore((s) => s.setSelectedCell);
   const resetGame = useGameStore((s) => s.resetGame);
+  const addScore = useGameStore((s) => s.addScore);
+  const subtractScore = useGameStore((s) => s.subtractScore);
   const setPhase = useGameStore((s) => s.setPhase);
 
   useEffect(() => setMounted(true), []);
@@ -124,11 +126,21 @@ export default function GameBoardPage() {
         </div>
       </div>
 
-      {/* لوحة النتائج */}
+      {/* لوحة النتائج مع أزرار تعديل النقاط */}
       <div className="max-w-7xl mx-auto px-6 mb-6">
         <div className="grid grid-cols-2 gap-3">
-          <TeamBar team={teamA} active={currentTurn === "team_a"} />
-          <TeamBar team={teamB} active={currentTurn === "team_b"} />
+          <TeamBar
+            team={teamA}
+            active={currentTurn === "team_a"}
+            onAdd={() => addScore("team_a", 100)}
+            onSub={() => subtractScore("team_a", 100)}
+          />
+          <TeamBar
+            team={teamB}
+            active={currentTurn === "team_b"}
+            onAdd={() => addScore("team_b", 100)}
+            onSub={() => subtractScore("team_b", 100)}
+          />
         </div>
       </div>
 
@@ -191,9 +203,13 @@ export default function GameBoardPage() {
 function TeamBar({
   team,
   active,
+  onAdd,
+  onSub,
 }: {
   team: { name: string; color: string; avatar: string; score: number };
   active: boolean;
+  onAdd: () => void;
+  onSub: () => void;
 }) {
   const color = TEAM_COLORS.find((c) => c.id === team.color) ?? TEAM_COLORS[0];
   return (
@@ -237,14 +253,42 @@ function TeamBar({
             </div>
           </div>
         </div>
-        <div
-          className={cn(
-            "text-xl font-black tabular-nums shrink-0",
-            active ? "text-white" : "",
-          )}
-          style={active ? undefined : { color: color.hex }}
-        >
-          {formatPoints(team.score)}
+
+        {/* النقاط مع أزرار التعديل */}
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={onSub}
+            aria-label="انقص ١٠٠"
+            className={cn(
+              "w-7 h-7 rounded-md flex items-center justify-center transition active:scale-90",
+              active
+                ? "bg-white/20 hover:bg-white/30 text-white"
+                : "bg-ink-100 hover:bg-ink-200 text-ink-600",
+            )}
+          >
+            <Minus className="w-3.5 h-3.5" strokeWidth={3} />
+          </button>
+          <div
+            className={cn(
+              "text-xl font-black tabular-nums min-w-[3rem] text-center",
+              active ? "text-white" : "",
+            )}
+            style={active ? undefined : { color: color.hex }}
+          >
+            {formatPoints(team.score)}
+          </div>
+          <button
+            onClick={onAdd}
+            aria-label="زِد ١٠٠"
+            className={cn(
+              "w-7 h-7 rounded-md flex items-center justify-center transition active:scale-90",
+              active
+                ? "bg-white/20 hover:bg-white/30 text-white"
+                : "bg-ink-100 hover:bg-ink-200 text-ink-600",
+            )}
+          >
+            <Plus className="w-3.5 h-3.5" strokeWidth={3} />
+          </button>
         </div>
       </div>
     </div>

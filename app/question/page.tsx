@@ -231,7 +231,16 @@ function QuestionScreen() {
 
     setJudgment({ ...result, forTeam: team });
     setJudging(false);
-    setStage("reveal");
+
+    // منطق جديد: الفريق الأول لو جاوب غلط، الفريق الثاني ياخذ فرصة سرقة
+    if (team === activeTeam.id && !result.isCorrect) {
+      // الفريق الأول غلط → ننتقل للسرقة (الفريق الثاني عنده فرصة)
+      setStage("stealing");
+      setTimeLeft(STEAL_TIME);
+    } else {
+      // إما الفريق الأول جاوب صح، أو الفريق الثاني جاوب (محاولة سرقة)
+      setStage("reveal");
+    }
   };
 
   const applyScore = (correct: boolean, team: "team_a" | "team_b") => {
