@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/Button";
 import { useGameStore } from "@/lib/store";
@@ -38,6 +39,7 @@ interface QuestionData {
   answer: string;
   acceptableAnswers: string[];
   hint: string;
+  imageUrl?: string | null;
 }
 
 const ANSWER_TIME = 60;
@@ -49,6 +51,15 @@ function QuestionScreen() {
   const cellId = params.get("cell");
 
   const parsed = parseCellId(cellId);
+
+  // إعادة التوجيه لنمط الـ charades للفئات المخصصة
+  useEffect(() => {
+    if (!parsed) return;
+    const cat = CATEGORY_BY_ID[parsed.categoryId];
+    if (cat?.gameMode === "charades") {
+      router.replace(`/charades?cell=${cellId}`);
+    }
+  }, [parsed?.categoryId, cellId, router]); // eslint-disable-line
 
   const teamA = useGameStore((s) => s.teamA);
   const teamB = useGameStore((s) => s.teamB);
@@ -271,7 +282,21 @@ function QuestionScreen() {
         </div>
 
         {/* بطاقة السؤال */}
-        <div className="bg-white rounded-3xl border-2 border-ink-100 p-6 md:p-10 mb-6 min-h-[280px] flex items-center justify-center text-center">
+        <div className="bg-white rounded-3xl border-2 border-ink-100 overflow-hidden mb-6 min-h-[280px]">
+          {/* الصورة المرفقة (إن وُجدت) */}
+          {!loading && questionData?.imageUrl && (
+            <div className="relative w-full aspect-[16/9] bg-ink-100">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={questionData.imageUrl}
+                alt="صورة موضوعية للسؤال"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+            </div>
+          )}
+
+          <div className="p-6 md:p-10 flex items-center justify-center text-center">
           {loading ? (
             <div className="flex flex-col items-center gap-3 text-ink-500">
               <Loader2 className="w-10 h-10 animate-spin text-primary-500" />
@@ -321,6 +346,7 @@ function QuestionScreen() {
               {questionData?.text}
             </p>
           )}
+          </div>
         </div>
 
         {/* التلميح */}

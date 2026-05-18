@@ -1,7 +1,38 @@
 import type { Category } from "./types";
 
 // قائمة التصنيفات في لعبة نون عين
+// gradient: تدرج لوني للبطاقة (Tailwind from-X to-Y)
+// imageQuery: استعلام لجلب صور حقيقية لاحقاً من Pexels/Unsplash
 export const CATEGORIES: Category[] = [
+  // 🎉 ألعاب جماعية مرحة (جديد)
+  {
+    id: "charades",
+    name: "اشرح بدون ما تتكلم",
+    group: "party_games",
+    icon: "🤐",
+    description:
+      "نمط لعب مختلف! لاعب يمثّل كلمة بدون كلام، والباقي يخمّنون.",
+    hasImages: false,
+    hasAudio: false,
+    gameMode: "charades",
+    gradient: "from-fuchsia-500 to-pink-600",
+    imageQuery: "people charades party game",
+    featured: true,
+  },
+  {
+    id: "draw_guess",
+    name: "ارسم وخمّن",
+    group: "party_games",
+    icon: "✏️",
+    description:
+      "لاعب يقرأ الكلمة ويرسمها، الباقي يخمّنون من الرسمة.",
+    hasImages: false,
+    hasAudio: false,
+    gameMode: "charades",
+    gradient: "from-amber-500 to-orange-600",
+    imageQuery: "drawing pictionary game",
+  },
+
   // 🎬 أفلام ومسلسلات
   {
     id: "movies_arabic",
@@ -11,6 +42,8 @@ export const CATEGORIES: Category[] = [
     description: "خمن الأفلام العربية الشهيرة من قديم وحديث.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-red-500 to-rose-700",
+    imageQuery: "arabic cinema film",
   },
   {
     id: "movies_foreign",
@@ -20,6 +53,8 @@ export const CATEGORIES: Category[] = [
     description: "أفلام هوليوود من الكلاسيكيات إلى أحدث الإصدارات.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-slate-700 to-zinc-900",
+    imageQuery: "hollywood cinema movie",
   },
   {
     id: "marvel_dc",
@@ -29,6 +64,8 @@ export const CATEGORIES: Category[] = [
     description: "أبطال خارقون، أفلام، شخصيات، وأحداث.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-red-600 to-blue-700",
+    imageQuery: "superhero comic",
   },
   {
     id: "netflix_shows",
@@ -38,15 +75,19 @@ export const CATEGORIES: Category[] = [
     description: "أشهر مسلسلات نتفليكس عبر السنين.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-red-600 to-black",
+    imageQuery: "tv series streaming",
   },
   {
     id: "korean_shows",
     name: "مسلسلات كورية",
     group: "movies_shows",
     icon: "🇰🇷",
-    description: "K-Drama من الكلاسيك إلى آخر الموسم.",
+    description: "K-Drama من الكلاسيك إلى آخر موسم.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-pink-400 to-rose-600",
+    imageQuery: "korean drama kdrama",
   },
   {
     id: "turkish_shows",
@@ -56,6 +97,8 @@ export const CATEGORIES: Category[] = [
     description: "أشهر المسلسلات التركية المعربة.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-red-600 to-red-900",
+    imageQuery: "turkish drama istanbul",
   },
   {
     id: "horror_movies",
@@ -65,6 +108,8 @@ export const CATEGORIES: Category[] = [
     description: "أفلام الرعب من الكلاسيك إلى الحديث.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-zinc-800 to-black",
+    imageQuery: "horror movie scary",
   },
   {
     id: "disney_pixar",
@@ -74,6 +119,8 @@ export const CATEGORIES: Category[] = [
     description: "أفلام ديزني وبيكسار العائلية.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-blue-500 to-purple-600",
+    imageQuery: "disney castle animation",
   },
 
   // 🎌 أنمي ومانجا
@@ -85,6 +132,8 @@ export const CATEGORIES: Category[] = [
     description: "كل ما يخص ون بيس: شخصيات، أركات، قوى.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-amber-500 to-red-600",
+    imageQuery: "pirate ship adventure",
   },
   {
     id: "naruto",
@@ -94,6 +143,8 @@ export const CATEGORIES: Category[] = [
     description: "ناروتو وشيبودن وبورتو والعالم النيني.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-orange-500 to-amber-600",
+    imageQuery: "ninja japanese anime",
   },
   {
     id: "attack_on_titan",
@@ -103,6 +154,8 @@ export const CATEGORIES: Category[] = [
     description: "Attack on Titan من البداية للنهاية.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-slate-700 to-red-900",
+    imageQuery: "wall fantasy fortress",
   },
   {
     id: "dragon_ball",
@@ -112,6 +165,8 @@ export const CATEGORIES: Category[] = [
     description: "Dragon Ball Z و Super و GT.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-orange-400 to-yellow-600",
+    imageQuery: "dragon fantasy power",
   },
   {
     id: "demon_slayer",
@@ -121,6 +176,8 @@ export const CATEGORIES: Category[] = [
     description: "Demon Slayer / Kimetsu no Yaiba.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-emerald-600 to-slate-900",
+    imageQuery: "japanese sword samurai",
   },
   {
     id: "anime_classic",
@@ -130,6 +187,8 @@ export const CATEGORIES: Category[] = [
     description: "أنميات الزمن الجميل: كونان، بوكيمون، ديجيمون.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-violet-500 to-purple-700",
+    imageQuery: "retro vintage anime",
   },
 
   // 🎮 ألعاب فيديو
@@ -141,6 +200,8 @@ export const CATEGORIES: Category[] = [
     description: "ماين كرافت: عوالم، وحوش، كرافت.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-emerald-500 to-green-700",
+    imageQuery: "pixel block game",
   },
   {
     id: "pubg_fortnite",
@@ -150,6 +211,8 @@ export const CATEGORIES: Category[] = [
     description: "ألعاب الباتل رويال الشهيرة.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-orange-500 to-rose-700",
+    imageQuery: "battle royale gaming",
   },
   {
     id: "fifa_ea_sports",
@@ -159,6 +222,8 @@ export const CATEGORIES: Category[] = [
     description: "كرة قدم على البلايستيشن والاكس بوكس.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-green-500 to-emerald-700",
+    imageQuery: "football gaming controller",
   },
   {
     id: "call_of_duty",
@@ -168,6 +233,8 @@ export const CATEGORIES: Category[] = [
     description: "Call of Duty: Warzone, MW, BO.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-zinc-700 to-zinc-900",
+    imageQuery: "military fps shooter",
   },
   {
     id: "resident_evil",
@@ -177,6 +244,8 @@ export const CATEGORIES: Category[] = [
     description: "أشهر سلسلة رعب: شخصيات، قصص، وحوش.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-emerald-800 to-red-900",
+    imageQuery: "zombie horror dark",
   },
   {
     id: "gta",
@@ -186,6 +255,8 @@ export const CATEGORIES: Category[] = [
     description: "Grand Theft Auto: من V لـ VI.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-purple-600 to-pink-700",
+    imageQuery: "city neon night urban",
   },
   {
     id: "nintendo",
@@ -195,6 +266,8 @@ export const CATEGORIES: Category[] = [
     description: "ماريو، زيلدا، بوكيمون، كيربي.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-red-500 to-pink-600",
+    imageQuery: "retro arcade game",
   },
 
   // ⚽ رياضة
@@ -206,6 +279,8 @@ export const CATEGORIES: Category[] = [
     description: "بطولات كأس العالم من 1930 لليوم.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-yellow-500 to-amber-700",
+    imageQuery: "world cup trophy",
   },
   {
     id: "european_leagues",
@@ -215,6 +290,8 @@ export const CATEGORIES: Category[] = [
     description: "بريميرليغ، لا ليغا، بوندسليغا، السيري آ.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-blue-600 to-cyan-700",
+    imageQuery: "european football stadium",
   },
   {
     id: "khaleeji_leagues",
@@ -224,6 +301,8 @@ export const CATEGORIES: Category[] = [
     description: "روشن السعودي، الكويتي، الإماراتي، القطري.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-emerald-500 to-teal-700",
+    imageQuery: "football stadium night",
   },
   {
     id: "ai_player_guess",
@@ -233,6 +312,8 @@ export const CATEGORIES: Category[] = [
     description: "صور لاعبين بدون ملامح، خمن من هو.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-sky-500 to-blue-700",
+    imageQuery: "soccer player silhouette",
   },
   {
     id: "football_ranking",
@@ -242,6 +323,8 @@ export const CATEGORIES: Category[] = [
     description: "رتب اللاعبين أو الأندية حسب معيار.",
     hasImages: false,
     hasAudio: false,
+    gradient: "from-indigo-500 to-violet-700",
+    imageQuery: "trophy ranking podium",
   },
   {
     id: "basketball_nba",
@@ -251,6 +334,8 @@ export const CATEGORIES: Category[] = [
     description: "NBA: لاعبين، فرق، بطولات.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-orange-500 to-red-700",
+    imageQuery: "basketball court NBA",
   },
 
   // 🚗 سيارات
@@ -262,6 +347,8 @@ export const CATEGORIES: Category[] = [
     description: "رولز رويس، مرسيدس، بنتلي، فيراري.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-zinc-700 to-amber-700",
+    imageQuery: "luxury car rolls royce",
   },
   {
     id: "sport_cars",
@@ -271,6 +358,8 @@ export const CATEGORIES: Category[] = [
     description: "Supercars و Hypercars الأسطورية.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-red-600 to-orange-700",
+    imageQuery: "sports car ferrari supercar",
   },
   {
     id: "car_logos",
@@ -280,6 +369,8 @@ export const CATEGORIES: Category[] = [
     description: "خمن الشركة من الشعار فقط.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-blue-700 to-zinc-800",
+    imageQuery: "car logo emblem",
   },
   {
     id: "car_engine_sound",
@@ -289,6 +380,8 @@ export const CATEGORIES: Category[] = [
     description: "صوت محرك، خمن نوع السيارة.",
     hasImages: false,
     hasAudio: true,
+    gradient: "from-zinc-800 to-orange-700",
+    imageQuery: "car engine motor",
   },
 
   // 🌍 ثقافة عامة
@@ -300,6 +393,8 @@ export const CATEGORIES: Category[] = [
     description: "عواصم الدول حول العالم.",
     hasImages: false,
     hasAudio: false,
+    gradient: "from-sky-500 to-blue-700",
+    imageQuery: "world map globe",
   },
   {
     id: "flags",
@@ -309,6 +404,8 @@ export const CATEGORIES: Category[] = [
     description: "أعلام دول وخمن البلد.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-blue-500 to-emerald-600",
+    imageQuery: "national flag country",
   },
   {
     id: "languages",
@@ -318,6 +415,8 @@ export const CATEGORIES: Category[] = [
     description: "كلمات بلغات مختلفة، خمن المعنى.",
     hasImages: false,
     hasAudio: false,
+    gradient: "from-cyan-500 to-blue-700",
+    imageQuery: "language books world",
   },
   {
     id: "history",
@@ -327,6 +426,8 @@ export const CATEGORIES: Category[] = [
     description: "أحداث تاريخية شهيرة عربية وعالمية.",
     hasImages: false,
     hasAudio: false,
+    gradient: "from-amber-600 to-orange-800",
+    imageQuery: "ancient history civilization",
   },
   {
     id: "geography",
@@ -336,6 +437,8 @@ export const CATEGORIES: Category[] = [
     description: "جبال، أنهار، صحاري، بحار.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-teal-500 to-emerald-700",
+    imageQuery: "mountain landscape nature",
   },
   {
     id: "science",
@@ -345,6 +448,8 @@ export const CATEGORIES: Category[] = [
     description: "فيزياء، كيمياء، أحياء، فضاء.",
     hasImages: false,
     hasAudio: false,
+    gradient: "from-violet-500 to-indigo-700",
+    imageQuery: "science laboratory experiment",
   },
   {
     id: "arab_celebs",
@@ -354,6 +459,8 @@ export const CATEGORIES: Category[] = [
     description: "ممثلين، مغنين، رياضيين، إعلاميين عرب.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-yellow-500 to-orange-700",
+    imageQuery: "arab celebrity star",
   },
   {
     id: "world_celebs",
@@ -363,6 +470,8 @@ export const CATEGORIES: Category[] = [
     description: "نجوم هوليوود ومشاهير العالم.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-yellow-400 to-pink-600",
+    imageQuery: "celebrity hollywood star",
   },
 
   // 🎵 صوت وصورة
@@ -374,6 +483,8 @@ export const CATEGORIES: Category[] = [
     description: "صور مكبرة جداً، خمن الشي.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-purple-500 to-fuchsia-700",
+    imageQuery: "macro zoom close-up",
   },
   {
     id: "guess_sound",
@@ -383,6 +494,8 @@ export const CATEGORIES: Category[] = [
     description: "صوت شي، آلة، أو حيوان، خمنه.",
     hasImages: false,
     hasAudio: true,
+    gradient: "from-rose-500 to-pink-700",
+    imageQuery: "sound waveform audio",
   },
   {
     id: "guess_arabic_song",
@@ -392,6 +505,8 @@ export const CATEGORIES: Category[] = [
     description: "مقطع أغنية عربية، خمن الاسم والمغني.",
     hasImages: false,
     hasAudio: true,
+    gradient: "from-yellow-500 to-red-700",
+    imageQuery: "arabic music concert",
   },
   {
     id: "guess_foreign_song",
@@ -401,6 +516,8 @@ export const CATEGORIES: Category[] = [
     description: "أغاني انجليزية، خمن اسمها أو مغنيها.",
     hasImages: false,
     hasAudio: true,
+    gradient: "from-violet-600 to-indigo-800",
+    imageQuery: "music concert stage",
   },
   {
     id: "guess_ad",
@@ -410,6 +527,8 @@ export const CATEGORIES: Category[] = [
     description: "إعلانات شهيرة من الذاكرة.",
     hasImages: true,
     hasAudio: true,
+    gradient: "from-blue-500 to-purple-700",
+    imageQuery: "tv commercial advertising",
   },
   {
     id: "guess_logo",
@@ -419,6 +538,8 @@ export const CATEGORIES: Category[] = [
     description: "شعارات شركات وعلامات تجارية.",
     hasImages: true,
     hasAudio: false,
+    gradient: "from-amber-500 to-red-700",
+    imageQuery: "brand logo company",
   },
 ];
 
@@ -431,6 +552,7 @@ export const CATEGORY_BY_ID = CATEGORIES.reduce<Record<string, Category>>(
 );
 
 export const CATEGORY_GROUPS = {
+  party_games: { name: "ألعاب جماعية", icon: "🎉" },
   movies_shows: { name: "أفلام ومسلسلات", icon: "🎬" },
   anime_manga: { name: "أنمي ومانجا", icon: "🎌" },
   video_games: { name: "ألعاب فيديو", icon: "🎮" },

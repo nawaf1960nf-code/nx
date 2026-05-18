@@ -16,7 +16,8 @@ interface QuestionResponse {
   answer: string;
   acceptableAnswers: string[];
   hint: string;
-  imagePrompt?: string;
+  imageQuery?: string;
+  imageUrl?: string | null;
 }
 
 const DIFFICULTY_GUIDE = {
@@ -24,6 +25,29 @@ const DIFFICULTY_GUIDE = {
   400: "سؤال متوسط الصعوبة، يحتاج إلمام جيد بالفئة",
   600: "سؤال صعب، للمتعمقين والمتخصصين في الفئة",
 } as const;
+
+async function fetchPexelsImage(query: string): Promise<string | null> {
+  const pexelsKey = process.env.PEXELS_API_KEY;
+  if (!pexelsKey) return null;
+  try {
+    const res = await fetch(
+      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=10&orientation=landscape`,
+      {
+        headers: { Authorization: pexelsKey },
+        next: { revalidate: 3600 },
+      },
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      photos?: Array<{ src: { large: string } }>;
+    };
+    const photos = data.photos ?? [];
+    if (photos.length === 0) return null;
+    return photos[Math.floor(Math.random() * photos.length)].src.large;
+  } catch {
+    return null;
+  }
+}
 
 export async function POST(req: Request) {
   try {
@@ -40,13 +64,13 @@ export async function POST(req: Request) {
 
     const anthropic = getAnthropic();
 
-    // وضع التطوير بدون مفتاح: نرجع سؤال وهمي عشان نقدر نختبر الواجهة
     if (!anthropic) {
       const mock: QuestionResponse = {
-        text: `[وضع تجريبي] سؤال في فئة ${category.name} بصعوبة ${difficulty} — أضف ANTHROPIC_API_KEY في .env.local لتوليد أسئلة حقيقية.`,
+        text: `[وضع تجريبي] سؤال في فئة ${category.name} بصعوبة ${difficulty} — أضف ANTHROPIC_API_KEY لتوليد أسئلة حقيقية.`,
         answer: "إجابة وهمية",
         acceptableAnswers: ["إجابة وهمية", "اجابة وهمية"],
-        hint: "هذا تلميح وهمي لأن الذكاء الاصطناعي ما هو متصل.",
+        hint: "هذا تلميح وهمي.",
+        imageUrl: null,
       };
       return NextResponse.json(mock);
     }
@@ -62,13 +86,15 @@ export async function POST(req: Request) {
 6. لا تستخدم تواريخ بعد ${new Date().getFullYear()}.
 7. أعطِ تلميحاً ذكياً لا يكشف الإجابة لكن يقرّبها.
 8. أعطِ مرادفات مقبولة للإجابة (بدائل صحيحة بنفس المعنى).
+9. اقترح imageQuery مناسب بالإنجليزية (٢-٤ كلمات) لجلب صورة من Pexels تُثري السؤال بصرياً بدون كشف الإجابة.
 
 أعد ردك كـ JSON صرف، بدون markdown ولا تعليقات:
 {
   "text": "نص السؤال",
   "answer": "الإجابة الأساسية",
   "acceptableAnswers": ["الإجابة الأساسية", "بديل مقبول 1", "بديل مقبول 2"],
-  "hint": "تلميح ذكي"
+  "hint": "تلميح ذكي",
+  "imageQuery": "english search query for thematic image"
 }`;
 
     const userPrompt = `الفئة: ${category.name}
@@ -86,7 +112,7 @@ ${
 
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 600,
+      max_tokens: 700,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     });
@@ -103,6 +129,11 @@ ${
     }
 
     const parsed = JSON.parse(jsonMatch[0]) as QuestionResponse;
+
+    // محاولة جلب صورة موضوعية (آمنة، لا تكشف الإجابة)
+    const imageQuery = parsed.imageQuery || category.imageQuery || category.name;
+    parsed.imageUrl = await fetchPexelsImage(imageQuery);
+
     return NextResponse.json(parsed);
   } catch (error) {
     console.error("Question generation error:", error);

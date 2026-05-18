@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/Button";
+import { UserMenu } from "@/components/UserMenu";
 import { useGameStore } from "@/lib/store";
 import { TEAM_COLORS, cn } from "@/lib/utils";
 import { ArrowLeft, ChevronLeft, Users, Brain, Hand, Layers } from "lucide-react";
@@ -35,7 +36,7 @@ export default function SetupPage() {
 
   const handleNext = () => {
     setPhase("categories_a");
-    router.push("/categories");
+    router.push("/pick");
   };
 
   return (
@@ -43,11 +44,14 @@ export default function SetupPage() {
       {/* الهيدر */}
       <header className="px-6 py-5 flex items-center justify-between max-w-7xl mx-auto">
         <Logo size="md" />
-        <Link href="/">
-          <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />}>
-            رجوع
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <UserMenu />
+          <Link href="/">
+            <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />}>
+              رجوع
+            </Button>
+          </Link>
+        </div>
       </header>
 
       <div className="max-w-5xl mx-auto px-6 py-8">

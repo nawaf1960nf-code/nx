@@ -32,7 +32,10 @@ export type CategoryGroup =
   | "cars"
   | "general_culture"
   | "audio_visual"
+  | "party_games"
   | "special_daily";
+
+export type GameMode = "trivia" | "charades";
 
 export interface Category {
   id: string;
@@ -44,6 +47,9 @@ export interface Category {
   hasImages: boolean;
   hasAudio: boolean;
   featured?: boolean;
+  gameMode?: GameMode;
+  gradient: string;
+  imageQuery?: string;
 }
 
 export interface Team {

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/Button";
+import { UserMenu } from "@/components/UserMenu";
 import { Play, Sparkles, Users, Brain } from "lucide-react";
 
 export default function HomePage() {
@@ -11,17 +12,17 @@ export default function HomePage() {
       {/* الهيدر */}
       <header className="px-6 py-5 flex items-center justify-between max-w-7xl mx-auto">
         <Logo size="md" />
-        <nav className="hidden md:flex items-center gap-6 text-ink-600 font-medium">
-          <a href="#features" className="hover:text-primary-500 transition">
-            المميزات
-          </a>
-          <a href="#how" className="hover:text-primary-500 transition">
-            طريقة اللعب
-          </a>
-          <a href="#categories" className="hover:text-primary-500 transition">
-            التصنيفات
-          </a>
-        </nav>
+        <div className="flex items-center gap-5">
+          <nav className="hidden md:flex items-center gap-6 text-ink-600 font-medium">
+            <a href="#features" className="hover:text-primary-500 transition">
+              المميزات
+            </a>
+            <a href="#how" className="hover:text-primary-500 transition">
+              طريقة اللعب
+            </a>
+          </nav>
+          <UserMenu />
+        </div>
       </header>
 
       {/* الهيرو */}
