@@ -26,11 +26,12 @@ interface ParsedCell {
 function parseCellId(cellId: string | null): ParsedCell | null {
   if (!cellId) return null;
   const parts = cellId.split("_");
-  if (parts.length < 2) return null;
-  const lastPart = parts[parts.length - 1];
-  const diff = Number(lastPart);
+  if (parts.length < 3) return null;
+  const idx = Number(parts[parts.length - 1]);
+  const diff = Number(parts[parts.length - 2]);
   if (!diff || ![200, 400, 600].includes(diff)) return null;
-  const categoryId = parts.slice(0, -1).join("_");
+  if (isNaN(idx)) return null;
+  const categoryId = parts.slice(0, -2).join("_");
   return { categoryId, difficulty: diff as QuestionDifficulty };
 }
 
@@ -39,7 +40,7 @@ interface CharadesWord {
   category: string;
   englishName: string;
   imageUrl: string | null;
-  hint?: string;
+  instructions: string;
 }
 
 // التوقيت حسب الصعوبة
@@ -85,14 +86,17 @@ function CharadesScreen() {
       const res = await fetch("/api/charades", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ difficulty: parsed.difficulty }),
+        body: JSON.stringify({
+          difficulty: parsed.difficulty,
+          categoryId: parsed.categoryId,
+        }),
       });
       const data = (await res.json()) as CharadesWord;
       setCurrentWord(data);
 
       // ابنِ URL بطاقة الجوال
       const origin = window.location.origin;
-      const url = `${origin}/card?w=${encodeURIComponent(data.word)}&c=${encodeURIComponent(data.category)}${
+      const url = `${origin}/card?w=${encodeURIComponent(data.word)}&c=${encodeURIComponent(data.category)}&i=${encodeURIComponent(data.instructions)}${
         data.imageUrl ? `&img=${encodeURIComponent(data.imageUrl)}` : ""
       }`;
       setCardUrl(url);

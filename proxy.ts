@@ -5,6 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const PROTECTED_PATHS = [
   "/setup",
   "/pick",
+  "/preload",
   "/game",
   "/question",
   "/charades",

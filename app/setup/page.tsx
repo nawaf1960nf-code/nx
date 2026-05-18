@@ -128,7 +128,7 @@ export default function SetupPage() {
               onClick={() => setJudgingMode("ai")}
               icon={<Brain className="w-5 h-5" />}
               title="ذكاء اصطناعي"
-              desc="Claude يحكم تلقائياً"
+              desc="AI يحكم تلقائياً"
             />
             <JudgeOption
               id="manual"

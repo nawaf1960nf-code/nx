@@ -13,6 +13,7 @@ import { Home, X, ArrowRight } from "lucide-react";
 import type { QuestionDifficulty } from "@/lib/types";
 
 const DIFFICULTIES: QuestionDifficulty[] = [200, 400, 600];
+const QUESTIONS_PER_DIFFICULTY = 2;
 
 export default function GameBoardPage() {
   const router = useRouter();
@@ -35,8 +36,8 @@ export default function GameBoardPage() {
     [teamA.selectedCategories, teamB.selectedCategories],
   );
 
-  // كل تصنيف = ٣ خلايا (٢٠٠، ٤٠٠، ٦٠٠) بدون فصل بين الفريقين
-  const totalCells = allCategories.length * 3;
+  // كل تصنيف = ٦ خلايا (سؤالين لكل صعوبة)
+  const totalCells = allCategories.length * 3 * QUESTIONS_PER_DIFFICULTY;
   const finishedCells = answeredQuestions.length;
 
   useEffect(() => {
@@ -66,8 +67,12 @@ export default function GameBoardPage() {
   const activeColor =
     TEAM_COLORS.find((c) => c.id === activeTeam.color) ?? TEAM_COLORS[0];
 
-  const onCellClick = (categoryId: string, diff: QuestionDifficulty) => {
-    const cellId = `${categoryId}_${diff}`;
+  const onCellClick = (
+    categoryId: string,
+    diff: QuestionDifficulty,
+    idx: number,
+  ) => {
+    const cellId = `${categoryId}_${diff}_${idx}`;
     if (answeredQuestions.includes(cellId)) return;
     setSelectedCell(cellId);
     router.push(`/question?cell=${cellId}`);
@@ -257,14 +262,13 @@ function CategoryCard({
   answeredQuestions: string[];
   activeColor: string;
   coverImage: string | null | undefined;
-  onCellClick: (catId: string, diff: QuestionDifficulty) => void;
+  onCellClick: (catId: string, diff: QuestionDifficulty, idx: number) => void;
 }) {
   const cat = CATEGORY_BY_ID[categoryId];
   if (!cat) return null;
 
   return (
     <div className="bg-white rounded-3xl border-2 border-ink-100 overflow-hidden shadow-sm">
-      {/* رأس البطاقة بصورة + tدرج */}
       <div
         className={cn(
           "relative h-20 md:h-24 flex items-end p-3 overflow-hidden bg-gradient-to-br",
@@ -289,31 +293,35 @@ function CategoryCard({
         </div>
       </div>
 
-      {/* الخلايا */}
-      <div className="p-2 grid grid-cols-3 gap-1.5">
-        {DIFFICULTIES.map((diff) => {
-          const cellId = `${categoryId}_${diff}`;
-          const answered = answeredQuestions.includes(cellId);
-          return (
-            <button
-              key={diff}
-              onClick={() => onCellClick(categoryId, diff)}
-              disabled={answered}
-              className={cn(
-                "py-3 md:py-4 rounded-xl font-black text-base md:text-lg transition-all",
-                "disabled:opacity-25 disabled:cursor-not-allowed disabled:line-through",
-                !answered && "hover:scale-105 active:scale-95 hover:shadow-md",
-              )}
-              style={
-                answered
-                  ? { backgroundColor: "#f4f5f8", color: "#9aa1b8" }
-                  : { backgroundColor: `${activeColor}15`, color: activeColor }
-              }
-            >
-              {formatPoints(diff)}
-            </button>
-          );
-        })}
+      {/* الخلايا: ٣ صفوف × سؤالين لكل صعوبة */}
+      <div className="p-2 space-y-1.5">
+        {DIFFICULTIES.map((diff) => (
+          <div key={diff} className="grid grid-cols-2 gap-1.5">
+            {Array.from({ length: QUESTIONS_PER_DIFFICULTY }).map((_, idx) => {
+              const cellId = `${categoryId}_${diff}_${idx}`;
+              const answered = answeredQuestions.includes(cellId);
+              return (
+                <button
+                  key={idx}
+                  onClick={() => onCellClick(categoryId, diff, idx)}
+                  disabled={answered}
+                  className={cn(
+                    "py-2.5 md:py-3 rounded-xl font-black text-sm md:text-base transition-all",
+                    "disabled:opacity-25 disabled:cursor-not-allowed disabled:line-through",
+                    !answered && "hover:scale-105 active:scale-95 hover:shadow-md",
+                  )}
+                  style={
+                    answered
+                      ? { backgroundColor: "#f4f5f8", color: "#9aa1b8" }
+                      : { backgroundColor: `${activeColor}15`, color: activeColor }
+                  }
+                >
+                  {formatPoints(diff)}
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </div>
     </div>
   );

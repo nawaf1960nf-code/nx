@@ -18,6 +18,60 @@ export const CATEGORIES: Category[] = [
     wikiTitle: "Charades",
     featured: true,
   },
+  {
+    id: "imitation",
+    name: "محاكاة المشاهير",
+    group: "party_games",
+    icon: "🎭",
+    description:
+      "قلّد صوت أو طريقة كلام مشهور (مغني، ممثل، رياضي) والباقي يخمنون.",
+    hasImages: true,
+    hasAudio: false,
+    gameMode: "charades",
+    gradient: "from-violet-500 to-purple-700",
+    wikiTitle: "Impression_(entertainment)",
+    featured: true,
+  },
+  {
+    id: "crazy_challenges",
+    name: "تحديات جنونية",
+    group: "party_games",
+    icon: "🔥",
+    description:
+      "تحدي بدني/طريف للفريق - قف على رجل ٢٠ ثانية، اقفز ١٠ مرات، أو...",
+    hasImages: false,
+    hasAudio: false,
+    gameMode: "charades",
+    gradient: "from-orange-500 to-red-600",
+    wikiTitle: "Challenge",
+    featured: true,
+  },
+  {
+    id: "two_words",
+    name: "احزرني بكلمتين",
+    group: "party_games",
+    icon: "💬",
+    description:
+      "وصف الكلمة باستخدام كلمتين فقط، ممنوع تذكر اسمها أو مرادفاتها.",
+    hasImages: false,
+    hasAudio: false,
+    gameMode: "charades",
+    gradient: "from-cyan-500 to-blue-700",
+    wikiTitle: "Word_game",
+  },
+  {
+    id: "guess_in_room",
+    name: "خمّن مين من الجمعة؟",
+    group: "party_games",
+    icon: "👀",
+    description:
+      "وصف شخص من اللي معاكم بدون ذكر اسمه، الباقي يخمّن.",
+    hasImages: false,
+    hasAudio: false,
+    gameMode: "charades",
+    gradient: "from-yellow-500 to-amber-600",
+    wikiTitle: "Guessing_game",
+  },
 
   // 🎬 أفلام ومسلسلات
   {

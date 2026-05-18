@@ -1,6 +1,13 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { GameState, Team, HookId, Question, JudgingMode } from "./types";
+import type {
+  GameState,
+  Team,
+  HookId,
+  Question,
+  JudgingMode,
+  PreloadedQuestions,
+} from "./types";
 import { TEAM_COLORS, TEAM_AVATARS, TEAM_NAME_PRESETS } from "./utils";
 
 const makeEmptyTeam = (id: "team_a" | "team_b", color: string, avatar: string, defaultName: string): Team => ({
@@ -28,6 +35,7 @@ const INITIAL_STATE: GameState = {
   currentQuestion: null,
   answeredQuestions: [],
   selectedCellId: null,
+  preloadedQuestions: {},
 };
 
 interface GameStore extends GameState {
@@ -58,6 +66,10 @@ interface GameStore extends GameState {
   addScore: (team: "team_a" | "team_b", points: number) => void;
   subtractScore: (team: "team_a" | "team_b", points: number) => void;
   useHook: (team: "team_a" | "team_b", hookId: HookId) => void;
+
+  // تحميل مسبق
+  setPreloadedQuestions: (questions: PreloadedQuestions) => void;
+  clearPreloadedQuestions: () => void;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -167,6 +179,11 @@ export const useGameStore = create<GameStore>()(
             },
           };
         }),
+
+      setPreloadedQuestions: (questions) =>
+        set({ preloadedQuestions: questions }),
+
+      clearPreloadedQuestions: () => set({ preloadedQuestions: {} }),
     }),
     {
       name: "noonaeen-game",

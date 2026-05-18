@@ -103,8 +103,8 @@ export default function PickPage() {
         return;
       }
       await refreshCredits();
-      setPhase("board");
-      router.push("/game");
+      setPhase("preloading");
+      router.push("/preload");
     } finally {
       setStarting(false);
     }

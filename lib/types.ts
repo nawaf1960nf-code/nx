@@ -81,6 +81,7 @@ export interface Question {
   id: string;
   categoryId: string;
   difficulty: QuestionDifficulty;
+  idx: number; // 0 أو 1 لكل صعوبة
   text: string;
   answer: string;
   acceptableAnswers?: string[];
@@ -90,6 +91,9 @@ export interface Question {
   isDailyBonus?: boolean;
 }
 
+// خريطة الأسئلة المُحمّلة مسبقاً مفهرسة بـ cellId
+export type PreloadedQuestions = Record<string, Question>;
+
 export interface GameState {
   phase:
     | "landing"
@@ -98,6 +102,7 @@ export interface GameState {
     | "categories_b"
     | "hooks_a"
     | "hooks_b"
+    | "preloading"
     | "board"
     | "question"
     | "results";
@@ -108,4 +113,5 @@ export interface GameState {
   currentQuestion: Question | null;
   answeredQuestions: string[];
   selectedCellId: string | null;
+  preloadedQuestions: PreloadedQuestions;
 }

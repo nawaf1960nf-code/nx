@@ -11,6 +11,7 @@ function CardView() {
   const word = params.get("w") || "";
   const img = params.get("img") || "";
   const cat = params.get("c") || "";
+  const instructions = params.get("i") || "";
   const [hidden, setHidden] = useState(false);
 
   return (
@@ -50,9 +51,11 @@ function CardView() {
           )}
 
           <div className="text-center">
-            <div className="text-xs text-white/40 font-bold mb-2">
-              مثّل بدون كلام
-            </div>
+            {instructions && (
+              <div className="text-xs text-white/40 font-bold mb-2">
+                {instructions}
+              </div>
+            )}
             <h1 className="text-4xl md:text-6xl font-black mb-4">
               {word}
             </h1>

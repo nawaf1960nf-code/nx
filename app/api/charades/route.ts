@@ -6,6 +6,7 @@ export const runtime = "nodejs";
 
 interface RequestBody {
   difficulty: 200 | 400 | 600;
+  categoryId?: string;
   recentlyAsked?: string[];
 }
 
@@ -14,74 +15,169 @@ interface CharadesResponse {
   category: string;
   englishName: string;
   imageUrl: string | null;
-  hint?: string;
+  instructions: string; // إرشادات للممثل
 }
 
-const DIFFICULTY_GUIDE = {
-  200: "كلمة جداً سهلة، يعرفها الجميع: فاكهة شائعة، حيوان مألوف، أداة منزلية، أو لعبة أطفال.",
-  400: "كلمة متوسطة الصعوبة: مهنة، رياضة، شخصية مشهورة (مغني، ممثل، رياضي)، فيلم شهير، طبق طعام.",
-  600: "كلمة صعبة وفريدة: معلَم سياحي عالمي، عملية/مفهوم، حدث تاريخي، أو ظاهرة طبيعية.",
-} as const;
-
-const CATEGORIES_BY_DIFFICULTY = {
-  200: ["فاكهة", "حيوان", "لعبة أطفال", "أداة منزلية", "رياضة شائعة"],
-  400: ["فيلم شهير", "مغني", "ممثل", "رياضي", "مهنة", "طبق طعام"],
-  600: ["معلَم سياحي", "حدث تاريخي", "اختراع", "ظاهرة طبيعية", "شخصية أدبية"],
+// قواعد التوليد حسب نوع اللعبة
+const GAME_RULES: Record<
+  string,
+  {
+    title: string;
+    instructions: (difficulty: number) => string;
+    examples: { 200: string; 400: string; 600: string };
+    needsImage: boolean;
+    categories: { 200: string[]; 400: string[]; 600: string[] };
+  }
+> = {
+  charades: {
+    title: "اشرح بدون كلام",
+    instructions: () =>
+      "مثّل الكلمة بدون أي صوت أو كلمة. الباقي يخمّنون.",
+    examples: {
+      200: "تمساح، بيتزا، كرة قدم، طائرة",
+      400: "ميسي، عنكبوت سبايدرمان، تحلب بقرة، تشاهد فيلم رعب",
+      600: "برج إيفل، الذكاء الاصطناعي، طبيب يجري عملية، رائد فضاء",
+    },
+    needsImage: true,
+    categories: {
+      200: ["حيوانات مألوفة", "أكلات شائعة", "رياضات", "أدوات يومية", "ألعاب"],
+      400: ["مشاهير معروفين", "أفلام شهيرة", "مهن", "تصرفات يومية مضحكة", "حيوانات تفعل أشياء"],
+      600: ["معالم سياحية عالمية", "مفاهيم مجردة", "شخصيات تاريخية", "اختراعات", "مهن دقيقة"],
+    },
+  },
+  imitation: {
+    title: "محاكاة المشاهير",
+    instructions: () =>
+      "قلّد صوت/طريقة كلام هذا الشخص بدون ذكر اسمه. الباقي يخمّنون.",
+    examples: {
+      200: "محمد عبده، عمرو دياب، فيروز",
+      400: "ميسي، ترامب، عبدالباري عطوان",
+      600: "أينشتاين، شكسبير، نابليون",
+    },
+    needsImage: true,
+    categories: {
+      200: ["مغنين عرب مشهورين", "ممثلين كوميديين"],
+      400: ["رياضيين عالميين", "سياسيين", "إعلاميين"],
+      600: ["شخصيات تاريخية", "علماء", "قادة عسكريين"],
+    },
+  },
+  crazy_challenges: {
+    title: "تحديات جنونية",
+    instructions: () =>
+      "نفّذ هذا التحدي البدني/الطريف أمام الجميع. لو نفذته بنجاح = نقاط كاملة!",
+    examples: {
+      200: "قف على رجل وحدة ٢٠ ثانية، اقفز ١٠ مرات",
+      400: "اقفز ٢٠ مرة ووانت تردّد آية الكرسي، شخبط رسمة بسيطة وانت مغمض",
+      600: "ارقص ٣٠ ثانية بدون موسيقى، اشرب كوب ماء مقلوب على رأسك",
+    },
+    needsImage: false,
+    categories: {
+      200: ["تحديات بدنية سهلة", "تحديات حركية بسيطة"],
+      400: ["تحديات متوسطة", "تحديات تركيز وتوازن"],
+      600: ["تحديات صعبة وطريفة", "تحديات أداء غريبة"],
+    },
+  },
+  two_words: {
+    title: "احزرني بكلمتين",
+    instructions: () =>
+      "وصف الكلمة باستخدام كلمتين فقط (ممنوع ذكر اسمها أو مرادفاتها).",
+    examples: {
+      200: "بحر، نار، كتاب",
+      400: "ساعة ذكية، صديق طفولة",
+      600: "ذكاء اصطناعي، طبق طائر",
+    },
+    needsImage: false,
+    categories: {
+      200: ["أشياء بسيطة", "أماكن مألوفة", "أشياء طبيعية"],
+      400: ["مفاهيم متوسطة", "أشياء مركبة"],
+      600: ["مفاهيم مجردة", "اختراعات حديثة"],
+    },
+  },
+  guess_in_room: {
+    title: "خمّن مين من الجمعة؟",
+    instructions: () =>
+      "هذا تلميح: وصف هذا النوع من الشخصيات اللي قد تكون موجودة في جمعتكم بدون ذكر الاسم.",
+    examples: {
+      200: "صاحبه يضحك على كل نكتة، اللي دايماً ياكل بقهوة",
+      400: "اللي ما يخلص شغله إلا في آخر دقيقة، خبير المسلسلات الكورية",
+      600: "اللي يحفظ أسعار كل شي، الذي يقتنع برأيه ويحاول إقناع الباقي",
+    },
+    needsImage: false,
+    categories: {
+      200: ["شخصية صديق طفولة", "شخصية مرحة"],
+      400: ["شخصية فريدة", "شخصية محبوبة"],
+      600: ["شخصية معقدة", "شخصية خاصة جداً"],
+    },
+  },
 };
+
+const TIME_BY_DIFFICULTY = { 200: 90, 400: 50, 600: 30 } as const;
 
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as RequestBody;
-    const { difficulty, recentlyAsked = [] } = body;
+    const { difficulty, categoryId = "charades", recentlyAsked = [] } = body;
 
+    const rules = GAME_RULES[categoryId] ?? GAME_RULES.charades;
     const anthropic = getAnthropic();
 
     if (!anthropic) {
-      const fallback: CharadesResponse = {
-        word: difficulty === 200 ? "تمساح" : difficulty === 400 ? "ميسي" : "برج إيفل",
-        englishName: difficulty === 200 ? "Crocodile" : difficulty === 400 ? "Lionel Messi" : "Eiffel Tower",
-        category: "حيوانات",
+      return NextResponse.json<CharadesResponse>({
+        word: rules.examples[difficulty].split("،")[0],
+        englishName: "Example",
+        category: rules.title,
+        instructions: rules.instructions(difficulty),
         imageUrl: null,
-        hint: "[وضع تجريبي]",
-      };
-      return NextResponse.json(fallback);
+      });
     }
 
-    const categories = CATEGORIES_BY_DIFFICULTY[difficulty];
+    const systemPrompt = `أنت مولّد محتوى للعبة جماعية عربية اسمها "${rules.title}".
 
-    const systemPrompt = `أنت مولّد كلمات للعبة "اشرح بدون كلام". اللاعب يشوف صورة وكلمة على جواله ويمثّلها بدون كلام، والباقي يخمّنون.
+📋 طبيعة اللعبة:
+${rules.instructions(difficulty)}
 
-📋 القواعد:
-1. أعطِ كلمة واحدة فقط - شي محسوس قابل للتمثيل بصرياً.
-2. الكلمة عربية مفهومة في كل الدول العربية.
-3. تجنّب الكلمات المسيئة أو الحساسة.
-4. تجنّب الكلمات المكررة من القائمة.
-5. أعطِ نسخة إنجليزية / لاتينية للكلمة (للبحث عن صورة).
-6. اختر التصنيف من القائمة المُعطاة.
+🎯 الصعوبة الحالية: ${difficulty}
+${difficulty === 200 ? "(سهل جداً، يعرفه ٩٠٪ من الناس)" : ""}
+${difficulty === 400 ? "(متوسط، يحتاج معرفة جيدة)" : ""}
+${difficulty === 600 ? "(صعب، للمحترفين فقط)" : ""}
+
+⏱️ الوقت المتاح: ${TIME_BY_DIFFICULTY[difficulty]} ثانية
+
+📂 التصنيفات المسموحة لهذي الصعوبة:
+${rules.categories[difficulty].map((c, i) => `${i + 1}. ${c}`).join("\n")}
+
+✨ أمثلة على المستوى المطلوب:
+${rules.examples[difficulty]}
+
+📐 القواعد:
+1. الكلمة/التحدي ممتع ومشوق، يفجّر الضحك أو الحماس.
+2. مناسب للجمعات العائلية والأصدقاء (بدون إساءة).
+3. يتجنب التكرار من القائمة المُعطاة.
+4. إذا كانت اللعبة "تحدي بدني" - يكون قابل للتنفيذ ومضحك.
+5. ${
+      rules.needsImage
+        ? "اذكر اسم بالإنجليزية للبحث عن صورة في ويكيبيديا."
+        : "لا حاجة لاسم إنجليزي."
+    }
 
 أعد JSON صرف فقط:
 {
-  "word": "الكلمة بالعربي",
-  "englishName": "الكلمة بالإنجليزية (للبحث في ويكي)",
-  "category": "التصنيف",
-  "hint": "تلميح اختياري قصير لو احتاج"
+  "word": "${rules.needsImage ? "الكلمة بالعربي" : "نص التحدي/الوصف"}",
+  "englishName": "${rules.needsImage ? "النسخة الإنجليزية للبحث" : "Same"}",
+  "category": "نوع التصنيف اللي اخترته"
 }`;
 
-    const userPrompt = `صعوبة: ${difficulty}
-الوصف: ${DIFFICULTY_GUIDE[difficulty]}
-التصنيفات المسموحة: ${categories.join("، ")}
+    const userPrompt = `أعطني محتوى جديد بصعوبة ${difficulty} - شي ممتع ومثير للضحك.
 
 ${
   recentlyAsked.length > 0
-    ? `كلمات مُستبعدة:\n- ${recentlyAsked.slice(-20).join("\n- ")}`
+    ? `مُستبعد (لا تكرر):\n- ${recentlyAsked.slice(-20).join("\n- ")}`
     : ""
-}
-
-أعطني كلمة واحدة جديدة الآن.`;
+}`;
 
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 250,
+      max_tokens: 300,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     });
@@ -97,15 +193,21 @@ ${
       );
     }
 
-    const parsed = JSON.parse(jsonMatch[0]) as Omit<CharadesResponse, "imageUrl">;
+    const parsed = JSON.parse(jsonMatch[0]) as Omit<
+      CharadesResponse,
+      "imageUrl" | "instructions"
+    >;
 
-    // جلب صورة من ويكي حسب الاسم الإنجليزي
-    const imageUrl = await fetchTopicImage(
-      parsed.englishName,
-      parsed.word,
-    );
+    let imageUrl: string | null = null;
+    if (rules.needsImage && parsed.englishName) {
+      imageUrl = await fetchTopicImage(parsed.englishName, parsed.word);
+    }
 
-    return NextResponse.json({ ...parsed, imageUrl });
+    return NextResponse.json<CharadesResponse>({
+      ...parsed,
+      imageUrl,
+      instructions: rules.instructions(difficulty),
+    });
   } catch (error) {
     console.error("Charades generation error:", error);
     return NextResponse.json(

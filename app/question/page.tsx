@@ -24,19 +24,23 @@ import type { QuestionDifficulty, HookId } from "@/lib/types";
 interface ParsedCell {
   categoryId: string;
   difficulty: QuestionDifficulty;
+  idx: number;
 }
 
 function parseCellId(cellId: string | null): ParsedCell | null {
   if (!cellId) return null;
   const parts = cellId.split("_");
-  if (parts.length < 2) return null;
-  const lastPart = parts[parts.length - 1];
-  const diff = Number(lastPart);
+  // التنسيق الجديد: categoryId_diff_idx (مثال: one_piece_400_1)
+  if (parts.length < 3) return null;
+  const idx = Number(parts[parts.length - 1]);
+  const diff = Number(parts[parts.length - 2]);
   if (!diff || ![200, 400, 600].includes(diff)) return null;
-  const categoryId = parts.slice(0, -1).join("_");
+  if (isNaN(idx)) return null;
+  const categoryId = parts.slice(0, -2).join("_");
   return {
     categoryId,
     difficulty: diff as QuestionDifficulty,
+    idx,
   };
 }
 
@@ -76,6 +80,7 @@ function QuestionScreen() {
   const useHookStore = useGameStore((s) => s.useHook);
   const markQuestionAnswered = useGameStore((s) => s.markQuestionAnswered);
   const setCurrentTurn = useGameStore((s) => s.setCurrentTurn);
+  const preloadedQuestions = useGameStore((s) => s.preloadedQuestions);
 
   const [questionData, setQuestionData] = useState<QuestionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -110,7 +115,20 @@ function QuestionScreen() {
   const isDoubleAnswer = activeHooks.includes("double_answer");
 
   const fetchQuestion = useCallback(async () => {
-    if (!parsed) return;
+    if (!parsed || !cellId) return;
+    // أولاً: تحقق من الأسئلة المحملة مسبقاً
+    const preloaded = preloadedQuestions[cellId];
+    if (preloaded) {
+      setQuestionData({
+        text: preloaded.text,
+        answer: preloaded.answer,
+        acceptableAnswers: preloaded.acceptableAnswers ?? [],
+        hint: preloaded.hint ?? "",
+      });
+      setLoading(false);
+      return;
+    }
+    // احتياطي: جلب من API لو ما كان محملاً
     setLoading(true);
     try {
       const res = await fetch("/api/question", {
@@ -126,7 +144,7 @@ function QuestionScreen() {
     } finally {
       setLoading(false);
     }
-  }, [parsed]); // eslint-disable-line
+  }, [parsed, cellId, preloadedQuestions]); // eslint-disable-line
 
   useEffect(() => {
     fetchQuestion();
