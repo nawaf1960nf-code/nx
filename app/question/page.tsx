@@ -365,23 +365,23 @@ function QuestionScreen() {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-6">
+      <div className="max-w-3xl mx-auto px-5 py-5">
         {/* شريط معلومات */}
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <div className="text-3xl">{cat?.icon}</div>
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <div className="text-2xl">{cat?.icon}</div>
             <div>
-              <div className="text-xs text-ink-500 font-bold">الفئة</div>
-              <div className="font-black text-lg">{cat?.name}</div>
+              <div className="text-[10px] text-ink-400 font-bold uppercase">الفئة</div>
+              <div className="font-bold text-sm">{cat?.name}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {isMultiplier && (
-              <div className="bg-gold-500 text-ink-900 px-3 py-1 rounded-full font-black text-sm flex items-center gap-1 animate-pulse">
-                <Sparkles className="w-4 h-4" />×٣ مضاعف
+              <div className="bg-gold-500 text-ink-900 px-2.5 py-1 rounded-full font-black text-xs flex items-center gap-1 animate-pulse">
+                <Sparkles className="w-3 h-3" />×٣
               </div>
             )}
-            <div className="bg-gold-500/15 text-gold-600 px-4 py-2 rounded-full font-black text-lg">
+            <div className="bg-gold-500/15 text-gold-700 px-3 py-1.5 rounded-full font-black text-sm">
               {formatPoints(effectivePoints)} نقطة
             </div>
           </div>
@@ -389,18 +389,18 @@ function QuestionScreen() {
 
         {/* قدرات نشطة */}
         {activeHooks.length > 0 && (
-          <div className="bg-gold-500/10 border-2 border-gold-500/30 rounded-2xl p-3 mb-4">
-            <div className="text-xs font-bold text-gold-700 mb-2">
-              ✨ القدرات النشطة:
+          <div className="bg-gold-500/10 border border-gold-500/30 rounded-xl p-2.5 mb-3">
+            <div className="text-[10px] font-bold text-gold-700 mb-1.5 uppercase">
+              القدرات النشطة
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {activeHooks.map((hookId) => {
                 const h = HOOK_BY_ID[hookId];
                 if (!h) return null;
                 return (
                   <span
                     key={hookId}
-                    className="bg-white border border-gold-500/40 rounded-full px-2.5 py-1 text-xs font-bold flex items-center gap-1"
+                    className="bg-white border border-gold-500/40 rounded-full px-2 py-0.5 text-[11px] font-bold flex items-center gap-1"
                   >
                     {h.icon} {h.name}
                   </span>
@@ -411,10 +411,10 @@ function QuestionScreen() {
         )}
 
         {/* الدور والمؤقت */}
-        <div className="bg-white rounded-3xl border-2 border-ink-100 p-4 mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="bg-white rounded-2xl border border-ink-100 p-3 mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
             <span
-              className="w-3 h-3 rounded-full"
+              className="w-2.5 h-2.5 rounded-full"
               style={{
                 backgroundColor:
                   stage === "stealing"
@@ -423,47 +423,47 @@ function QuestionScreen() {
               }}
             />
             <div>
-              <div className="text-xs text-ink-500 font-bold">
-                {stage === "stealing" ? "محاولة الفريق الثاني" : "دور"}
+              <div className="text-[10px] text-ink-400 font-bold uppercase">
+                {stage === "stealing" ? "محاولة الفريق الثاني" : "الدور"}
               </div>
-              <div className="font-black text-lg">
+              <div className="font-bold text-sm">
                 {stage === "stealing" ? otherTeam.name : activeTeam.name}
               </div>
             </div>
           </div>
           <div
             className={cn(
-              "px-5 py-3 rounded-2xl flex items-center gap-2 font-black text-2xl tabular-nums transition",
+              "px-4 py-2 rounded-xl flex items-center gap-1.5 font-black text-xl tabular-nums transition",
               timeBg,
               timeColor,
             )}
           >
-            <Clock className="w-5 h-5" />
+            <Clock className="w-4 h-4" />
             {String(Math.floor(timeLeft / 60)).padStart(2, "0")}:
             {String(timeLeft % 60).padStart(2, "0")}
           </div>
         </div>
 
         {/* بطاقة السؤال */}
-        <div className="bg-white rounded-3xl border-2 border-ink-100 overflow-hidden mb-4 min-h-[280px]">
-          <div className="p-6 md:p-10 flex items-center justify-center text-center">
+        <div className="bg-white rounded-2xl border border-ink-100 overflow-hidden mb-3 min-h-[200px]">
+          <div className="p-5 md:p-8 flex items-center justify-center text-center">
             {loading || switching ? (
-              <div className="flex flex-col items-center gap-3 text-ink-500">
-                <Loader2 className="w-10 h-10 animate-spin text-primary-500" />
-                <p className="font-bold">
+              <div className="flex flex-col items-center gap-2.5 text-ink-500">
+                <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+                <p className="font-bold text-sm">
                   {switching ? "جاري تبديل السؤال…" : "جارٍ توليد السؤال…"}
                 </p>
               </div>
             ) : stage === "reveal" || stage === "judged" ? (
-              <div className="space-y-6 w-full">
-                <p className="text-lg md:text-2xl font-bold text-ink-700 leading-relaxed">
+              <div className="space-y-4 w-full">
+                <p className="text-base md:text-lg font-medium text-ink-700 leading-relaxed">
                   {questionData?.text}
                 </p>
-                <div className="bg-primary-50 border-2 border-primary-200 rounded-2xl p-5">
-                  <div className="text-sm text-primary-700 font-bold mb-1">
+                <div className="bg-primary-50 border border-primary-200 rounded-xl p-4">
+                  <div className="text-[10px] text-primary-700 font-bold mb-1 uppercase">
                     الإجابة الصحيحة
                   </div>
-                  <div className="text-2xl md:text-3xl font-black text-primary-900">
+                  <div className="text-xl md:text-2xl font-black text-primary-900">
                     {questionData?.answer}
                   </div>
                 </div>
@@ -494,7 +494,7 @@ function QuestionScreen() {
                 )}
               </div>
             ) : (
-              <p className="text-2xl md:text-4xl font-bold text-ink-800 leading-relaxed">
+              <p className="text-xl md:text-2xl font-bold text-ink-800 leading-relaxed">
                 {questionData?.text}
               </p>
             )}
@@ -503,18 +503,18 @@ function QuestionScreen() {
 
         {/* التلميح */}
         {!loading && !switching && stage === "answering" && (
-          <div className="mb-4">
+          <div className="mb-3">
             {!showHint ? (
               <button
                 onClick={() => setShowHint(true)}
-                className="text-warn-500 font-bold hover:underline flex items-center gap-2 mx-auto"
+                className="text-warn-500 text-sm font-bold hover:underline flex items-center gap-1.5 mx-auto"
               >
-                <Lightbulb className="w-4 h-4" />
+                <Lightbulb className="w-3.5 h-3.5" />
                 إظهار تلميح
               </button>
             ) : (
-              <div className="bg-warn-500/10 border-2 border-warn-500/30 rounded-2xl p-4 text-warn-500 font-bold flex items-start gap-2">
-                <Lightbulb className="w-5 h-5 shrink-0 mt-0.5" />
+              <div className="bg-warn-500/10 border border-warn-500/30 rounded-xl p-3 text-warn-700 text-sm font-medium flex items-start gap-2">
+                <Lightbulb className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{questionData?.hint}</span>
               </div>
             )}
@@ -525,11 +525,11 @@ function QuestionScreen() {
         {!loading &&
           !switching &&
           (stage === "answering" || stage === "stealing") && (
-            <div className="bg-white rounded-3xl border-2 border-ink-100 p-6">
-              <label className="block text-sm font-bold text-ink-500 mb-2">
+            <div className="bg-white rounded-2xl border border-ink-100 p-4">
+              <label className="block text-xs font-bold text-ink-500 mb-2">
                 {stage === "stealing"
-                  ? `${otherTeam.name} - حاول الإجابة`
-                  : `${activeTeam.name} - اكتب إجابتك`}
+                  ? `${otherTeam.name} — حاول الإجابة`
+                  : `${activeTeam.name} — اكتب إجابتك`}
               </label>
               <input
                 type="text"
@@ -539,27 +539,27 @@ function QuestionScreen() {
                     ? setStealAnswer(e.target.value)
                     : setUserAnswer(e.target.value)
                 }
-                className="w-full px-5 py-4 border-2 border-ink-200 rounded-2xl text-xl font-bold focus:border-primary-500 focus:outline-none mb-3"
+                className="w-full px-4 py-3 border-2 border-ink-200 rounded-xl text-base font-bold focus:border-primary-500 focus:outline-none mb-2.5"
                 placeholder="اكتب الإجابة..."
                 autoFocus
               />
               {isDoubleAnswer && stage === "answering" && (
                 <>
-                  <label className="block text-sm font-bold text-ink-500 mb-2">
+                  <label className="block text-xs font-bold text-ink-500 mb-2">
                     الإجابة الثانية (جاوب جوابين)
                   </label>
                   <input
                     type="text"
                     value={userAnswer2}
                     onChange={(e) => setUserAnswer2(e.target.value)}
-                    className="w-full px-5 py-4 border-2 border-blue-200 bg-blue-50/50 rounded-2xl text-xl font-bold focus:border-blue-500 focus:outline-none mb-3"
+                    className="w-full px-4 py-3 border-2 border-blue-200 bg-blue-50/50 rounded-xl text-base font-bold focus:border-blue-500 focus:outline-none mb-2.5"
                     placeholder="بديل للإجابة الأولى..."
                   />
                 </>
               )}
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <Button
-                  size="lg"
+                  size="md"
                   className="flex-1"
                   disabled={
                     judging ||
@@ -578,7 +578,7 @@ function QuestionScreen() {
                   تأكيد الإجابة
                 </Button>
                 <Button
-                  size="lg"
+                  size="md"
                   variant="secondary"
                   onClick={() => handleTimeUp()}
                 >
@@ -593,25 +593,25 @@ function QuestionScreen() {
           stage === "reveal" &&
           settings.judgingMode === "manual" &&
           judgment && (
-            <div className="bg-white rounded-3xl border-2 border-ink-100 p-6">
-              <div className="text-center mb-4 font-bold">
+            <div className="bg-white rounded-2xl border border-ink-100 p-4">
+              <div className="text-center mb-3 text-sm font-bold">
                 هل إجابة{" "}
                 {judgment.forTeam === "team_a" ? teamA.name : teamB.name} صحيحة؟
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <Button
-                  size="lg"
+                  size="md"
                   variant="danger"
                   className="flex-1"
-                  icon={<X className="w-5 h-5" />}
+                  icon={<X className="w-4 h-4" />}
                   onClick={() => handleManualJudge(false)}
                 >
                   خطأ
                 </Button>
                 <Button
-                  size="lg"
+                  size="md"
                   className="flex-1"
-                  icon={<Check className="w-5 h-5" />}
+                  icon={<Check className="w-4 h-4" />}
                   onClick={() => handleManualJudge(true)}
                 >
                   صحيح
@@ -625,7 +625,7 @@ function QuestionScreen() {
           stage === "reveal" &&
           settings.judgingMode !== "manual" && (
             <div className="text-center">
-              <Button size="lg" onClick={handleAutoFinish}>
+              <Button size="md" onClick={handleAutoFinish}>
                 التالي
               </Button>
             </div>
@@ -657,11 +657,11 @@ function HooksRow({
   onUseHook: (hookId: HookId) => void;
 }) {
   return (
-    <div className="mt-6">
-      <div className="text-sm font-bold text-ink-500 mb-3 text-center">
+    <div className="mt-4">
+      <div className="text-[10px] font-bold text-ink-400 mb-2 text-center uppercase tracking-wider">
         قدرات {team.name}
       </div>
-      <div className="flex gap-2 flex-wrap justify-center">
+      <div className="flex gap-1.5 flex-wrap justify-center">
         {team.hooks.map((hookId) => {
           const hook = HOOK_BY_ID[hookId];
           if (!hook) return null;
@@ -679,18 +679,18 @@ function HooksRow({
               disabled={!available}
               onClick={() => onUseHook(hookId)}
               className={cn(
-                "px-4 py-3 rounded-2xl border-2 font-bold flex items-center gap-2 transition",
+                "px-3 py-2 rounded-xl border font-bold flex items-center gap-1.5 transition text-xs",
                 active
-                  ? "border-gold-500 bg-gold-500/10 shadow-md"
+                  ? "border-gold-500 bg-gold-500/10 shadow-sm"
                   : !available
                     ? "opacity-30 grayscale cursor-not-allowed border-ink-100"
                     : "border-ink-200 hover:border-ink-400 hover:scale-105 bg-white",
               )}
             >
-              <span className="text-2xl">{hook.icon}</span>
-              <span className="text-sm">{hook.name}</span>
+              <span className="text-base">{hook.icon}</span>
+              <span>{hook.name}</span>
               {active && (
-                <span className="text-xs bg-gold-500 text-white px-2 py-0.5 rounded-full">
+                <span className="text-[9px] bg-gold-500 text-white px-1.5 py-0.5 rounded-full">
                   نشطة
                 </span>
               )}

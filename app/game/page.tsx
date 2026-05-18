@@ -104,23 +104,23 @@ export default function GameBoardPage() {
       </header>
 
       {/* مؤشر الدور البارز */}
-      <div className="max-w-7xl mx-auto px-6 mb-4">
+      <div className="max-w-7xl mx-auto px-6 mb-3">
         <div
-          className="rounded-3xl p-4 flex items-center justify-between shadow-lg"
+          className="rounded-2xl px-4 py-2.5 flex items-center justify-between shadow-md"
           style={{
             backgroundColor: activeColor.hex,
           }}
         >
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
             <div>
-              <div className="text-white/80 text-xs font-bold">دور الآن</div>
-              <div className="text-white text-xl md:text-2xl font-black">
+              <div className="text-white/70 text-[10px] font-bold uppercase tracking-wider">دور</div>
+              <div className="text-white text-base font-bold">
                 {activeTeam.name}
               </div>
             </div>
           </div>
-          <ArrowRight className="w-6 h-6 text-white/50 animate-bounce" />
+          <ArrowRight className="w-4 h-4 text-white/40 animate-bounce" />
         </div>
       </div>
 
@@ -199,19 +199,19 @@ function TeamBar({
   return (
     <div
       className={cn(
-        "rounded-2xl p-3 md:p-4 transition-all",
-        active ? "shadow-xl scale-[1.02]" : "opacity-80",
+        "rounded-xl p-2.5 transition-all",
+        active ? "shadow-md" : "opacity-80",
       )}
       style={{
         backgroundColor: active ? color.hex : "white",
-        border: `2px solid ${color.hex}`,
+        border: `1.5px solid ${color.hex}`,
       }}
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <div
             className={cn(
-              "w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-2xl md:text-3xl shrink-0",
+              "w-9 h-9 rounded-lg flex items-center justify-center text-xl shrink-0",
               active ? "bg-white/20" : "",
             )}
             style={active ? undefined : { backgroundColor: `${color.hex}20` }}
@@ -221,15 +221,15 @@ function TeamBar({
           <div className="min-w-0">
             <div
               className={cn(
-                "text-[10px] md:text-xs font-bold mb-0.5 truncate",
-                active ? "text-white/80" : "text-ink-500",
+                "text-[9px] font-bold mb-0.5 truncate uppercase tracking-wider",
+                active ? "text-white/70" : "text-ink-400",
               )}
             >
               {active ? "يلعب الآن" : "بانتظار"}
             </div>
             <div
               className={cn(
-                "text-sm md:text-lg font-black truncate",
+                "text-sm font-bold truncate",
                 active ? "text-white" : "text-ink-800",
               )}
             >
@@ -239,7 +239,7 @@ function TeamBar({
         </div>
         <div
           className={cn(
-            "text-xl md:text-3xl font-black tabular-nums shrink-0",
+            "text-xl font-black tabular-nums shrink-0",
             active ? "text-white" : "",
           )}
           style={active ? undefined : { color: color.hex }}

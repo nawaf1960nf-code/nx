@@ -13,19 +13,19 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    "bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white shadow-lg shadow-primary-500/25",
+    "bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white shadow-md shadow-primary-500/20",
   secondary:
-    "bg-white hover:bg-ink-50 text-ink-800 border-2 border-ink-200 hover:border-ink-300",
+    "bg-white hover:bg-ink-50 text-ink-800 border border-ink-200 hover:border-ink-300",
   ghost: "bg-transparent hover:bg-ink-100 text-ink-700",
-  danger: "bg-danger-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/25",
-  gold: "bg-gold-500 hover:bg-gold-600 text-ink-900 shadow-lg shadow-yellow-400/30",
+  danger: "bg-danger-500 hover:bg-red-600 text-white shadow-md shadow-red-500/20",
+  gold: "bg-gold-500 hover:bg-gold-600 text-ink-900 shadow-md shadow-yellow-400/20",
 };
 
 const SIZES: Record<Size, string> = {
-  sm: "px-3 py-1.5 text-sm rounded-lg",
-  md: "px-5 py-2.5 text-base rounded-xl",
-  lg: "px-7 py-3.5 text-lg rounded-2xl",
-  xl: "px-10 py-4 text-xl rounded-2xl",
+  sm: "px-3 py-1.5 text-xs rounded-lg",
+  md: "px-4 py-2 text-sm rounded-xl",
+  lg: "px-6 py-2.5 text-sm rounded-xl",
+  xl: "px-8 py-3 text-base rounded-2xl",
 };
 
 export function Button({
@@ -52,7 +52,7 @@ export function Button({
       {...props}
     >
       {loading ? (
-        <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+        <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
       ) : (
         icon
       )}
