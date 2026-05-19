@@ -6,7 +6,6 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/Button";
 import { useGameStore } from "@/lib/store";
 import { TEAM_COLORS, cn, formatPoints } from "@/lib/utils";
-import { speak } from "@/lib/speech";
 import { Trophy, RotateCw, Home, Crown, Sparkles } from "lucide-react";
 
 const CONFETTI_COLORS = [
@@ -37,17 +36,6 @@ export default function ResultsPage() {
     const t = setTimeout(() => setRevealed(true), 800);
     return () => clearTimeout(t);
   }, [mounted]);
-
-  // إعلان صوتي عند ظهور الفائز
-  useEffect(() => {
-    if (!revealed || !mounted) return;
-    if (winner) {
-      const msg = `مبروووك الفوز لفريق ${winner.name}!`;
-      const t = setTimeout(() => speak(msg, { rate: 0.85, pitch: 1.1 }), 500);
-      return () => clearTimeout(t);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [revealed, mounted]);
 
   if (!mounted) return null;
 

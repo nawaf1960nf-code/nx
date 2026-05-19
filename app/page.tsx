@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/Button";
 import { UserMenu } from "@/components/UserMenu";
-import { Play, Sparkles, Users, Brain, Zap } from "lucide-react";
+import { Play, Users, Brain, Zap } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -27,11 +27,6 @@ export default function HomePage() {
 
       {/* الهيرو */}
       <section className="max-w-4xl mx-auto px-6 pt-14 pb-20 text-center">
-        <div className="inline-flex items-center gap-2 bg-primary-50 text-primary-700 px-3 py-1.5 rounded-full font-bold text-xs mb-6 animate-float-up">
-          <Sparkles className="w-3.5 h-3.5" />
-          أسئلة جديدة بالذكاء الاصطناعي كل مرة
-        </div>
-
         <div className="mb-5 animate-float-up">
           <Logo size="lg" />
         </div>

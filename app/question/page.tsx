@@ -8,8 +8,6 @@ import { useGameStore } from "@/lib/store";
 import { CATEGORY_BY_ID } from "@/lib/categories-data";
 import { HOOK_BY_ID } from "@/lib/hooks-data";
 import { TEAM_COLORS, cn, formatPoints } from "@/lib/utils";
-import { speak, stopSpeaking, isSupported } from "@/lib/speech";
-import { Volume2, VolumeX } from "lucide-react";
 import {
   Clock,
   Loader2,
@@ -149,23 +147,6 @@ function QuestionScreen() {
   useEffect(() => {
     fetchQuestion();
   }, [parsed?.categoryId, parsed?.difficulty]); // eslint-disable-line
-
-  // الراوي الصوتي: يقرأ السؤال تلقائياً لما يجي
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
-  useEffect(() => {
-    if (!questionData || loading || switching) return;
-    if (stage !== "answering") return;
-    if (!voiceEnabled || !isSupported()) return;
-    // تأخير صغير قبل القراءة
-    const t = setTimeout(() => speak(questionData.text), 600);
-    return () => {
-      clearTimeout(t);
-      stopSpeaking();
-    };
-  }, [questionData, loading, switching, voiceEnabled, stage]);
-
-  // أوقف الصوت عند المغادرة
-  useEffect(() => () => stopSpeaking(), []);
 
   // مؤقت العد
   useEffect(() => {
@@ -346,23 +327,6 @@ function QuestionScreen() {
       <header className="px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
         <Logo size="sm" />
         <div className="flex items-center gap-2">
-          {isSupported() && (
-            <button
-              onClick={() => {
-                setVoiceEnabled((v) => !v);
-                if (voiceEnabled) stopSpeaking();
-                else if (questionData) speak(questionData.text);
-              }}
-              className="w-10 h-10 rounded-full bg-white border-2 border-ink-200 hover:border-ink-400 flex items-center justify-center transition"
-              title={voiceEnabled ? "أوقف الراوي" : "شغّل الراوي"}
-            >
-              {voiceEnabled ? (
-                <Volume2 className="w-4 h-4 text-primary-600" />
-              ) : (
-                <VolumeX className="w-4 h-4 text-ink-400" />
-              )}
-            </button>
-          )}
           <Button
             variant="ghost"
             size="sm"

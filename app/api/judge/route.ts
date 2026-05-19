@@ -16,6 +16,56 @@ interface JudgeResponse {
   feedback: string;
 }
 
+/**
+ * تحقق محلي صارم بناءً على مسافة Levenshtein.
+ * يقبل فقط الإجابات اللي تطابق الصحيحة (أو أحد بدائلها) مع فروق إملائية بسيطة.
+ */
+function isCloseMatch(user: string, target: string): boolean {
+  const u = normalize(user);
+  const t = normalize(target);
+  if (!u || !t) return false;
+  if (u === t) return true;
+
+  // طول مختلف بأكثر من ٢٠٪ = إجابة مختلفة
+  const lenDiff = Math.abs(u.length - t.length);
+  const maxLen = Math.max(u.length, t.length);
+  if (maxLen > 0 && lenDiff / maxLen > 0.25) return false;
+
+  // مسافة Levenshtein
+  const dist = levenshtein(u, t);
+
+  // اقبل فقط لو الفرق صغير جداً نسبة لطول الإجابة:
+  // - كلمة قصيرة (≤ 4 أحرف): فرق حرف واحد كحد أقصى
+  // - كلمة متوسطة (5-8 أحرف): فرقين كحد أقصى
+  // - كلمة طويلة (> 8 أحرف): فرق ١٠٪ كحد أقصى
+  const allowed = t.length <= 4 ? 1 : t.length <= 8 ? 2 : Math.floor(t.length * 0.15);
+  return dist <= allowed;
+}
+
+function levenshtein(a: string, b: string): number {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+
+  const m = a.length;
+  const n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () =>
+    new Array(n + 1).fill(0),
+  );
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1, // حذف
+        dp[i][j - 1] + 1, // إضافة
+        dp[i - 1][j - 1] + cost, // إبدال
+      );
+    }
+  }
+  return dp[m][n];
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as JudgeRequest;
@@ -30,67 +80,72 @@ export async function POST(req: Request) {
       });
     }
 
-    const allAcceptable = [correctAnswer, ...acceptableAnswers].map((a) =>
-      normalize(a),
-    );
-    const normalizedUser = normalize(userAnswer);
+    const allAcceptable = [correctAnswer, ...acceptableAnswers];
 
-    // التحقق السريع المحلي (يكفي في ٨٠٪ من الحالات)
-    if (allAcceptable.some((a) => a === normalizedUser)) {
+    // التحقق المحلي الصارم - يكفي في معظم الحالات
+    const localMatch = allAcceptable.some((target) =>
+      isCloseMatch(userAnswer, target),
+    );
+
+    if (localMatch) {
       return NextResponse.json<JudgeResponse>({
         isCorrect: true,
         confidence: 1,
-        feedback: "إجابة صحيحة تماماً!",
+        feedback: "إجابة صحيحة!",
       });
-    }
-
-    // تحقق جزئي للكلمات الواضحة
-    for (const ans of allAcceptable) {
-      if (ans.length > 4 && normalizedUser.length > 3) {
-        if (ans.includes(normalizedUser) || normalizedUser.includes(ans)) {
-          // يحتاج تأكيد من الذكاء الاصطناعي
-          break;
-        }
-      }
     }
 
     const anthropic = getAnthropic();
 
-    // وضع التطوير بدون مفتاح: نعتمد فقط على المطابقة المحلية
+    // بدون مفتاح AI: نرفض كل ما لا يطابق محلياً
     if (!anthropic) {
       return NextResponse.json<JudgeResponse>({
         isCorrect: false,
-        confidence: 0.5,
-        feedback: "[وضع تجريبي] الجواب لا يطابق الإجابة المتوقعة.",
+        confidence: 1,
+        feedback: "الإجابة غير صحيحة.",
       });
     }
 
-    const systemPrompt = `أنت حكَم عادل في لعبة سؤال وجواب عربية. مهمتك تقييم إجابة لاعب بصدق ودقة.
+    // مع AI: نسأل عن المرادفات فقط (لا نقبل كلمات مختلفة)
+    const systemPrompt = `أنت حكَم صارم في لعبة سؤال وجواب عربية. مهمتك تحديد إذا كانت إجابة اللاعب هي **نفس** الإجابة الصحيحة (أو شكل آخر للكتابة فقط).
 
-قواعد التحكيم:
-1. اقبل المرادفات والصياغات المختلفة للإجابة الصحيحة.
-2. اقبل الإجابات بأخطاء إملائية بسيطة (حرف أو اثنين).
-3. ارفض الإجابات الناقصة أو غير الدقيقة.
-4. ارفض الإجابات اللي تذكر معلومة جانبية بدون الإجابة الفعلية.
-5. كن صارماً في الأسماء (شخصيات، أماكن) لكن مرناً في الصياغة.
+🚨 قواعد صارمة:
+1. **اقبل** الإجابة فقط إذا كانت:
+   - نفس الكلمة بشكل مختلف (إملاء/مرادف صحيح ١٠٠٪)
+   - مثال: "ميسي" = "Messi" = "ليونيل ميسي"
+   - مثال: "أمريكا" = "الولايات المتحدة"
+   - مثال: "البحرين" مكتوبة "بحرين" (بدون ال)
 
-أعد ردك كـ JSON صرف:
+2. **ارفض** الإجابة إذا كانت:
+   - كلمة مختلفة تماماً عن الصحيحة (حتى لو متعلقة بالموضوع)
+   - مفهوم قريب لكن ليس نفس الإجابة
+   - معلومة عن نفس الموضوع لكن ليست الجواب
+   - مثال: السؤال "اسم دمية رولز رويس؟" الجواب "روح النشوة"
+     ❌ "الملاك" - مرفوضة (كلمة مختلفة)
+     ❌ "تمثال" - مرفوضة (وصف عام)
+     ✅ "روح النشوة" أو "Spirit of Ecstasy"
+
+3. **انتبه:** إجابتك المرجعية هي القيمة المُعطاة في "correctAnswer" والبدائل في "acceptableAnswers". ما عداهما = رفض.
+
+4. **لا تستنتج** أو تفسّر بشكل واسع. كن دقيقاً.
+
+أعد ردك كـ JSON صرف فقط:
 {
   "isCorrect": true/false,
   "confidence": 0.0-1.0,
-  "feedback": "تعليق قصير ودود (سطر واحد)"
+  "feedback": "سطر واحد قصير - تعليق مختصر"
 }`;
 
     const userPrompt = `السؤال: ${question}
 الإجابة الصحيحة: ${correctAnswer}
-البدائل المقبولة: ${acceptableAnswers.join(" / ") || "لا يوجد"}
+البدائل المقبولة: ${acceptableAnswers.length > 0 ? acceptableAnswers.join(" / ") : "(لا يوجد بدائل)"}
 إجابة اللاعب: ${userAnswer}
 
-هل إجابة اللاعب صحيحة؟`;
+هل إجابة اللاعب هي **نفس** الإجابة الصحيحة (أو شكل آخر لكتابتها فقط)؟`;
 
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 300,
+      max_tokens: 250,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     });
@@ -103,7 +158,7 @@ export async function POST(req: Request) {
       return NextResponse.json<JudgeResponse>({
         isCorrect: false,
         confidence: 0.5,
-        feedback: "لم نتمكن من التحكيم تلقائياً، راجع المضيف.",
+        feedback: "تعذّر التحكيم، اعتبرها غلط.",
       });
     }
 
@@ -114,7 +169,7 @@ export async function POST(req: Request) {
     return NextResponse.json<JudgeResponse>({
       isCorrect: false,
       confidence: 0,
-      feedback: "حدث خطأ في التحكيم، حاول مرة ثانية.",
+      feedback: "حدث خطأ في التحكيم.",
     });
   }
 }
@@ -124,9 +179,12 @@ function normalize(s: string): string {
     .trim()
     .toLowerCase()
     .replace(/[ًٌٍَُِّْ]/g, "") // تشكيل
+    .replace(/ـ/g, "") // تطويل
     .replace(/[إأآ]/g, "ا")
     .replace(/[ىي]/g, "ي")
     .replace(/ة/g, "ه")
-    .replace(/[^؀-ۿݐ-ݿ\w\s]/g, "")
-    .replace(/\s+/g, " ");
+    .replace(/^ال/, "") // ال التعريف في البداية
+    .replace(/[^؀-ۿݐ-ݿa-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
