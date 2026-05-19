@@ -130,4 +130,5 @@ export interface GameState {
   answeredQuestions: string[];
   selectedCellId: string | null;
   preloadedQuestions: PreloadedQuestions;
+  sessionCode: string | null;
 }

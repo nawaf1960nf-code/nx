@@ -54,6 +54,21 @@ CREATE TABLE IF NOT EXISTS public.game_history (
   completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ===== جلسات المشاركة المباشرة =====
+CREATE TABLE IF NOT EXISTS public.game_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code TEXT UNIQUE NOT NULL,
+  host_user_id UUID REFERENCES auth.users(id),
+  state JSONB NOT NULL DEFAULT '{}'::jsonb,
+  watcher_count INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + interval '6 hours')
+);
+
+CREATE INDEX IF NOT EXISTS idx_game_sessions_code ON public.game_sessions(code);
+CREATE INDEX IF NOT EXISTS idx_game_sessions_expires ON public.game_sessions(expires_at);
+
 -- ============================================
 -- Triggers
 -- ============================================
@@ -110,6 +125,11 @@ CREATE POLICY "Users read own redemptions" ON public.code_redemptions
 DROP POLICY IF EXISTS "Users read own games" ON public.game_history;
 CREATE POLICY "Users read own games" ON public.game_history
   FOR SELECT USING (auth.uid() = user_id);
+
+-- جلسات اللعب (قراءة عامة، تعديل عبر service_role فقط)
+DROP POLICY IF EXISTS "Anyone can read sessions" ON public.game_sessions;
+CREATE POLICY "Anyone can read sessions" ON public.game_sessions
+  FOR SELECT USING (TRUE);
 
 -- لا يوجد وصول مباشر للأكواد من العميل (السيرفر فقط)
 -- (لا نضيف policy → بدون policy = ممنوع كل شي عبر anon key)

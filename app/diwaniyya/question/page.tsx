@@ -56,6 +56,7 @@ function DiwaniyyaQuestion() {
   const markQuestionAnswered = useGameStore((s) => s.markQuestionAnswered);
   const answered = useGameStore((s) => s.answeredQuestions);
   const nextPlayer = useGameStore((s) => s.nextDiwaniyyaPlayer);
+  const sessionCode = useGameStore((s) => s.sessionCode);
 
   const activePlayer = players.find((p) => p.id === parsed?.playerId);
   const otherPlayers = players.filter((p) => p.id !== parsed?.playerId);
@@ -79,6 +80,55 @@ function DiwaniyyaQuestion() {
   const [comment, setComment] = useState<string | null>(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // مزامنة الجلسة مع المشاهدين عند تغيير مهم
+  useEffect(() => {
+    if (!sessionCode) return;
+    const sharedState = {
+      mode: "diwaniyya",
+      players: players.map((p) => ({
+        id: p.id,
+        name: p.name,
+        color: p.color,
+        avatar: p.avatar,
+        categoryId: p.categoryId,
+        score: p.score,
+      })),
+      activePlayerId: parsed?.playerId,
+      difficulty: parsed?.difficulty,
+      answered,
+      stage,
+      timeLeft,
+      questionText: questionData?.text,
+      // كشف الإجابة فقط في reveal
+      correctAnswer:
+        stage === "reveal" || stage === "judged"
+          ? questionData?.answer
+          : undefined,
+      judgment:
+        stage === "reveal" || stage === "judged" ? judgment : null,
+      comment: stage === "reveal" || stage === "judged" ? comment : null,
+      updatedAt: Date.now(),
+    };
+    fetch(`/api/sessions/${sessionCode}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ state: sharedState }),
+    }).catch(() => undefined);
+    // ندفع عند تغيير المؤقت كل ثانية أيضاً
+  }, [
+    sessionCode,
+    stage,
+    judgment,
+    comment,
+    timeLeft,
+    parsed?.playerId,
+    parsed?.difficulty,
+    questionData?.text,
+    questionData?.answer,
+    answered,
+    players,
+  ]);
 
   // اختيار سؤال غير مستخدم من الأسئلة المُحمّلة لتصنيف اللاعب
   const fetchQuestion = useCallback(() => {

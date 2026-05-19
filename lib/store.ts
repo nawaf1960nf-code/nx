@@ -31,6 +31,7 @@ const INITIAL_STATE: GameState = {
   teamB: makeEmptyTeam("team_b", TEAM_COLORS[1].id, TEAM_AVATARS[1], TEAM_NAME_PRESETS[2]),
   diwaniyyaPlayers: [],
   currentPlayerIdx: 0,
+  sessionCode: null,
   settings: {
     judgingMode: "ai",
     language: "ar",
@@ -85,6 +86,9 @@ interface GameStore extends GameState {
   addDiwaniyyaScore: (playerId: string, points: number) => void;
   nextDiwaniyyaPlayer: () => void;
   setCurrentPlayerIdx: (idx: number) => void;
+
+  // مشاركة الجلسة
+  setSessionCode: (code: string | null) => void;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -233,6 +237,8 @@ export const useGameStore = create<GameStore>()(
         })),
 
       setCurrentPlayerIdx: (idx) => set({ currentPlayerIdx: idx }),
+
+      setSessionCode: (code) => set({ sessionCode: code }),
     }),
     {
       name: "noonaeen-game",

@@ -2,13 +2,25 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { QRCodeSVG } from "qrcode.react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/Button";
 import { UserMenu } from "@/components/UserMenu";
 import { useGameStore } from "@/lib/store";
 import { CATEGORY_BY_ID } from "@/lib/categories-data";
 import { TEAM_COLORS, cn, formatPoints } from "@/lib/utils";
-import { Home, X, ArrowRight, Plus, Minus, Trophy } from "lucide-react";
+import { useSessionSync } from "@/lib/session-sync";
+import {
+  Home,
+  X,
+  ArrowRight,
+  Plus,
+  Minus,
+  Trophy,
+  Share2,
+  Copy,
+  Check,
+} from "lucide-react";
 import type { QuestionDifficulty } from "@/lib/types";
 
 const DIFFICULTIES: QuestionDifficulty[] = [200, 400, 600];
@@ -26,6 +38,37 @@ export default function DiwaniyyaGamePage() {
   const resetGame = useGameStore((s) => s.resetGame);
   const addDiwaniyyaScore = useGameStore((s) => s.addDiwaniyyaScore);
   const setPhase = useGameStore((s) => s.setPhase);
+
+  // مزامنة الجلسة - الحالة المُشاركة مع المشاهدين
+  const sharedState = useMemo(
+    () => ({
+      mode: "diwaniyya" as const,
+      players: players.map((p) => ({
+        id: p.id,
+        name: p.name,
+        color: p.color,
+        avatar: p.avatar,
+        categoryId: p.categoryId,
+        score: p.score,
+      })),
+      currentIdx,
+      answered,
+      stage: "board" as const,
+      updatedAt: Date.now(),
+    }),
+    [players, currentIdx, answered],
+  );
+  const setSessionCode = useGameStore((s) => s.setSessionCode);
+  const existingSessionCode = useGameStore((s) => s.sessionCode);
+  const { code: shareCode, create: createShare, creating: creatingShare } = useSessionSync(sharedState);
+  const [showShareModal, setShowShareModal] = useState(false);
+
+  // احفظ الكود في store عشان شاشة السؤال تستخدمه
+  useEffect(() => {
+    if (shareCode && shareCode !== existingSessionCode) {
+      setSessionCode(shareCode);
+    }
+  }, [shareCode, existingSessionCode, setSessionCode]);
 
   useEffect(() => setMounted(true), []);
 
@@ -90,6 +133,20 @@ export default function DiwaniyyaGamePage() {
       <header className="px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
         <Logo size="sm" />
         <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Share2 className="w-4 h-4" />}
+            loading={creatingShare}
+            onClick={async () => {
+              if (!shareCode) {
+                await createShare(sharedState);
+              }
+              setShowShareModal(true);
+            }}
+          >
+            دعوة مشاهدين
+          </Button>
           <UserMenu />
           <Button
             variant="ghost"
@@ -157,6 +214,11 @@ export default function DiwaniyyaGamePage() {
         </div>
       </div>
 
+      {/* نافذة مشاركة الجلسة */}
+      {showShareModal && shareCode && (
+        <ShareModal code={shareCode} onClose={() => setShowShareModal(false)} />
+      )}
+
       {/* نافذة تأكيد الخروج */}
       {showExitConfirm && (
         <div className="fixed inset-0 bg-ink-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -186,6 +248,89 @@ export default function DiwaniyyaGamePage() {
         </div>
       )}
     </main>
+  );
+}
+
+function ShareModal({ code, onClose }: { code: string; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const url =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/watch/${code}`
+      : `/watch/${code}`;
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-ink-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-3xl p-6 max-w-md w-full text-center">
+        <div className="inline-flex w-14 h-14 bg-primary-50 text-primary-600 rounded-2xl items-center justify-center mb-3">
+          <Share2 className="w-7 h-7" />
+        </div>
+        <h3 className="text-xl font-black mb-1">ادعُ أصحابك للمشاهدة!</h3>
+        <p className="text-ink-500 text-sm mb-5">
+          يمسحون الـ QR أو يدخلون الكود، يشوفون اللعبة معاكم لحظياً
+        </p>
+
+        <div className="bg-white p-3 rounded-2xl border-4 border-ink-900 inline-block mb-4">
+          <QRCodeSVG value={url} size={180} level="M" />
+        </div>
+
+        <div className="bg-ink-100 rounded-xl p-3 mb-4">
+          <div className="text-[10px] text-ink-500 font-bold uppercase mb-1">
+            الكود
+          </div>
+          <div
+            className="text-3xl font-black tracking-widest font-mono"
+            dir="ltr"
+          >
+            {code}
+          </div>
+        </div>
+
+        <div className="text-xs text-ink-500 mb-1">رابط المشاهدة:</div>
+        <button
+          onClick={copyLink}
+          className="w-full bg-ink-50 hover:bg-ink-100 border border-ink-200 rounded-xl px-3 py-2 text-sm font-mono text-ink-700 mb-4 flex items-center justify-between gap-2 transition"
+          dir="ltr"
+        >
+          <span className="truncate">{url}</span>
+          {copied ? (
+            <Check className="w-4 h-4 text-primary-600 shrink-0" />
+          ) : (
+            <Copy className="w-4 h-4 text-ink-400 shrink-0" />
+          )}
+        </button>
+
+        <div className="flex gap-2">
+          <Button variant="secondary" className="flex-1" onClick={onClose}>
+            إغلاق
+          </Button>
+          <Button
+            className="flex-1"
+            onClick={() => {
+              if (navigator.share) {
+                navigator
+                  .share({
+                    title: "ادخل شوف لعبتنا!",
+                    text: `كود الجلسة: ${code}`,
+                    url,
+                  })
+                  .catch(() => undefined);
+              } else {
+                copyLink();
+              }
+            }}
+            icon={<Share2 className="w-4 h-4" />}
+          >
+            مشاركة
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 

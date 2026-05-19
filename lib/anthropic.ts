@@ -14,4 +14,8 @@ export function getAnthropic() {
   return cachedClient;
 }
 
-export const CLAUDE_MODEL = "claude-sonnet-4-6";
+// Haiku للسرعة (٣x أسرع من Sonnet) مع جودة ممتازة للأسئلة
+export const CLAUDE_MODEL = "claude-haiku-4-5-20251001";
+
+// نموذج أقوى للتحكيم (دقة عالية مطلوبة)
+export const JUDGE_MODEL = "claude-haiku-4-5-20251001";
