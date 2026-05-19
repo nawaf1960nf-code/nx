@@ -47,7 +47,7 @@ export default function HomePage() {
           className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-float-up"
           style={{ animationDelay: "200ms" }}
         >
-          <Link href="/setup">
+          <Link href="/mode">
             <Button size="lg" icon={<Play className="w-4 h-4" />}>
               ابدأ اللعبة الآن
             </Button>

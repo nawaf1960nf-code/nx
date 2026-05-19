@@ -18,6 +18,11 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { QuestionDifficulty, HookId } from "@/lib/types";
+import {
+  pickComment,
+  PERSONALITY_BY_ID,
+  type Outcome,
+} from "@/lib/personalities";
 
 interface ParsedCell {
   categoryId: string;
@@ -84,6 +89,7 @@ function QuestionScreen() {
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState(false);
   const [stage, setStage] = useState<Stage>("answering");
+  const [comment, setComment] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState(ANSWER_TIME);
   const [userAnswer, setUserAnswer] = useState("");
   const [userAnswer2, setUserAnswer2] = useState("");
@@ -267,8 +273,26 @@ function QuestionScreen() {
     markQuestionAnswered(cellId);
     setCurrentTurn(currentTurn === "team_a" ? "team_b" : "team_a");
     setStage("judged");
-    setTimeout(() => router.push("/game"), 800);
+    setTimeout(() => router.push("/game"), 1200);
   };
+
+  // حدّد التعليق بناءً على نتيجة السؤال
+  useEffect(() => {
+    if (stage !== "reveal" || comment) return;
+    let outcome: Outcome = "all_wrong";
+    if (judgment) {
+      if (judgment.isCorrect && judgment.forTeam === activeTeam.id) {
+        outcome = "first_correct";
+      } else if (judgment.isCorrect && judgment.forTeam === otherTeam.id) {
+        outcome = "stolen_correct";
+      } else {
+        outcome = "all_wrong";
+      }
+    } else {
+      outcome = "timeout";
+    }
+    setComment(pickComment(settings.personality, outcome));
+  }, [stage, judgment, comment, settings.personality, activeTeam.id, otherTeam.id]);
 
   const handleUseHook = async (hookId: HookId) => {
     useHookStore(activeTeam.id, hookId);
@@ -443,27 +467,36 @@ function QuestionScreen() {
                 {judgment && settings.judgingMode !== "manual" && (
                   <div
                     className={cn(
-                      "rounded-2xl p-4 border-2",
+                      "rounded-2xl p-3 border-2",
                       judgment.isCorrect
                         ? "bg-green-50 border-green-300 text-green-800"
                         : "bg-red-50 border-red-300 text-red-800",
                     )}
                   >
-                    <div className="flex items-center gap-2 font-black text-lg mb-1">
+                    <div className="flex items-center gap-2 font-black text-sm mb-0.5">
                       {judgment.isCorrect ? (
                         <>
-                          <Check className="w-5 h-5" />
+                          <Check className="w-4 h-4" />
                           إجابة صحيحة!
                         </>
                       ) : (
                         <>
-                          <X className="w-5 h-5" />
+                          <X className="w-4 h-4" />
                           إجابة غير صحيحة
                         </>
                       )}
                     </div>
-                    <p className="text-sm">{judgment.feedback}</p>
+                    <p className="text-xs">{judgment.feedback}</p>
                   </div>
+                )}
+
+                {/* تعليق شخصية AI */}
+                {comment && (
+                  <PersonalityComment
+                    comment={comment}
+                    personality={settings.personality}
+                    correct={!!judgment?.isCorrect}
+                  />
                 )}
               </div>
             ) : (
@@ -670,6 +703,48 @@ function HooksRow({
             </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function PersonalityComment({
+  comment,
+  personality,
+  correct,
+}: {
+  comment: string;
+  personality: keyof typeof PERSONALITY_BY_ID;
+  correct: boolean;
+}) {
+  const p = PERSONALITY_BY_ID[personality];
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border-2 p-4 flex items-start gap-3 animate-float-up",
+        correct ? "shadow-md" : "",
+      )}
+      style={{
+        borderColor: p.color,
+        backgroundColor: `${p.color}10`,
+      }}
+    >
+      <div
+        className="w-12 h-12 shrink-0 rounded-xl flex items-center justify-center text-3xl"
+        style={{ backgroundColor: `${p.color}25` }}
+      >
+        {p.emoji}
+      </div>
+      <div className="flex-1">
+        <div
+          className="text-[10px] font-black uppercase tracking-wider mb-1"
+          style={{ color: p.color }}
+        >
+          {p.name}
+        </div>
+        <p className="text-base md:text-lg font-bold text-ink-800 leading-snug">
+          {comment}
+        </p>
       </div>
     </div>
   );

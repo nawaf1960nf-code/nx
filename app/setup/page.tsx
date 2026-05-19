@@ -23,6 +23,7 @@ import {
   Shuffle,
 } from "lucide-react";
 import type { JudgingMode } from "@/lib/types";
+import { PERSONALITIES, type PersonalityId } from "@/lib/personalities";
 
 export default function SetupPage() {
   const router = useRouter();
@@ -37,6 +38,7 @@ export default function SetupPage() {
   const setTeamAvatar = useGameStore((s) => s.setTeamAvatar);
   const setTeamPlayersCount = useGameStore((s) => s.setTeamPlayersCount);
   const setJudgingMode = useGameStore((s) => s.setJudgingMode);
+  const setPersonality = useGameStore((s) => s.setPersonality);
   const setPhase = useGameStore((s) => s.setPhase);
 
   useEffect(() => setMounted(true), []);
@@ -146,6 +148,45 @@ export default function SetupPage() {
               title="مختلط"
               desc="AI يقترح والمضيف يأكد"
             />
+          </div>
+        </div>
+
+        {/* شخصية المعلّق */}
+        <div className="bg-white border-2 border-ink-100 rounded-3xl p-6 mb-10">
+          <h2 className="text-xl font-bold mb-1">شخصية المعلّق</h2>
+          <p className="text-ink-500 text-sm mb-5">
+            مين يعلّق بعد كل سؤال؟
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {PERSONALITIES.map((p) => {
+              const isActive = settings.personality === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setPersonality(p.id as PersonalityId)}
+                  className={cn(
+                    "p-4 rounded-2xl border-2 transition-all text-center",
+                    isActive
+                      ? "shadow-lg scale-105"
+                      : "border-ink-200 hover:border-ink-400 bg-white",
+                  )}
+                  style={
+                    isActive
+                      ? {
+                          borderColor: p.color,
+                          backgroundColor: `${p.color}10`,
+                        }
+                      : undefined
+                  }
+                >
+                  <div className="text-4xl mb-1">{p.emoji}</div>
+                  <div className="font-black text-sm mb-1">{p.name}</div>
+                  <div className="text-xs text-ink-500 leading-tight">
+                    {p.description}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 

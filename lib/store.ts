@@ -30,6 +30,7 @@ const INITIAL_STATE: GameState = {
     judgingMode: "ai",
     language: "ar",
     enableDailyBonus: true,
+    personality: "fun",
   },
   currentTurn: "team_a",
   currentQuestion: null,
@@ -51,6 +52,7 @@ interface GameStore extends GameState {
 
   // إعدادات اللعبة
   setJudgingMode: (mode: JudgingMode) => void;
+  setPersonality: (p: "fun" | "casual" | "strict" | "prince") => void;
 
   // اختيار التصنيفات
   toggleCategory: (team: "team_a" | "team_b", categoryId: string) => void;
@@ -114,6 +116,9 @@ export const useGameStore = create<GameStore>()(
 
       setJudgingMode: (mode) =>
         set((s) => ({ settings: { ...s.settings, judgingMode: mode } })),
+
+      setPersonality: (p) =>
+        set((s) => ({ settings: { ...s.settings, personality: p } })),
 
       toggleCategory: (team, categoryId) =>
         set((s) => {

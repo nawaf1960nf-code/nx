@@ -1,9 +1,18 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// نظام تسجيل الدخول معطّل مؤقتاً للاختبار السريع.
-// راح يبقى محمياً فقط: لوحة الأدمن وصفحات الأكواد
-const PROTECTED_PATHS = ["/admin"];
+const PROTECTED_PATHS = [
+  "/setup",
+  "/pick",
+  "/preload",
+  "/game",
+  "/question",
+  "/charades",
+  "/results",
+  "/redeem",
+  "/admin",
+  "/mode",
+];
 const AUTH_PATHS = ["/login", "/signup", "/verify"];
 
 export async function proxy(request: NextRequest) {
@@ -47,7 +56,7 @@ export async function proxy(request: NextRequest) {
 
   if (isAuthPath && user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/setup";
+    url.pathname = "/mode";
     return NextResponse.redirect(url);
   }
 

@@ -73,6 +73,7 @@ export interface GameSettings {
   judgingMode: JudgingMode;
   language: "ar" | "en";
   enableDailyBonus: boolean;
+  personality: "fun" | "casual" | "strict" | "prince";
 }
 
 export type QuestionDifficulty = 200 | 400 | 600;

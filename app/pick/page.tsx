@@ -92,7 +92,17 @@ export default function PickPage() {
     setStartError(null);
     setStarting(true);
     try {
-      // وضع الاختبار: تجاوز فحص الرصيد كلياً والذهاب مباشرة للتحميل
+      const res = await fetch("/api/credits/consume", { method: "POST" });
+      if (res.status === 402) {
+        router.push("/redeem");
+        return;
+      }
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setStartError(data.error || "تعذّر بدء اللعبة");
+        return;
+      }
+      await refreshCredits();
       setPhase("preloading");
       router.push("/preload");
     } finally {
@@ -101,16 +111,14 @@ export default function PickPage() {
   };
 
   const handleResetAll = () => {
-    // امسح اختيارات الفريقين كلها (تصنيفات + قدرات + هوكس مستخدمة)
     teamA.selectedCategories.forEach((c) => toggleCategory("team_a", c));
     teamB.selectedCategories.forEach((c) => toggleCategory("team_b", c));
     teamA.hooks.forEach((h) => toggleHook("team_a", h));
     teamB.hooks.forEach((h) => toggleHook("team_b", h));
   };
 
-  // في وضع الاختبار، السماح دائماً بالبدء
-  const isFirstFreeGame = false;
-  const hasCredits = true;
+  const isFirstFreeGame = credits?.has_free_play === true;
+  const hasCredits = credits?.has_credits === true;
 
   return (
     <main className="min-h-screen bg-mesh pb-44">
