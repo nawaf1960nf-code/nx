@@ -95,9 +95,21 @@ export interface Question {
 // خريطة الأسئلة المُحمّلة مسبقاً مفهرسة بـ cellId
 export type PreloadedQuestions = Record<string, Question>;
 
+export type PlayMode = "teams" | "diwaniyya";
+
+export interface DiwaniyyaPlayer {
+  id: string;
+  name: string;
+  color: string;
+  avatar: string;
+  categoryId: string;
+  score: number;
+}
+
 export interface GameState {
   phase:
     | "landing"
+    | "mode"
     | "setup"
     | "categories_a"
     | "categories_b"
@@ -107,8 +119,11 @@ export interface GameState {
     | "board"
     | "question"
     | "results";
+  playMode: PlayMode;
   teamA: Team;
   teamB: Team;
+  diwaniyyaPlayers: DiwaniyyaPlayer[];
+  currentPlayerIdx: number;
   settings: GameSettings;
   currentTurn: "team_a" | "team_b";
   currentQuestion: Question | null;

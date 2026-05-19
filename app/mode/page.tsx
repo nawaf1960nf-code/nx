@@ -6,16 +6,24 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/Button";
 import { UserMenu } from "@/components/UserMenu";
 import { useGameStore } from "@/lib/store";
-import { ArrowLeft, Users, Crown, Lock } from "lucide-react";
+import { ArrowLeft, Users, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function ModePage() {
   const router = useRouter();
+  const setPlayMode = useGameStore((s) => s.setPlayMode);
   const setPhase = useGameStore((s) => s.setPhase);
 
   const handlePickTeams = () => {
+    setPlayMode("teams");
     setPhase("setup");
     router.push("/setup");
+  };
+
+  const handlePickDiwaniyya = () => {
+    setPlayMode("diwaniyya");
+    setPhase("setup");
+    router.push("/diwaniyya/setup");
   };
 
   return (
@@ -61,15 +69,15 @@ export default function ModePage() {
             subtitle="٢ إلى ٦ لاعبين فردي"
             description="كل لاعب لحاله، كل واحد يختار تصنيفه. لو ما عرف، الباقي يسرقون نقاطه!"
             playerCount="٢-٦ لاعبين"
-            badge="قريباً"
+            badge="جديد ✨"
             badgeColor="bg-gold-500/15 text-gold-700"
             gradient="from-purple-500 to-fuchsia-700"
-            comingSoon
+            onClick={handlePickDiwaniyya}
           />
         </div>
 
         <p className="text-center text-xs text-ink-400 mt-8">
-          💡 اللعبة الواحدة ~٢٥-٤٠ دقيقة حسب عدد اللاعبين
+          💡 لعبة الجمعة ~٢٥-٤٠ دقيقة • الديوانية ~١٥-٣٠ دقيقة حسب عدد اللاعبين
         </p>
       </div>
     </main>
@@ -85,7 +93,6 @@ function ModeCard({
   badge,
   badgeColor,
   gradient,
-  comingSoon,
   onClick,
 }: {
   icon: React.ReactNode;
@@ -96,21 +103,16 @@ function ModeCard({
   badge: string;
   badgeColor: string;
   gradient: string;
-  comingSoon?: boolean;
-  onClick?: () => void;
+  onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
-      disabled={comingSoon}
       className={cn(
         "relative rounded-3xl overflow-hidden text-right transition-all bg-white border-2",
-        comingSoon
-          ? "border-ink-100 cursor-not-allowed opacity-75"
-          : "border-ink-100 hover:border-primary-300 hover:shadow-xl hover:scale-[1.02]",
+        "border-ink-100 hover:border-primary-300 hover:shadow-xl hover:scale-[1.02]",
       )}
     >
-      {/* تدرج علوي */}
       <div
         className={cn(
           "relative h-28 bg-gradient-to-br p-4 flex items-end",
@@ -144,16 +146,7 @@ function ModeCard({
             <Users className="inline w-3 h-3 ml-1" />
             {playerCount}
           </span>
-          {comingSoon ? (
-            <span className="text-xs text-ink-400 font-bold flex items-center gap-1">
-              <Lock className="w-3 h-3" />
-              غير متاح حالياً
-            </span>
-          ) : (
-            <span className="text-xs text-primary-600 font-bold">
-              ابدأ ←
-            </span>
-          )}
+          <span className="text-xs text-primary-600 font-bold">ابدأ ←</span>
         </div>
       </div>
     </button>

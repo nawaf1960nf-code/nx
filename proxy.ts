@@ -12,6 +12,7 @@ const PROTECTED_PATHS = [
   "/redeem",
   "/admin",
   "/mode",
+  "/diwaniyya",
 ];
 const AUTH_PATHS = ["/login", "/signup", "/verify"];
 

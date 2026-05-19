@@ -7,6 +7,8 @@ import type {
   Question,
   JudgingMode,
   PreloadedQuestions,
+  PlayMode,
+  DiwaniyyaPlayer,
 } from "./types";
 import { TEAM_COLORS, TEAM_AVATARS, TEAM_NAME_PRESETS } from "./utils";
 
@@ -24,8 +26,11 @@ const makeEmptyTeam = (id: "team_a" | "team_b", color: string, avatar: string, d
 
 const INITIAL_STATE: GameState = {
   phase: "landing",
+  playMode: "teams",
   teamA: makeEmptyTeam("team_a", TEAM_COLORS[0].id, TEAM_AVATARS[0], TEAM_NAME_PRESETS[0]),
   teamB: makeEmptyTeam("team_b", TEAM_COLORS[1].id, TEAM_AVATARS[1], TEAM_NAME_PRESETS[2]),
+  diwaniyyaPlayers: [],
+  currentPlayerIdx: 0,
   settings: {
     judgingMode: "ai",
     language: "ar",
@@ -72,6 +77,14 @@ interface GameStore extends GameState {
   // تحميل مسبق
   setPreloadedQuestions: (questions: PreloadedQuestions) => void;
   clearPreloadedQuestions: () => void;
+
+  // الديوانية
+  setPlayMode: (mode: PlayMode) => void;
+  setDiwaniyyaPlayers: (players: DiwaniyyaPlayer[]) => void;
+  updateDiwaniyyaPlayer: (id: string, patch: Partial<DiwaniyyaPlayer>) => void;
+  addDiwaniyyaScore: (playerId: string, points: number) => void;
+  nextDiwaniyyaPlayer: () => void;
+  setCurrentPlayerIdx: (idx: number) => void;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -189,6 +202,37 @@ export const useGameStore = create<GameStore>()(
         set({ preloadedQuestions: questions }),
 
       clearPreloadedQuestions: () => set({ preloadedQuestions: {} }),
+
+      setPlayMode: (mode) => set({ playMode: mode }),
+
+      setDiwaniyyaPlayers: (players) =>
+        set({ diwaniyyaPlayers: players, currentPlayerIdx: 0 }),
+
+      updateDiwaniyyaPlayer: (id, patch) =>
+        set((s) => ({
+          diwaniyyaPlayers: s.diwaniyyaPlayers.map((p) =>
+            p.id === id ? { ...p, ...patch } : p,
+          ),
+        })),
+
+      addDiwaniyyaScore: (playerId, points) =>
+        set((s) => ({
+          diwaniyyaPlayers: s.diwaniyyaPlayers.map((p) =>
+            p.id === playerId
+              ? { ...p, score: Math.max(0, p.score + points) }
+              : p,
+          ),
+        })),
+
+      nextDiwaniyyaPlayer: () =>
+        set((s) => ({
+          currentPlayerIdx:
+            s.diwaniyyaPlayers.length > 0
+              ? (s.currentPlayerIdx + 1) % s.diwaniyyaPlayers.length
+              : 0,
+        })),
+
+      setCurrentPlayerIdx: (idx) => set({ currentPlayerIdx: idx }),
     }),
     {
       name: "noonaeen-game",
