@@ -1,28 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { Tajawal } from "next/font/google";
-import { AuthProvider } from "@/lib/auth-context";
-import { CreditsProvider } from "@/lib/credits-context";
 import "./globals.css";
 
-const tajawal = Tajawal({
-  weight: ["400", "500", "700", "800", "900"],
-  subsets: ["arabic"],
-  variable: "--font-tajawal",
-  display: "swap",
-});
-
 export const metadata: Metadata = {
-  title: "نون عين | لعبة الفرق التنافسية",
+  title: "Services Marketing Exam Platform",
   description:
-    "لعبة جماعية ممتعة بين فريقين، أسئلة ذكية متجددة في تصنيفات متنوعة، مع وسائل مساعدة وتحديات مثيرة.",
-  keywords: ["نون عين", "لعبة فرق", "سؤال وجواب", "ألعاب جماعية", "ديوانية"],
+    "An AI-powered, interactive exam platform for mastering Services Marketing — covering Chapters 4, 7, 8, 10 & 11 with adaptive testing, study mode, and performance analytics.",
+  keywords: [
+    "Services Marketing",
+    "Exam Platform",
+    "Flower of Service",
+    "Service Blueprinting",
+    "Servicescape",
+    "Quiz",
+    "AI tutor",
+  ],
+  authors: [{ name: "Services Marketing Exam Platform" }],
 };
 
 export const viewport: Viewport = {
-  themeColor: "#00c853",
+  themeColor: "#060713",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -31,11 +29,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ar" dir="rtl" className={`${tajawal.variable} h-full`}>
-      <body className="min-h-full antialiased bg-white text-ink-800">
-        <AuthProvider>
-          <CreditsProvider>{children}</CreditsProvider>
-        </AuthProvider>
+    <html lang="en" className="h-full">
+      <body className="min-h-full antialiased">
+        <div className="bg-aurora" aria-hidden />
+        {children}
       </body>
     </html>
   );
