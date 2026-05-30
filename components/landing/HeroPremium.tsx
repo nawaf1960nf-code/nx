@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { Sparkles, ArrowRight, BookOpen } from "lucide-react";
-import { AIBadge } from "@/components/AIBadge";
 import { useLocale } from "@/lib/locale-context";
 import { DashboardMockup } from "./DashboardMockup";
 
@@ -28,10 +27,9 @@ export function HeroPremium() {
 
   return (
     <section className="relative overflow-hidden px-4 pt-16 sm:pt-24">
-      {/* Animated grid + glow backdrop */}
+      {/* Static grid + glow backdrop (no infinite animation = no jank) */}
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-grid mask-fade-b opacity-60 animate-grid-pan" />
-        <div className="absolute left-1/2 top-0 h-[40rem] w-[40rem] -translate-x-1/2 rounded-full bg-brand-500/20 blur-[120px]" />
+        <div className="absolute inset-0 bg-grid mask-fade-b opacity-50" />
       </div>
 
       <div className="mx-auto max-w-3xl text-center">
@@ -86,14 +84,6 @@ export function HeroPremium() {
           </Link>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.28 }}
-          className="mt-8 flex justify-center"
-        >
-          <AIBadge />
-        </motion.div>
       </div>
 
       {/* Dashboard mockup with parallax tilt */}

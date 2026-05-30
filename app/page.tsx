@@ -5,8 +5,6 @@ import { CourseCatalog } from "@/components/landing/CourseCatalog";
 import { LevelsSection } from "@/components/landing/LevelsSection";
 import { FeaturesBento } from "@/components/landing/FeaturesBento";
 import { DashboardPreviewSection } from "@/components/landing/DashboardPreviewSection";
-import { Testimonials } from "@/components/landing/Testimonials";
-import { Pricing } from "@/components/landing/Pricing";
 import { FAQ } from "@/components/landing/FAQ";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { Footer } from "@/components/landing/Footer";
@@ -21,8 +19,6 @@ export default function HomePage() {
       <LevelsSection />
       <FeaturesBento />
       <DashboardPreviewSection />
-      <Testimonials />
-      <Pricing />
       <FAQ />
       <FinalCTA />
       <Footer />

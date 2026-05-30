@@ -15,16 +15,16 @@ import {
 import { Navbar } from "@/components/Navbar";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
-import { AIBadge } from "@/components/AIBadge";
 import { QUESTION_BANK } from "@/lib/questions";
 import { shuffle } from "@/lib/utils";
+import { shuffleOptions } from "@/lib/exam-engine";
 import { aiTutor, type TutorMessage } from "@/lib/ai-client";
-import type { Question } from "@/lib/types";
+import type { PreparedQuestion } from "@/lib/types";
 import { useLocale } from "@/lib/locale-context";
 
 export default function StudyPage() {
   const { t } = useLocale();
-  const [deck, setDeck] = useState<Question[]>([]);
+  const [deck, setDeck] = useState<PreparedQuestion[]>([]);
   const [pos, setPos] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [chat, setChat] = useState<TutorMessage[]>([]);
@@ -33,7 +33,9 @@ export default function StudyPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setDeck(shuffle(QUESTION_BANK));
+    // Shuffle the deck AND each question's answer positions so the correct
+    // choice is never always in the same slot.
+    setDeck(shuffle(QUESTION_BANK).map(shuffleOptions));
   }, []);
 
   const q = deck[pos];
@@ -47,7 +49,7 @@ export default function StudyPage() {
   async function choose(i: number) {
     if (answered || !q) return;
     setSelected(i);
-    // Ask the AI tutor to elaborate with an example (graceful fallback).
+    // Ask the tutor to elaborate with an example (graceful fallback).
     setTutorLoading(true);
     const res = await aiTutor({
       topic: q.topic,
@@ -107,7 +109,6 @@ export default function StudyPage() {
           <h1 className="font-display text-3xl font-bold text-white">{t.study.title}</h1>
           <p className="mt-2 text-sm text-brand-100/60">{t.study.subtitle}</p>
           <div className="mt-4 flex items-center justify-center gap-3">
-            <AIBadge />
             <span className="text-xs text-brand-100/40">{progressLabel}</span>
           </div>
         </div>

@@ -122,11 +122,6 @@ export function ResultsView({
           <h2 className="font-display text-lg font-semibold text-white">
             {tr.results.analysis}
           </h2>
-          {ai && (
-            <span className="rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold text-success">
-              AI
-            </span>
-          )}
           {aiLoading && !ai && (
             <span className="text-[11px] text-brand-100/40">{tr.results.analyzing}</span>
           )}

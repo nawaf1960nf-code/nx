@@ -52,7 +52,6 @@ export function QuestionView({
       >
         <p className="mb-1 text-xs font-medium uppercase tracking-wider text-brand-200/60">
           {t.topics[question.topic]}
-          {question.aiGenerated && " · AI"}
         </p>
         <h2 className="font-display text-xl font-semibold leading-snug text-white sm:text-2xl">
           {question.prompt}

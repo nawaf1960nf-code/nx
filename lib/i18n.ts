@@ -30,12 +30,12 @@ const en = {
   },
 
   hero: {
-    badge: "AI-Powered Learning · Chapters 4 · 7 · 8 · 10 · 11",
+    badge: "Smart Exam Practice · Chapters 4 · 7 · 8 · 10 · 11",
     titleA: "Master",
     titleHighlight: "Services Marketing",
     titleB: "with intelligent exams",
     subtitle:
-      "An interactive, AI-driven platform that generates fresh exams every attempt, explains every answer, and adapts to exactly where you need to improve — from the Flower of Service to the Cycle of Success.",
+      "An interactive platform that generates fresh exams every attempt, explains every answer, and adapts to exactly where you need to improve — from the Flower of Service to the Cycle of Success.",
     chooseLevel: "Choose your level",
     tryStudy: "Try Study Mode",
   },
@@ -46,15 +46,15 @@ const en = {
   },
 
   features: {
-    heading: "More than a quiz — a smart tutor",
+    heading: "More than a quiz — a smart study partner",
     subtitle: "Everything you need to go from memorising to mastering.",
     items: [
-      { title: "AI Question Generation", desc: "Fresh, syllabus-grounded questions synthesised on every attempt — never the same exam twice." },
-      { title: "Adaptive Learning", desc: "The engine over-samples the topics you miss and eases up on the ones you've mastered." },
+      { title: "Fresh Questions Every Time", desc: "Questions and answer order are randomised on every attempt — never the same exam twice." },
+      { title: "Adaptive Practice", desc: "The engine focuses on the topics you miss and eases up on the ones you've mastered." },
       { title: "No-Repetition System", desc: "Different order, different wording, different questions — same learning objectives." },
       { title: "Performance Analysis", desc: "Per-topic breakdowns, strong/weak areas and concrete recommendations after every exam." },
-      { title: "Study Mode", desc: "A personal AI tutor that asks, waits, explains, and gives extra examples — one concept at a time." },
-      { title: "Grounded & Accurate", desc: "A knowledge base of the five chapters keeps the AI on-syllabus and prevents hallucination." },
+      { title: "Study Mode", desc: "A personal tutor that asks, waits, explains, and gives extra examples — one concept at a time." },
+      { title: "Grounded & Accurate", desc: "Built directly from the five chapters, so every question stays on-syllabus." },
     ],
   },
 
@@ -84,10 +84,10 @@ const en = {
       badge: "Live analytics",
       heading: "See your progress come to life",
       subtitle:
-        "Every attempt feeds a personal dashboard — scores over time, mastery by topic, and AI insights that tell you exactly what to review next.",
+        "Every attempt feeds a personal dashboard — scores over time, mastery by topic, and clear insights that tell you exactly what to review next.",
       cardAnalytics: "Average score",
       cardProgress: "Mastery",
-      cardInsight: "AI Insight",
+      cardInsight: "Insight",
       insightText: "Strong on Servicescape & SSTs. Focus next on Marketing Communications.",
       recommend: "Smart recommendation",
       recommendText: "Review Chapter 8 — Blueprinting & fail points.",
@@ -119,7 +119,7 @@ const en = {
         {
           name: "Pro",
           price: "$6",
-          desc: "AI-powered, personalised studying.",
+          desc: "Personalised, adaptive studying.",
           features: ["Everything in Free", "AI question generation", "AI Study Mode tutor", "Adaptive learning", "Digital certificate"],
         },
         {
@@ -135,9 +135,9 @@ const en = {
       items: [
         { q: "Are the questions based on my actual course?", a: "Yes — the bank is built directly from the Services Marketing slides (Chapters 4, 7, 8, 10 & 11), including the real examples used in class." },
         { q: "What happens if I close the browser mid-exam?", a: "Nothing is lost. Your answers and position are saved automatically, so you resume exactly where you left off." },
-        { q: "Do I need the AI features to use it?", a: "No. The platform works fully offline with the built-in question bank and analysis. The AI tutor and question generation are optional extras." },
+        { q: "How are questions kept fresh?", a: "Every attempt randomises which questions appear, their order, and the position of each answer choice — so you learn the concepts instead of memorising positions." },
         { q: "Can I add other subjects?", a: "Yes — the platform is built as a course catalog. New subjects can be added with their own questions, study mode and dashboard." },
-        { q: "Is it free?", a: "The core exam experience is free. A Pro tier unlocks the AI tutor and adaptive learning." },
+        { q: "Is it free?", a: "Yes — the exam experience, study mode and dashboard are all free to use." },
       ],
     },
     finalCta: {
@@ -146,7 +146,7 @@ const en = {
       button: "Start practicing free",
     },
     footer: {
-      tagline: "An AI-powered exam platform for mastering your courses.",
+      tagline: "A smart exam platform for mastering your courses.",
       product: "Product",
       rights: "All rights reserved.",
     },
@@ -251,15 +251,15 @@ const en = {
 
   study: {
     title: "Study Mode",
-    subtitle: "Your personal AI tutor — answer, learn instantly, then ask anything.",
+    subtitle: "Your personal study tutor — answer, learn instantly, then ask anything.",
     concept: (n: number, total: number) => `Concept ${n} / ${total}`,
     correct: "Correct!",
     notQuite: "Not quite.",
-    tutor: "AI Tutor",
+    tutor: "Tutor",
     thinking: "Tutor is thinking…",
     askPlaceholder: "Ask the tutor for an example or clarification…",
     offline:
-      "The AI tutor is in offline mode. Tip: re-read the explanation above and connect it to the chapter's key definition.",
+      "Tip: re-read the explanation above and connect it to the chapter's key definition.",
     next: "Next concept",
   },
 
@@ -341,12 +341,12 @@ const ar: Messages = {
   },
 
   hero: {
-    badge: "تعلّم مدعوم بالذكاء الاصطناعي · الفصول ٤ · ٧ · ٨ · ١٠ · ١١",
+    badge: "تدرّب ذكي على الاختبارات · الفصول ٤ · ٧ · ٨ · ١٠ · ١١",
     titleA: "أتقن",
     titleHighlight: "تسويق الخدمات",
     titleB: "عبر اختبارات ذكية",
     subtitle:
-      "منصة تفاعلية مدعومة بالذكاء الاصطناعي تولّد اختباراً جديداً في كل محاولة، تشرح كل إجابة، وتتكيّف مع المواضيع التي تحتاج تحسينها — من زهرة الخدمة إلى دورة النجاح.",
+      "منصة تفاعلية تولّد اختباراً جديداً في كل محاولة، تشرح كل إجابة، وتتكيّف مع المواضيع التي تحتاج تحسينها — من زهرة الخدمة إلى دورة النجاح.",
     chooseLevel: "اختر مستواك",
     tryStudy: "جرّب وضع الدراسة",
   },
@@ -357,15 +357,15 @@ const ar: Messages = {
   },
 
   features: {
-    heading: "أكثر من مجرد اختبار — مدرّس ذكي",
+    heading: "أكثر من مجرد اختبار — رفيق دراسة ذكي",
     subtitle: "كل ما تحتاجه للانتقال من الحفظ إلى الإتقان.",
     items: [
-      { title: "توليد الأسئلة بالذكاء الاصطناعي", desc: "أسئلة جديدة مبنية على المنهج تُولَّد في كل محاولة — لا يتكرر الاختبار أبداً." },
-      { title: "التعلّم التكيّفي", desc: "يركّز المحرك على المواضيع التي تخطئ فيها ويقلّل من التي أتقنتها." },
+      { title: "أسئلة متجدّدة كل مرة", desc: "الأسئلة وترتيب الخيارات تُخلَط عشوائياً في كل محاولة — لا يتكرر الاختبار أبداً." },
+      { title: "تدرّب تكيّفي", desc: "يركّز المحرك على المواضيع التي تخطئ فيها ويقلّل من التي أتقنتها." },
       { title: "نظام منع التكرار", desc: "ترتيب مختلف، صياغة مختلفة، أسئلة مختلفة — مع نفس الأهداف التعليمية." },
       { title: "تحليل الأداء", desc: "تفصيل لكل موضوع، نقاط القوة والضعف، وتوصيات عملية بعد كل اختبار." },
-      { title: "وضع الدراسة", desc: "مدرّس شخصي بالذكاء الاصطناعي يسأل، ينتظر، يشرح، ويعطي أمثلة إضافية — مفهوماً تلو الآخر." },
-      { title: "دقيق وملتزم بالمنهج", desc: "قاعدة معرفة للفصول الخمسة تُبقي الذكاء الاصطناعي ضمن المنهج وتمنع الهلوسة." },
+      { title: "وضع الدراسة", desc: "مدرّس شخصي يسأل، ينتظر، يشرح، ويعطي أمثلة إضافية — مفهوماً تلو الآخر." },
+      { title: "دقيق وملتزم بالمنهج", desc: "مبني مباشرة من الفصول الخمسة، فكل سؤال يبقى ضمن المنهج." },
     ],
   },
 
@@ -395,10 +395,10 @@ const ar: Messages = {
       badge: "تحليلات حيّة",
       heading: "شاهد تقدّمك يتجسّد أمامك",
       subtitle:
-        "كل محاولة تغذّي لوحة تحكم شخصية — نتائجك عبر الوقت، إتقانك لكل موضوع، ورؤى ذكية تخبرك بالضبط بما تحتاج مراجعته.",
+        "كل محاولة تغذّي لوحة تحكم شخصية — نتائجك عبر الوقت، إتقانك لكل موضوع، ورؤى واضحة تخبرك بالضبط بما تحتاج مراجعته.",
       cardAnalytics: "متوسط الدرجات",
       cardProgress: "الإتقان",
-      cardInsight: "رؤية ذكية",
+      cardInsight: "رؤية",
       insightText: "قوي في Servicescape و SSTs. ركّز تالياً على Marketing Communications.",
       recommend: "توصية ذكية",
       recommendText: "راجع الفصل ٨ — Blueprinting ونقاط الفشل.",
@@ -446,9 +446,9 @@ const ar: Messages = {
       items: [
         { q: "هل الأسئلة مبنية على مادتي فعلاً؟", a: "نعم — البنك مبني مباشرة من شرائح تسويق الخدمات (الفصول ٤ و٧ و٨ و١٠ و١١)، مع الأمثلة الحقيقية المستخدمة في المحاضرات." },
         { q: "وش يصير لو سكّرت المتصفح بنص الاختبار؟", a: "ما يضيع شي. إجاباتك وموضعك يُحفظ تلقائياً، فترجع تكمّل من نفس المكان بالضبط." },
-        { q: "هل أحتاج ميزات الذكاء الاصطناعي لاستخدامه؟", a: "لا. المنصة تشتغل بالكامل بدون اتصال ببنك الأسئلة والتحليل المدمج. المدرّس الذكي وتوليد الأسئلة إضافات اختيارية." },
+        { q: "كيف تبقى الأسئلة متجدّدة؟", a: "كل محاولة تخلط الأسئلة المعروضة وترتيبها وموضع كل خيار إجابة — فتتعلّم المفاهيم بدل حفظ الأماكن." },
         { q: "هل أقدر أضيف مواد ثانية؟", a: "نعم — المنصة مبنية ككتالوج مواد. تقدر تضيف مواد جديدة بأسئلتها ووضع دراستها ولوحة تحكمها." },
-        { q: "هل هو مجاني؟", a: "تجربة الاختبار الأساسية مجانية. وخطة Pro تفتح المدرّس الذكي والتعلّم التكيّفي." },
+        { q: "هل هو مجاني؟", a: "نعم — تجربة الاختبار ووضع الدراسة ولوحة التحكم كلها مجانية." },
       ],
     },
     finalCta: {
@@ -562,15 +562,15 @@ const ar: Messages = {
 
   study: {
     title: "وضع الدراسة",
-    subtitle: "مدرّسك الشخصي بالذكاء الاصطناعي — أجب، تعلّم فوراً، ثم اسأل أي شيء.",
+    subtitle: "مدرّسك الشخصي للدراسة — أجب، تعلّم فوراً، ثم اسأل أي شيء.",
     concept: (n: number, total: number) => `المفهوم ${n} / ${total}`,
     correct: "صحيح!",
     notQuite: "ليس تماماً.",
-    tutor: "المدرّس الذكي",
+    tutor: "المدرّس",
     thinking: "المدرّس يفكّر…",
     askPlaceholder: "اطلب من المدرّس مثالاً أو توضيحاً…",
     offline:
-      "المدرّس الذكي في وضع عدم الاتصال. نصيحة: أعد قراءة الشرح أعلاه واربطه بالتعريف الأساسي للفصل.",
+      "نصيحة: أعد قراءة الشرح أعلاه واربطه بالتعريف الأساسي للفصل.",
     next: "المفهوم التالي",
   },
 

@@ -120,43 +120,23 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Ambient page background */
+/*
+  Ambient page background.
+  Painted once with static radial gradients (no blur filters, no infinite
+  animations) so it stays butter-smooth on mobile and low-end browsers while
+  still looking premium. This was previously two animated blur(90px) circles
+  which caused continuous GPU work and jank on open.
+*/
 .bg-aurora {
   position: fixed;
   inset: 0;
   z-index: -1;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(79, 70, 229, 0.25), transparent 60%),
-    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(6, 182, 212, 0.18), transparent 55%),
+    radial-gradient(60rem 45rem at 50% -12%, rgba(99, 102, 241, 0.22), transparent 60%),
+    radial-gradient(45rem 40rem at 8% 8%, rgba(99, 102, 241, 0.14), transparent 60%),
+    radial-gradient(45rem 40rem at 100% 100%, rgba(217, 70, 239, 0.12), transparent 60%),
     var(--color-base-950);
-}
-
-.bg-aurora::before,
-.bg-aurora::after {
-  content: "";
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(90px);
-  will-change: transform, opacity;
-}
-
-.bg-aurora::before {
-  width: 45vw;
-  height: 45vw;
-  top: -10%;
-  left: -5%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.5), transparent 70%);
-  animation: aurora 18s ease-in-out infinite;
-}
-
-.bg-aurora::after {
-  width: 40vw;
-  height: 40vw;
-  bottom: -15%;
-  right: -8%;
-  background: radial-gradient(circle, rgba(217, 70, 239, 0.35), transparent 70%);
-  animation: aurora 22s ease-in-out infinite reverse;
 }
 
 /* Glassmorphism surfaces */
@@ -166,20 +146,20 @@ body {
     rgba(255, 255, 255, 0.07),
     rgba(255, 255, 255, 0.02)
   );
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(12px) saturate(130%);
+  -webkit-backdrop-filter: blur(12px) saturate(130%);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 @utility glass-strong {
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.1),
-    rgba(255, 255, 255, 0.03)
+    rgba(20, 22, 45, 0.72),
+    rgba(20, 22, 45, 0.55)
   );
-  backdrop-filter: blur(28px) saturate(160%);
-  -webkit-backdrop-filter: blur(28px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 @utility text-gradient {

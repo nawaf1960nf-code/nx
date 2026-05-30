@@ -18,7 +18,7 @@ export function DashboardMockup() {
   ];
 
   return (
-    <div className="relative rounded-[1.75rem] border border-white/10 bg-base-900/80 p-3 shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)] backdrop-blur-xl">
+    <div className="relative rounded-[1.75rem] border border-white/10 bg-base-900 p-3 shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)]">
       {/* window chrome */}
       <div className="mb-3 flex items-center gap-1.5 px-3 pt-1">
         <span className="h-2.5 w-2.5 rounded-full bg-danger/70" />

@@ -18,9 +18,12 @@ export interface BuildExamOptions {
   length?: number;
 }
 
-/** Shuffle a single question's options while keeping the correct answer tracked. */
-function shuffleOptions(q: Question): PreparedQuestion {
-  // True/False keep their natural order for readability.
+/**
+ * Shuffle a single question's options while keeping the correct answer tracked.
+ * True/False keep True-then-False order for readability; everything else gets a
+ * randomised answer position so the correct choice isn't always in slot A.
+ */
+export function shuffleOptions(q: Question): PreparedQuestion {
   if (q.type === "true-false") return { ...q };
   const indices = shuffle(q.options.map((_, i) => i));
   const options = indices.map((i) => q.options[i]);

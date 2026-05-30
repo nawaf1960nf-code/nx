@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Services Marketing Exam Platform",
   description:
-    "An AI-powered, interactive exam platform for mastering Services Marketing — covering Chapters 4, 7, 8, 10 & 11 with adaptive testing, study mode, and performance analytics.",
+    "An interactive exam platform for mastering Services Marketing — covering Chapters 4, 7, 8, 10 & 11 with adaptive practice, study mode, and performance analytics.",
   keywords: [
     "Services Marketing",
     "Exam Platform",
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     "Service Blueprinting",
     "Servicescape",
     "Quiz",
-    "AI tutor",
+    "Study",
   ],
   authors: [{ name: "Services Marketing Exam Platform" }],
 };
