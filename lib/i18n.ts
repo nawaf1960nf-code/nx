@@ -64,6 +64,94 @@ const en = {
     chapterWord: "Chapter",
   },
 
+  landing: {
+    catalogHeading: "Choose your course",
+    catalogSubtitle: "Pick a subject to start practicing. More are on the way.",
+    comingSoon: "Coming soon",
+    open: "Open course",
+    questionsLabel: "questions",
+    chaptersLabel: "chapters",
+    stats: {
+      heading: "Built for results",
+      items: [
+        { value: "132+", label: "Exam-ready questions" },
+        { value: "27", label: "Concepts covered" },
+        { value: "3", label: "Difficulty levels" },
+        { value: "100%", label: "Syllabus-grounded" },
+      ],
+    },
+    dashboardPreview: {
+      badge: "Live analytics",
+      heading: "See your progress come to life",
+      subtitle:
+        "Every attempt feeds a personal dashboard — scores over time, mastery by topic, and AI insights that tell you exactly what to review next.",
+      cardAnalytics: "Average score",
+      cardProgress: "Mastery",
+      cardInsight: "AI Insight",
+      insightText: "Strong on Servicescape & SSTs. Focus next on Marketing Communications.",
+      recommend: "Smart recommendation",
+      recommendText: "Review Chapter 8 — Blueprinting & fail points.",
+      bestLabel: "Best",
+      attemptsLabel: "Attempts",
+    },
+    testimonials: {
+      heading: "Loved by students",
+      subtitle: "Real results, fewer late-night cram sessions.",
+      items: [
+        { quote: "Went from a C to an A in two weeks. The per-topic analysis showed me exactly where I was weak.", name: "Sara A.", role: "Marketing major" },
+        { quote: "Study Mode feels like a private tutor. It explains every answer instantly.", name: "Khalid M.", role: "Business student" },
+        { quote: "The exam never repeats the same way, so I actually learn instead of memorising.", name: "Noura F.", role: "MBA candidate" },
+      ],
+    },
+    pricing: {
+      heading: "Simple, student-friendly pricing",
+      subtitle: "Start free. Upgrade only if you want the AI tutor.",
+      perMonth: "/mo",
+      mostPopular: "Most popular",
+      cta: "Get started",
+      plans: [
+        {
+          name: "Free",
+          price: "$0",
+          desc: "Everything you need to pass.",
+          features: ["Full question bank", "3 difficulty levels", "Performance analysis", "Progress dashboard"],
+        },
+        {
+          name: "Pro",
+          price: "$6",
+          desc: "AI-powered, personalised studying.",
+          features: ["Everything in Free", "AI question generation", "AI Study Mode tutor", "Adaptive learning", "Digital certificate"],
+        },
+        {
+          name: "Campus",
+          price: "Custom",
+          desc: "For study groups & classes.",
+          features: ["Everything in Pro", "Multiple subjects", "Shared progress", "Priority support"],
+        },
+      ],
+    },
+    faq: {
+      heading: "Frequently asked questions",
+      items: [
+        { q: "Are the questions based on my actual course?", a: "Yes — the bank is built directly from the Services Marketing slides (Chapters 4, 7, 8, 10 & 11), including the real examples used in class." },
+        { q: "What happens if I close the browser mid-exam?", a: "Nothing is lost. Your answers and position are saved automatically, so you resume exactly where you left off." },
+        { q: "Do I need the AI features to use it?", a: "No. The platform works fully offline with the built-in question bank and analysis. The AI tutor and question generation are optional extras." },
+        { q: "Can I add other subjects?", a: "Yes — the platform is built as a course catalog. New subjects can be added with their own questions, study mode and dashboard." },
+        { q: "Is it free?", a: "The core exam experience is free. A Pro tier unlocks the AI tutor and adaptive learning." },
+      ],
+    },
+    finalCta: {
+      heading: "Ready to ace your exam?",
+      subtitle: "Join students who turned anxious cramming into confident mastery.",
+      button: "Start practicing free",
+    },
+    footer: {
+      tagline: "An AI-powered exam platform for mastering your courses.",
+      product: "Product",
+      rights: "All rights reserved.",
+    },
+  },
+
   level: {
     questions: (n: number) => `${n} questions`,
     best: (pct: number) => `Best ${pct}%`,
@@ -285,6 +373,94 @@ const ar: Messages = {
     heading: "تغطية كاملة للمنهج",
     subtitle: "الأسئلة تشمل كل مفهوم مطلوب عبر الفصول الخمسة.",
     chapterWord: "الفصل",
+  },
+
+  landing: {
+    catalogHeading: "اختر مادتك",
+    catalogSubtitle: "اختر مادة لتبدأ التدرّب. والمزيد في الطريق.",
+    comingSoon: "قريباً",
+    open: "افتح المادة",
+    questionsLabel: "سؤال",
+    chaptersLabel: "فصول",
+    stats: {
+      heading: "مبني لتحقيق النتائج",
+      items: [
+        { value: "132+", label: "سؤال جاهز للامتحان" },
+        { value: "27", label: "مفهوماً مغطّى" },
+        { value: "3", label: "مستويات صعوبة" },
+        { value: "100%", label: "ملتزم بالمنهج" },
+      ],
+    },
+    dashboardPreview: {
+      badge: "تحليلات حيّة",
+      heading: "شاهد تقدّمك يتجسّد أمامك",
+      subtitle:
+        "كل محاولة تغذّي لوحة تحكم شخصية — نتائجك عبر الوقت، إتقانك لكل موضوع، ورؤى ذكية تخبرك بالضبط بما تحتاج مراجعته.",
+      cardAnalytics: "متوسط الدرجات",
+      cardProgress: "الإتقان",
+      cardInsight: "رؤية ذكية",
+      insightText: "قوي في Servicescape و SSTs. ركّز تالياً على Marketing Communications.",
+      recommend: "توصية ذكية",
+      recommendText: "راجع الفصل ٨ — Blueprinting ونقاط الفشل.",
+      bestLabel: "الأفضل",
+      attemptsLabel: "المحاولات",
+    },
+    testimonials: {
+      heading: "محبوب من الطلاب",
+      subtitle: "نتائج حقيقية، وسهر أقل قبل الامتحان.",
+      items: [
+        { quote: "انتقلت من C إلى A في أسبوعين. تحليل المواضيع وضّح لي بالضبط نقاط ضعفي.", name: "سارة أ.", role: "تخصص تسويق" },
+        { quote: "وضع الدراسة يحسّه مدرّس خاص. يشرح كل إجابة فوراً.", name: "خالد م.", role: "طالب إدارة أعمال" },
+        { quote: "الاختبار ما يتكرر بنفس الطريقة، فأنا فعلاً أتعلّم بدل ما أحفظ.", name: "نورة ف.", role: "ماجستير إدارة" },
+      ],
+    },
+    pricing: {
+      heading: "أسعار بسيطة ومناسبة للطلاب",
+      subtitle: "ابدأ مجاناً. ترقَّ فقط لو تبي المدرّس الذكي.",
+      perMonth: "/شهرياً",
+      mostPopular: "الأكثر شيوعاً",
+      cta: "ابدأ الآن",
+      plans: [
+        {
+          name: "مجاني",
+          price: "$0",
+          desc: "كل ما تحتاجه للنجاح.",
+          features: ["بنك أسئلة كامل", "٣ مستويات صعوبة", "تحليل الأداء", "لوحة تحكم للتقدّم"],
+        },
+        {
+          name: "Pro",
+          price: "$6",
+          desc: "دراسة شخصية مدعومة بالذكاء الاصطناعي.",
+          features: ["كل ما في المجاني", "توليد أسئلة بالذكاء الاصطناعي", "مدرّس وضع الدراسة الذكي", "تعلّم تكيّفي", "شهادة رقمية"],
+        },
+        {
+          name: "Campus",
+          price: "حسب الطلب",
+          desc: "لمجموعات الدراسة والصفوف.",
+          features: ["كل ما في Pro", "مواد متعددة", "تقدّم مشترك", "دعم ذو أولوية"],
+        },
+      ],
+    },
+    faq: {
+      heading: "الأسئلة الشائعة",
+      items: [
+        { q: "هل الأسئلة مبنية على مادتي فعلاً؟", a: "نعم — البنك مبني مباشرة من شرائح تسويق الخدمات (الفصول ٤ و٧ و٨ و١٠ و١١)، مع الأمثلة الحقيقية المستخدمة في المحاضرات." },
+        { q: "وش يصير لو سكّرت المتصفح بنص الاختبار؟", a: "ما يضيع شي. إجاباتك وموضعك يُحفظ تلقائياً، فترجع تكمّل من نفس المكان بالضبط." },
+        { q: "هل أحتاج ميزات الذكاء الاصطناعي لاستخدامه؟", a: "لا. المنصة تشتغل بالكامل بدون اتصال ببنك الأسئلة والتحليل المدمج. المدرّس الذكي وتوليد الأسئلة إضافات اختيارية." },
+        { q: "هل أقدر أضيف مواد ثانية؟", a: "نعم — المنصة مبنية ككتالوج مواد. تقدر تضيف مواد جديدة بأسئلتها ووضع دراستها ولوحة تحكمها." },
+        { q: "هل هو مجاني؟", a: "تجربة الاختبار الأساسية مجانية. وخطة Pro تفتح المدرّس الذكي والتعلّم التكيّفي." },
+      ],
+    },
+    finalCta: {
+      heading: "جاهز تتفوّق في امتحانك؟",
+      subtitle: "انضم لطلاب حوّلوا السهر القلِق إلى إتقان واثق.",
+      button: "ابدأ التدرّب مجاناً",
+    },
+    footer: {
+      tagline: "منصة اختبارات مدعومة بالذكاء الاصطناعي لإتقان موادك.",
+      product: "المنتج",
+      rights: "جميع الحقوق محفوظة.",
+    },
   },
 
   level: {
