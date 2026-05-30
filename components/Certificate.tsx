@@ -2,7 +2,8 @@
 
 import { motion } from "framer-motion";
 import { Award, BadgeCheck } from "lucide-react";
-import type { Grade } from "@/lib/types";
+import type { Difficulty, Grade } from "@/lib/types";
+import { useLocale } from "@/lib/locale-context";
 
 export function Certificate({
   name,
@@ -14,11 +15,12 @@ export function Certificate({
   name: string;
   percentage: number;
   grade: Grade;
-  difficulty: string;
+  difficulty: Difficulty;
   date: number;
 }) {
-  const displayName = name?.trim() || "Star Student";
-  const dateStr = new Date(date).toLocaleDateString(undefined, {
+  const { t, locale } = useLocale();
+  const displayName = name?.trim() || t.certificate.defaultName;
+  const dateStr = new Date(date).toLocaleDateString(locale === "ar" ? "ar" : undefined, {
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -48,29 +50,26 @@ export function Certificate({
           <Award className="h-8 w-8" />
         </span>
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold/80">
-          Certificate of Achievement
+          {t.certificate.title}
         </p>
         <h3 className="mt-4 font-display text-3xl font-bold text-white">
           {displayName}
         </h3>
         <p className="mx-auto mt-3 max-w-md text-sm text-brand-100/70">
-          has successfully completed the{" "}
-          <span className="font-semibold capitalize text-white">{difficulty}</span>{" "}
-          Services Marketing examination with a score of{" "}
-          <span className="font-semibold text-gold">{percentage}%</span>.
+          {t.certificate.body(t.difficulty[difficulty], percentage)}
         </p>
 
         <div className="mt-6 flex items-center justify-center gap-6">
           <div className="text-center">
             <p className="font-display text-2xl font-bold text-white">{grade}</p>
             <p className="text-[11px] uppercase tracking-wider text-brand-100/50">
-              Grade
+              {t.certificate.grade}
             </p>
           </div>
           <div className="h-10 w-px bg-white/15" />
           <div className="text-center">
             <p className="flex items-center gap-1.5 font-display text-lg font-semibold text-success">
-              <BadgeCheck className="h-5 w-5" /> Passed
+              <BadgeCheck className="h-5 w-5" /> {t.certificate.passed}
             </p>
             <p className="text-[11px] uppercase tracking-wider text-brand-100/50">
               {dateStr}
@@ -79,7 +78,7 @@ export function Certificate({
         </div>
 
         <p className="mt-6 text-[11px] tracking-wider text-brand-100/40">
-          Services Marketing Exam Platform · Chapters 4 · 7 · 8 · 10 · 11
+          {t.certificate.footer}
         </p>
       </div>
     </motion.div>

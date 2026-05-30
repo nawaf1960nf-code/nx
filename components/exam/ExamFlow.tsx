@@ -20,6 +20,7 @@ import {
   setStudentName,
 } from "@/lib/storage";
 import { aiGenerateQuestions } from "@/lib/ai-client";
+import { useLocale } from "@/lib/locale-context";
 
 import { Welcome } from "./Welcome";
 import { QuestionView } from "./QuestionView";
@@ -34,6 +35,7 @@ function parseLevel(value: string | null): Difficulty {
 
 export function ExamFlow() {
   const params = useSearchParams();
+  const { t } = useLocale();
   const difficulty = parseLevel(params.get("level"));
   const level = levelConfig(difficulty);
 
@@ -147,7 +149,7 @@ export function ExamFlow() {
         return (
           <div className="flex flex-col items-center gap-4 text-center">
             <Loader2 className="h-10 w-10 animate-spin text-brand-300" />
-            <p className="text-brand-100/70">Building your unique exam…</p>
+            <p className="text-brand-100/70">{t.exam.building}</p>
           </div>
         );
       case "exam":
@@ -192,11 +194,11 @@ export function ExamFlow() {
           href="/"
           className="flex items-center gap-2 text-sm text-brand-100/60 transition-colors hover:text-white"
         >
-          <X className="h-4 w-4" /> Exit
+          <X className="h-4 w-4" /> {t.exam.exit}
         </Link>
         {phase === "exam" && (
-          <span className="text-sm font-medium capitalize text-brand-100/70">
-            {difficulty} level
+          <span className="text-sm font-medium text-brand-100/70">
+            {t.exam.levelSuffix(t.difficulty[difficulty])}
           </span>
         )}
       </div>

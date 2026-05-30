@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/Button";
 import { Confetti } from "@/components/Confetti";
 import { Certificate } from "@/components/Certificate";
 import { aiAnalyze } from "@/lib/ai-client";
+import { useLocale } from "@/lib/locale-context";
 
 export function ResultsView({
   analysis,
@@ -39,6 +40,7 @@ export function ResultsView({
   onReview: () => void;
   onRetake: () => void;
 }) {
+  const { t: tr } = useLocale();
   const { score, total, percentage, grade } = analysis;
   const passed = percentage >= PASS_THRESHOLD;
   const earnedCert = percentage >= CERTIFICATE_THRESHOLD;
@@ -90,22 +92,24 @@ export function ResultsView({
       >
         <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">
           {percentage >= 90
-            ? "Exceptional! 🎉"
+            ? tr.results.exceptional
             : passed
-              ? "Well done! 👏"
-              : "Keep going 💪"}
+              ? tr.results.wellDone
+              : tr.results.keepGoing}
         </h1>
-        <p className="mt-2 text-brand-100/60 capitalize">{difficulty} exam complete</p>
+        <p className="mt-2 text-brand-100/60">
+          {tr.results.complete(tr.difficulty[difficulty])}
+        </p>
       </motion.div>
 
       <div className="mt-8 flex flex-col items-center gap-6">
         <ScoreRing percentage={percentage} color={color} label={grade} />
         <div className="flex items-center gap-4">
-          <Stat icon={CheckCircle2} value={score} label="Correct" color="#34d399" />
-          <Stat icon={XCircle} value={total - score} label="Wrong" color="#f43f5e" />
+          <Stat icon={CheckCircle2} value={score} label={tr.results.correct} color="#34d399" />
+          <Stat icon={XCircle} value={total - score} label={tr.results.wrong} color="#f43f5e" />
           <Stat
             value={`${score}/${total}`}
-            label="Final Score"
+            label={tr.results.finalScore}
             color="#818cf8"
           />
         </div>
@@ -116,7 +120,7 @@ export function ResultsView({
         <div className="mb-3 flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-brand-300" />
           <h2 className="font-display text-lg font-semibold text-white">
-            Performance Analysis
+            {tr.results.analysis}
           </h2>
           {ai && (
             <span className="rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold text-success">
@@ -124,40 +128,40 @@ export function ResultsView({
             </span>
           )}
           {aiLoading && !ai && (
-            <span className="text-[11px] text-brand-100/40">analyzing…</span>
+            <span className="text-[11px] text-brand-100/40">{tr.results.analyzing}</span>
           )}
         </div>
         <p className="text-sm leading-relaxed text-brand-100/80">{summary}</p>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <AreaList
-            title="Strong Areas"
+            title={tr.results.strongAreas}
             icon={TrendingUp}
             color="#34d399"
             items={
               ai?.strongAreas?.length
                 ? ai.strongAreas
-                : analysis.strongTopics.map((t) => `${t.label} (${t.correct}/${t.total})`)
+                : analysis.strongTopics.map((t) => `${tr.topics[t.topic]} (${t.correct}/${t.total})`)
             }
-            empty="Build strengths by retaking the exam."
+            empty={tr.results.strongEmpty}
           />
           <AreaList
-            title="Weak Areas"
+            title={tr.results.weakAreas}
             icon={TrendingDown}
             color="#fb7185"
             items={
               ai?.weakAreas?.length
                 ? ai.weakAreas
-                : analysis.weakTopics.map((t) => `${t.label} (${t.correct}/${t.total})`)
+                : analysis.weakTopics.map((t) => `${tr.topics[t.topic]} (${t.correct}/${t.total})`)
             }
-            empty="No major weak spots — great work!"
+            empty={tr.results.weakEmpty}
           />
         </div>
 
         <div className="mt-6">
           <div className="mb-2 flex items-center gap-2">
             <Lightbulb className="h-4 w-4 text-gold" />
-            <h3 className="text-sm font-semibold text-white">Recommendations</h3>
+            <h3 className="text-sm font-semibold text-white">{tr.results.recommendations}</h3>
           </div>
           <ul className="space-y-2">
             {recommendations.map((r, i) => (
@@ -176,13 +180,13 @@ export function ResultsView({
       {/* Topic breakdown bars */}
       <GlassCard className="mt-6 p-6 sm:p-8">
         <h2 className="mb-4 font-display text-lg font-semibold text-white">
-          Topic Breakdown
+          {tr.results.breakdown}
         </h2>
         <div className="space-y-3">
           {analysis.byTopic.map((t) => (
             <div key={t.topic}>
               <div className="mb-1 flex justify-between text-xs">
-                <span className="text-brand-100/80">{t.label}</span>
+                <span className="text-brand-100/80">{tr.topics[t.topic]}</span>
                 <span className="text-brand-100/50">
                   {t.correct}/{t.total}
                 </span>
@@ -220,14 +224,14 @@ export function ResultsView({
       {/* Actions */}
       <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
         <Button onClick={onReview} variant="subtle" size="lg">
-          <ListChecks className="h-4 w-4" /> Review Answers
+          <ListChecks className="h-4 w-4" /> {tr.results.review}
         </Button>
         <Button onClick={onRetake} size="lg">
-          <RotateCcw className="h-4 w-4" /> Retake Exam
+          <RotateCcw className="h-4 w-4" /> {tr.results.retake}
         </Button>
         <Link href="/dashboard">
           <Button variant="outline" size="lg">
-            <Home className="h-4 w-4" /> Dashboard
+            <Home className="h-4 w-4" /> {tr.results.dashboard}
           </Button>
         </Link>
       </div>

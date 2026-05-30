@@ -7,8 +7,10 @@ import { useEffect, useState } from "react";
 import type { LevelConfig } from "@/lib/levels";
 import { EXAM_LENGTH } from "@/lib/exam-engine";
 import { getBestScore, type BestScore } from "@/lib/storage";
+import { useLocale } from "@/lib/locale-context";
 
 export function LevelCard({ level, index }: { level: LevelConfig; index: number }) {
+  const { t } = useLocale();
   const [best, setBest] = useState<BestScore | null>(null);
 
   useEffect(() => {
@@ -41,13 +43,15 @@ export function LevelCard({ level, index }: { level: LevelConfig; index: number 
             className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider"
             style={{ background: `${level.accent}1f`, color: level.accent }}
           >
-            {level.tagline}
+            {t.tagline[level.id]}
           </span>
         </div>
 
-        <h3 className="font-display text-2xl font-bold text-white">{level.name}</h3>
+        <h3 className="font-display text-2xl font-bold text-white">
+          {t.difficulty[level.id]}
+        </h3>
         <p className="mt-2 flex-1 text-sm leading-relaxed text-brand-100/70">
-          {level.description}
+          {t.levelDesc[level.id]}
         </p>
 
         <div className="mt-6 flex items-center gap-4 text-sm text-brand-100/60">
@@ -56,12 +60,12 @@ export function LevelCard({ level, index }: { level: LevelConfig; index: number 
               className="inline-block h-1.5 w-1.5 rounded-full"
               style={{ background: level.accent }}
             />
-            {EXAM_LENGTH} questions
+            {t.level.questions(EXAM_LENGTH)}
           </span>
           {best && (
             <span className="flex items-center gap-1.5 text-gold">
               <Trophy className="h-3.5 w-3.5" />
-              Best {best.percentage}%
+              {t.level.best(best.percentage)}
             </span>
           )}
         </div>
@@ -74,8 +78,8 @@ export function LevelCard({ level, index }: { level: LevelConfig; index: number 
             boxShadow: `0 10px 30px -10px ${level.glow}`,
           }}
         >
-          Start Exam
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          {t.level.start}
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" />
         </Link>
       </div>
     </motion.div>

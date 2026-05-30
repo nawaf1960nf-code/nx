@@ -25,11 +25,14 @@ import {
   getTopicMastery,
   clearAll,
 } from "@/lib/storage";
-import { topicLabel, topicChapter, CHAPTER_TITLES } from "@/lib/topics";
+import { topicChapter } from "@/lib/topics";
 import { GRADE_COLORS } from "@/lib/grading";
 import type { ExamResult, TopicId, Chapter } from "@/lib/types";
+import { useLocale } from "@/lib/locale-context";
+import type { Messages } from "@/lib/i18n";
 
 export default function DashboardPage() {
+  const { t } = useLocale();
   const [results, setResults] = useState<ExamResult[]>([]);
   const [avg, setAvg] = useState(0);
   const [best, setBest] = useState(0);
@@ -88,22 +91,20 @@ export default function DashboardPage() {
       <div className="mx-auto max-w-5xl px-4 pt-10">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="font-display text-3xl font-bold text-white">Dashboard</h1>
-            <p className="mt-1 text-sm text-brand-100/60">
-              Track your progress across every attempt.
-            </p>
+            <h1 className="font-display text-3xl font-bold text-white">{t.dashboard.title}</h1>
+            <p className="mt-1 text-sm text-brand-100/60">{t.dashboard.subtitle}</p>
           </div>
           {hasData && (
             <button
               onClick={() => {
-                if (confirm("Clear all saved progress? This cannot be undone.")) {
+                if (confirm(t.dashboard.resetConfirm)) {
                   clearAll();
                   refresh();
                 }
               }}
               className="flex items-center gap-1.5 text-xs text-brand-100/40 transition-colors hover:text-danger"
             >
-              <Trash2 className="h-3.5 w-3.5" /> Reset progress
+              <Trash2 className="h-3.5 w-3.5" /> {t.dashboard.reset}
             </button>
           )}
         </div>
@@ -114,15 +115,14 @@ export default function DashboardPage() {
               <Sparkles className="h-8 w-8" />
             </span>
             <h2 className="font-display text-xl font-semibold text-white">
-              No attempts yet
+              {t.dashboard.emptyTitle}
             </h2>
             <p className="mx-auto mt-2 max-w-sm text-sm text-brand-100/60">
-              Take your first exam to unlock detailed analytics — scores over time,
-              strong and weak areas, and chapters to review.
+              {t.dashboard.emptyDesc}
             </p>
             <Link href="/#levels" className="mt-6 inline-block">
               <Button size="lg">
-                Start your first exam <ArrowRight className="h-4 w-4" />
+                {t.dashboard.emptyCta} <ArrowRight className="h-4 w-4 rtl:rotate-180" />
               </Button>
             </Link>
           </GlassCard>
@@ -130,12 +130,12 @@ export default function DashboardPage() {
           <>
             {/* Stat cards */}
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <StatCard icon={ListChecks} label="Exams Completed" value={attempts} color="#818cf8" />
-              <StatCard icon={Target} label="Average Score" value={`${avg}%`} color="#22d3ee" />
-              <StatCard icon={Trophy} label="Best Score" value={`${best}%`} color="#fbbf24" />
+              <StatCard icon={ListChecks} label={t.dashboard.examsCompleted} value={attempts} color="#818cf8" />
+              <StatCard icon={Target} label={t.dashboard.averageScore} value={`${avg}%`} color="#22d3ee" />
+              <StatCard icon={Trophy} label={t.dashboard.bestScore} value={`${best}%`} color="#fbbf24" />
               <StatCard
                 icon={TrendingUp}
-                label="Improvement"
+                label={t.dashboard.improvement}
                 value={improvement === null ? "—" : `${improvement >= 0 ? "+" : ""}${improvement}%`}
                 color={improvement !== null && improvement >= 0 ? "#34d399" : "#fb7185"}
               />
@@ -144,7 +144,7 @@ export default function DashboardPage() {
             {/* Score history chart */}
             <GlassCard className="mt-6 p-6 sm:p-8">
               <h2 className="mb-5 font-display text-lg font-semibold text-white">
-                Scores Over Time
+                {t.dashboard.scoresOverTime}
               </h2>
               <ScoreChart history={history} />
             </GlassCard>
@@ -152,18 +152,20 @@ export default function DashboardPage() {
             {/* Strong / Weak */}
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               <TopicPanel
-                title="Your Strengths"
+                title={t.dashboard.strengths}
                 icon={TrendingUp}
                 color="#34d399"
                 items={strong}
-                empty="Keep practicing to build strengths."
+                empty={t.dashboard.strengthsEmpty}
+                t={t}
               />
               <TopicPanel
-                title="Needs Review"
+                title={t.dashboard.needsReview}
                 icon={Target}
                 color="#fb7185"
                 items={weak}
-                empty="No weak spots detected — excellent!"
+                empty={t.dashboard.needsReviewEmpty}
+                t={t}
               />
             </div>
 
@@ -172,7 +174,7 @@ export default function DashboardPage() {
               <div className="mb-4 flex items-center gap-2">
                 <BookOpenCheck className="h-5 w-5 text-brand-300" />
                 <h2 className="font-display text-lg font-semibold text-white">
-                  Chapters to Review
+                  {t.dashboard.chaptersToReview}
                 </h2>
               </div>
               <div className="space-y-3">
@@ -180,7 +182,7 @@ export default function DashboardPage() {
                   <div key={chapter}>
                     <div className="mb-1 flex justify-between text-xs">
                       <span className="text-brand-100/80">
-                        Ch. {chapter} · {CHAPTER_TITLES[chapter]}
+                        {t.exam.chShort} {chapter} · {t.chapterTitles[chapter]}
                       </span>
                       <span className="text-brand-100/50">{Math.round(ratio * 100)}%</span>
                     </div>
@@ -204,12 +206,12 @@ export default function DashboardPage() {
             <div className="mt-8 flex justify-center gap-3">
               <Link href="/#levels">
                 <Button size="lg">
-                  New Exam <ArrowRight className="h-4 w-4" />
+                  {t.dashboard.newExam} <ArrowRight className="h-4 w-4 rtl:rotate-180" />
                 </Button>
               </Link>
               <Link href="/study">
                 <Button variant="outline" size="lg">
-                  Study Mode
+                  {t.dashboard.study}
                 </Button>
               </Link>
             </div>
@@ -255,12 +257,14 @@ function TopicPanel({
   color,
   items,
   empty,
+  t,
 }: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
   items: { topic: TopicId; ratio: number }[];
   empty: string;
+  t: Messages;
 }) {
   return (
     <GlassCard className="p-6">
@@ -272,7 +276,7 @@ function TopicPanel({
         <ul className="space-y-2.5">
           {items.map(({ topic, ratio }) => (
             <li key={topic} className="flex items-center justify-between text-sm">
-              <span className="text-brand-100/80">{topicLabel(topic)}</span>
+              <span className="text-brand-100/80">{t.topics[topic]}</span>
               <span className="font-semibold" style={{ color }}>
                 {Math.round(ratio * 100)}%
               </span>
