@@ -12,10 +12,13 @@ import { levelConfig } from "@/lib/levels";
 import type { Difficulty, PreparedQuestion } from "@/lib/types";
 import {
   buildResult,
+  clearInProgress,
+  getInProgress,
   getRecentIds,
   getStrongTopics,
   getStudentName,
   getWeakTopics,
+  saveInProgress,
   saveResult,
   setStudentName,
 } from "@/lib/storage";
@@ -48,9 +51,20 @@ export function ExamFlow() {
   const [studentName, setName] = useState("");
   const advancing = useRef(false);
 
+  // On mount: restore the saved name and, if an exam for this difficulty was
+  // in progress, resume it exactly where the student left off.
   useEffect(() => {
     setName(getStudentName());
-  }, []);
+    const saved = getInProgress();
+    if (saved && saved.difficulty === difficulty) {
+      setQuestions(saved.questions);
+      setSelections(saved.selections);
+      setIndex(saved.index);
+      setName(saved.studentName || getStudentName());
+      advancing.current = false;
+      setPhase("exam");
+    }
+  }, [difficulty]);
 
   const start = useCallback(
     async (name: string) => {
@@ -85,10 +99,20 @@ export function ExamFlow() {
         recentIds,
         extra,
       });
+      const freshSelections = Array(exam.length).fill(null) as (number | null)[];
       setQuestions(exam);
-      setSelections(Array(exam.length).fill(null));
+      setSelections(freshSelections);
       setIndex(0);
       advancing.current = false;
+      // Persist the brand-new attempt so a refresh resumes it immediately.
+      saveInProgress({
+        difficulty,
+        studentName: name,
+        questions: exam,
+        selections: freshSelections,
+        index: 0,
+        startedAt: Date.now(),
+      });
       setPhase("exam");
     },
     [difficulty],
@@ -106,6 +130,8 @@ export function ExamFlow() {
         a.grade,
       );
       saveResult(result, questions.map((q) => q.id));
+      // The attempt is complete — drop the in-progress snapshot.
+      clearInProgress();
       setAnalysis(a);
       setResultDate(result.date);
       setPhase("results");
@@ -121,9 +147,22 @@ export function ExamFlow() {
       next[index] = choice;
       setSelections(next);
 
+      const isLast = index + 1 >= questions.length;
+      // Persist progress immediately so a crash/refresh never loses the answer.
+      if (!isLast) {
+        saveInProgress({
+          difficulty,
+          studentName,
+          questions,
+          selections: next,
+          index: index + 1,
+          startedAt: Date.now(),
+        });
+      }
+
       // Auto-advance shortly after answering; block going back.
       window.setTimeout(() => {
-        if (index + 1 >= questions.length) {
+        if (isLast) {
           finish(next);
         } else {
           setIndex((i) => i + 1);
@@ -131,7 +170,7 @@ export function ExamFlow() {
         }
       }, 420);
     },
-    [selections, index, questions.length, finish],
+    [selections, index, questions.length, finish, difficulty, studentName],
   );
 
   const retake = useCallback(() => {
