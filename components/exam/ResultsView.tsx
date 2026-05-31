@@ -28,15 +28,19 @@ import { useLocale } from "@/lib/locale-context";
 export function ResultsView({
   analysis,
   difficulty,
+  subjectId,
   studentName,
   date,
+  labelFor,
   onReview,
   onRetake,
 }: {
   analysis: Analysis;
   difficulty: Difficulty;
+  subjectId: string;
   studentName: string;
   date: number;
+  labelFor: (topic: string) => string;
   onReview: () => void;
   onRetake: () => void;
 }) {
@@ -57,11 +61,12 @@ export function ResultsView({
   useEffect(() => {
     let active = true;
     aiAnalyze({
+      subjectId,
       percentage,
       grade,
       difficulty,
       topics: analysis.byTopic.map((t) => ({
-        label: t.label,
+        label: labelFor(t.topic),
         topicId: t.topic,
         correct: t.correct,
         total: t.total,
@@ -74,7 +79,7 @@ export function ResultsView({
     return () => {
       active = false;
     };
-  }, [percentage, grade, difficulty, analysis]);
+  }, [percentage, grade, difficulty, analysis, subjectId, labelFor]);
 
   const summary = ai?.summary || analysis.summary;
   const recommendations =
