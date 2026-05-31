@@ -20,8 +20,9 @@ const en = {
     home: "Home",
     study: "Study Mode",
     dashboard: "Dashboard",
-    brand: "Services Marketing",
-    brandSub: "Exam Platform",
+    courses: "Courses",
+    brand: "Exam Platform",
+    brandSub: "Smart study & practice",
   },
 
   ai: {
@@ -149,6 +150,31 @@ const en = {
       tagline: "A smart exam platform for mastering your courses.",
       product: "Product",
       rights: "All rights reserved.",
+    },
+  },
+
+  hub: {
+    backToCourses: "All courses",
+    chooseLevel: "Choose your level",
+    levelSubtitle: "Each exam is 30 questions, randomised every attempt.",
+    studyCta: "Study Mode",
+    dashboardCta: "Dashboard",
+    chaptersCovered: "Chapters covered",
+  },
+
+  analysis: {
+    review: (label: string, chapter: number, correct: number, total: number) =>
+      `Review ${label} (Chapter ${chapter}) — you scored ${correct}/${total} here.`,
+    allRound: "Strong all-round performance — keep reinforcing concepts with Study Mode to stay sharp.",
+    summary: (percentage: number, strong: string[], weak: string[]) => {
+      const parts: string[] = [];
+      if (percentage >= 90) parts.push("Outstanding mastery of the material.");
+      else if (percentage >= 75) parts.push("Solid, confident understanding overall.");
+      else if (percentage >= 60) parts.push("A reasonable grasp with clear room to grow.");
+      else parts.push("The fundamentals need more review before the exam.");
+      if (strong.length) parts.push(`Excellent understanding of ${strong.slice(0, 2).join(" and ")}.`);
+      if (weak.length) parts.push(`Needs improvement in ${weak.slice(0, 2).join(" and ")}.`);
+      return parts.join(" ");
     },
   },
 
@@ -331,8 +357,9 @@ const ar: Messages = {
     home: "الرئيسية",
     study: "وضع الدراسة",
     dashboard: "لوحة التحكم",
-    brand: "تسويق الخدمات",
-    brandSub: "منصة الاختبارات",
+    courses: "المواد",
+    brand: "منصة الاختبارات",
+    brandSub: "دراسة وتدرّب ذكي",
   },
 
   ai: {
@@ -460,6 +487,31 @@ const ar: Messages = {
       tagline: "منصة اختبارات مدعومة بالذكاء الاصطناعي لإتقان موادك.",
       product: "المنتج",
       rights: "جميع الحقوق محفوظة.",
+    },
+  },
+
+  hub: {
+    backToCourses: "كل المواد",
+    chooseLevel: "اختر مستواك",
+    levelSubtitle: "كل اختبار من ٣٠ سؤالاً، عشوائية في كل محاولة.",
+    studyCta: "وضع الدراسة",
+    dashboardCta: "لوحة التحكم",
+    chaptersCovered: "الفصول المغطّاة",
+  },
+
+  analysis: {
+    review: (label: string, chapter: number, correct: number, total: number) =>
+      `راجع ${label} (الفصل ${chapter}) — نتيجتك هنا ${correct}/${total}.`,
+    allRound: "أداء قوي وشامل — واصل ترسيخ المفاهيم عبر وضع الدراسة للبقاء في القمة.",
+    summary: (percentage: number, strong: string[], weak: string[]) => {
+      const parts: string[] = [];
+      if (percentage >= 90) parts.push("إتقان متميّز للمادة.");
+      else if (percentage >= 75) parts.push("فهم قوي وواثق بشكل عام.");
+      else if (percentage >= 60) parts.push("استيعاب معقول مع مجال واضح للتحسّن.");
+      else parts.push("الأساسيات تحتاج مزيداً من المراجعة قبل الامتحان.");
+      if (strong.length) parts.push(`فهم ممتاز لـ ${strong.slice(0, 2).join(" و ")}.`);
+      if (weak.length) parts.push(`تحتاج تحسيناً في ${weak.slice(0, 2).join(" و ")}.`);
+      return parts.join(" ");
     },
   },
 

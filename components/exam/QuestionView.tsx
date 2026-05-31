@@ -13,12 +13,14 @@ export function QuestionView({
   total,
   selected,
   onSelect,
+  labelFor,
 }: {
   question: PreparedQuestion;
   index: number;
   total: number;
   selected: number | null;
   onSelect: (i: number) => void;
+  labelFor: (topic: string) => string;
 }) {
   const { t } = useLocale();
   const accent = levelConfig(question.difficulty).accent;
@@ -51,7 +53,7 @@ export function QuestionView({
         className="glass-strong rounded-3xl p-6 sm:p-8"
       >
         <p className="mb-1 text-xs font-medium uppercase tracking-wider text-brand-200/60">
-          {t.topics[question.topic]}
+          {labelFor(question.topic)}
         </p>
         <h2 className="font-display text-xl font-semibold leading-snug text-white sm:text-2xl">
           {question.prompt}

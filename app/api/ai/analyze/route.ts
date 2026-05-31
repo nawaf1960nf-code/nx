@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { callClaude, extractJson } from "@/lib/ai-server";
-import { buildContext } from "@/lib/knowledge-base";
+import { getSubject, buildContext } from "@/lib/subjects";
+import type { TopicId } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -13,6 +14,7 @@ interface TopicStat {
 }
 
 interface Body {
+  subjectId: string;
   percentage: number;
   grade: string;
   difficulty: string;
@@ -27,15 +29,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ source: "fallback" }, { status: 400 });
   }
 
+  const subject = getSubject(body.subjectId);
   const topics = Array.isArray(body.topics) ? body.topics : [];
-  const context = buildContext(topics.map((t) => t.topicId as never));
+  const context = buildContext(subject, topics.map((t) => t.topicId as TopicId));
 
-  const breakdown = topics
-    .map((t) => `- ${t.label}: ${t.correct}/${t.total}`)
-    .join("\n");
+  const breakdown = topics.map((t) => `- ${t.label}: ${t.correct}/${t.total}`).join("\n");
 
   const system =
-    "You are a supportive Services Marketing tutor. Analyse a student's exam " +
+    `You are a supportive ${subject.name.en} tutor. Analyse a student's exam ` +
     "performance and give specific, encouraging, actionable feedback grounded " +
     "ONLY in the provided course notes. Respond with strict JSON only.";
 

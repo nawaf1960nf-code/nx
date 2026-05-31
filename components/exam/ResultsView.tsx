@@ -136,7 +136,7 @@ export function ResultsView({
             items={
               ai?.strongAreas?.length
                 ? ai.strongAreas
-                : analysis.strongTopics.map((t) => `${tr.topics[t.topic]} (${t.correct}/${t.total})`)
+                : analysis.strongTopics.map((t) => `${labelFor(t.topic)} (${t.correct}/${t.total})`)
             }
             empty={tr.results.strongEmpty}
           />
@@ -147,7 +147,7 @@ export function ResultsView({
             items={
               ai?.weakAreas?.length
                 ? ai.weakAreas
-                : analysis.weakTopics.map((t) => `${tr.topics[t.topic]} (${t.correct}/${t.total})`)
+                : analysis.weakTopics.map((t) => `${labelFor(t.topic)} (${t.correct}/${t.total})`)
             }
             empty={tr.results.weakEmpty}
           />
@@ -181,7 +181,7 @@ export function ResultsView({
           {analysis.byTopic.map((t) => (
             <div key={t.topic}>
               <div className="mb-1 flex justify-between text-xs">
-                <span className="text-brand-100/80">{tr.topics[t.topic]}</span>
+                <span className="text-brand-100/80">{labelFor(t.topic)}</span>
                 <span className="text-brand-100/50">
                   {t.correct}/{t.total}
                 </span>

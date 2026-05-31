@@ -1,11 +1,9 @@
 import type {
   AnswerRecord,
-  Difficulty,
   Grade,
   PreparedQuestion,
   TopicId,
 } from "./types";
-import { topicLabel, topicChapter } from "./topics";
 
 export function toGrade(percentage: number): Grade {
   if (percentage >= 95) return "A+";
@@ -29,10 +27,21 @@ export const GRADE_COLORS: Record<Grade, string> = {
 
 export interface TopicScore {
   topic: TopicId;
-  label: string;
   correct: number;
   total: number;
   ratio: number;
+}
+
+/** Resolves human-readable labels/chapters for the active subject + locale. */
+export interface LabelResolver {
+  label: (topic: TopicId) => string;
+  chapter: (topic: TopicId) => number;
+  /** Localized recommendation/summary phrasing. */
+  phrases: {
+    review: (label: string, chapter: number, correct: number, total: number) => string;
+    allRound: string;
+    summary: (percentage: number, strong: string[], weak: string[]) => string;
+  };
 }
 
 export interface Analysis {
@@ -66,8 +75,8 @@ export function gradeAttempt(
   });
 }
 
-/** Produce a rich, deterministic performance analysis from answer records. */
-export function analyze(answers: AnswerRecord[]): Analysis {
+/** Produce a performance analysis from answer records, localized via resolver. */
+export function analyze(answers: AnswerRecord[], r: LabelResolver): Analysis {
   const total = answers.length;
   const score = answers.filter((a) => a.isCorrect).length;
   const percentage = total === 0 ? 0 : Math.round((score / total) * 100);
@@ -75,9 +84,7 @@ export function analyze(answers: AnswerRecord[]): Analysis {
 
   const map = new Map<TopicId, TopicScore>();
   for (const a of answers) {
-    const entry =
-      map.get(a.topic) ??
-      { topic: a.topic, label: topicLabel(a.topic), correct: 0, total: 0, ratio: 0 };
+    const entry = map.get(a.topic) ?? { topic: a.topic, correct: 0, total: 0, ratio: 0 };
     entry.total += 1;
     if (a.isCorrect) entry.correct += 1;
     map.set(a.topic, entry);
@@ -97,53 +104,17 @@ export function analyze(answers: AnswerRecord[]): Analysis {
 
   const recommendations: string[] = [];
   for (const t of weakTopics) {
-    recommendations.push(
-      `Review ${t.label} (Chapter ${topicChapter(t.topic)}) — you scored ${t.correct}/${t.total} here.`,
-    );
+    recommendations.push(r.phrases.review(r.label(t.topic), r.chapter(t.topic), t.correct, t.total));
   }
-  if (recommendations.length === 0) {
-    recommendations.push(
-      "Strong all-round performance — keep reinforcing concepts with Study Mode to stay sharp.",
-    );
-  }
+  if (recommendations.length === 0) recommendations.push(r.phrases.allRound);
 
-  const summary = buildSummary(percentage, strongTopics, weakTopics);
-
-  return {
-    score,
-    total,
+  const summary = r.phrases.summary(
     percentage,
-    grade,
-    byTopic: sorted,
-    strongTopics,
-    weakTopics,
-    recommendations,
-    summary,
-  };
-}
+    strongTopics.map((t) => r.label(t.topic)),
+    weakTopics.map((t) => r.label(t.topic)),
+  );
 
-function buildSummary(
-  percentage: number,
-  strong: TopicScore[],
-  weak: TopicScore[],
-): string {
-  const parts: string[] = [];
-  if (percentage >= 90) parts.push("Outstanding mastery of the material.");
-  else if (percentage >= 75) parts.push("Solid, confident understanding overall.");
-  else if (percentage >= 60) parts.push("A reasonable grasp with clear room to grow.");
-  else parts.push("The fundamentals need more review before the exam.");
-
-  if (strong.length) {
-    parts.push(
-      `Excellent understanding of ${strong.map((t) => t.label).slice(0, 2).join(" and ")}.`,
-    );
-  }
-  if (weak.length) {
-    parts.push(
-      `Needs improvement in ${weak.map((t) => t.label).slice(0, 2).join(" and ")}.`,
-    );
-  }
-  return parts.join(" ");
+  return { score, total, percentage, grade, byTopic: sorted, strongTopics, weakTopics, recommendations, summary };
 }
 
 export const PASS_THRESHOLD = 60;

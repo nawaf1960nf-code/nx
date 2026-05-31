@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Trophy,
@@ -25,14 +26,19 @@ import {
   getTopicMastery,
   clearAll,
 } from "@/lib/storage";
-import { topicChapter } from "@/lib/topics";
 import { GRADE_COLORS } from "@/lib/grading";
+import { SUBJECTS, getSubject, topicLabel, topicChapter } from "@/lib/subjects";
 import type { ExamResult, TopicId, Chapter } from "@/lib/types";
 import { useLocale } from "@/lib/locale-context";
-import type { Messages } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
-export default function DashboardPage() {
-  const { t } = useLocale();
+function DashboardInner() {
+  const { t, locale } = useLocale();
+  const params = useSearchParams();
+  const [subjectId, setSubjectId] = useState(getSubject(params.get("subject")).id);
+  const subject = getSubject(subjectId);
+
   const [results, setResults] = useState<ExamResult[]>([]);
   const [avg, setAvg] = useState(0);
   const [best, setBest] = useState(0);
@@ -42,30 +48,25 @@ export default function DashboardPage() {
   const [weak, setWeak] = useState<{ topic: TopicId; ratio: number }[]>([]);
   const [chapterNeeds, setChapterNeeds] = useState<{ chapter: Chapter; ratio: number }[]>([]);
 
-  function refresh() {
-    setResults(getResults());
-    setAvg(getAverageScore());
-    setBest(getBestScore()?.percentage ?? 0);
-    setAttempts(getAttemptCount());
-    setImprovement(getImprovement());
+  const refresh = useCallback(() => {
+    setResults(getResults(subjectId));
+    setAvg(getAverageScore(subjectId));
+    setBest(getBestScore(subjectId)?.percentage ?? 0);
+    setAttempts(getAttemptCount(subjectId));
+    setImprovement(getImprovement(subjectId));
 
-    const mastery = getTopicMastery();
-    const arr = Object.entries(mastery).map(([t, v]) => ({
-      topic: t as TopicId,
+    const mastery = getTopicMastery(subjectId);
+    const arr = Object.entries(mastery).map(([topic, v]) => ({
+      topic: topic as TopicId,
       ratio: v.total ? v.correct / v.total : 0,
       total: v.total,
     }));
-    setStrong(
-      arr.filter((a) => a.total >= 1 && a.ratio >= 0.75).sort((a, b) => b.ratio - a.ratio).slice(0, 5),
-    );
-    setWeak(
-      arr.filter((a) => a.total >= 1 && a.ratio < 0.6).sort((a, b) => a.ratio - b.ratio).slice(0, 5),
-    );
+    setStrong(arr.filter((a) => a.total >= 1 && a.ratio >= 0.75).sort((a, b) => b.ratio - a.ratio).slice(0, 5));
+    setWeak(arr.filter((a) => a.total >= 1 && a.ratio < 0.6).sort((a, b) => a.ratio - b.ratio).slice(0, 5));
 
-    // Aggregate by chapter.
     const chMap = new Map<Chapter, { correct: number; total: number }>();
-    for (const [t, v] of Object.entries(mastery)) {
-      const ch = topicChapter(t as TopicId);
+    for (const [topic, v] of Object.entries(mastery)) {
+      const ch = topicChapter(subject, topic as TopicId);
       const e = chMap.get(ch) ?? { correct: 0, total: 0 };
       e.correct += v.correct;
       e.total += v.total;
@@ -76,20 +77,20 @@ export default function DashboardPage() {
         .map(([chapter, v]) => ({ chapter, ratio: v.total ? v.correct / v.total : 0 }))
         .sort((a, b) => a.ratio - b.ratio),
     );
-  }
+  }, [subjectId, subject]);
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [refresh]);
 
   const hasData = attempts > 0;
-  const history = [...results].reverse(); // oldest → newest for the chart
+  const history = [...results].reverse();
 
   return (
     <main className="min-h-screen pb-20">
       <Navbar />
       <div className="mx-auto max-w-5xl px-4 pt-10">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="font-display text-3xl font-bold text-white">{t.dashboard.title}</h1>
             <p className="mt-1 text-sm text-brand-100/60">{t.dashboard.subtitle}</p>
@@ -98,7 +99,7 @@ export default function DashboardPage() {
             <button
               onClick={() => {
                 if (confirm(t.dashboard.resetConfirm)) {
-                  clearAll();
+                  clearAll(subjectId);
                   refresh();
                 }
               }}
@@ -109,18 +110,33 @@ export default function DashboardPage() {
           )}
         </div>
 
+        {/* Subject switcher */}
+        <div className="mb-8 flex flex-wrap gap-2">
+          {SUBJECTS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setSubjectId(s.id)}
+              className={cn(
+                "flex items-center gap-2 rounded-2xl border px-4 py-2 text-sm font-medium transition-all",
+                s.id === subjectId
+                  ? "border-white/20 bg-white/10 text-white"
+                  : "border-white/8 text-brand-100/60 hover:bg-white/5 hover:text-white",
+              )}
+            >
+              <span>{s.icon}</span>
+              {s.name[locale]}
+            </button>
+          ))}
+        </div>
+
         {!hasData ? (
           <GlassCard className="p-12 text-center">
             <span className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-brand-500/15 text-brand-300">
               <Sparkles className="h-8 w-8" />
             </span>
-            <h2 className="font-display text-xl font-semibold text-white">
-              {t.dashboard.emptyTitle}
-            </h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-brand-100/60">
-              {t.dashboard.emptyDesc}
-            </p>
-            <Link href="/#levels" className="mt-6 inline-block">
+            <h2 className="font-display text-xl font-semibold text-white">{t.dashboard.emptyTitle}</h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-brand-100/60">{t.dashboard.emptyDesc}</p>
+            <Link href={`/course/${subjectId}`} className="mt-6 inline-block">
               <Button size="lg">
                 {t.dashboard.emptyCta} <ArrowRight className="h-4 w-4 rtl:rotate-180" />
               </Button>
@@ -128,7 +144,6 @@ export default function DashboardPage() {
           </GlassCard>
         ) : (
           <>
-            {/* Stat cards */}
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               <StatCard icon={ListChecks} label={t.dashboard.examsCompleted} value={attempts} color="#818cf8" />
               <StatCard icon={Target} label={t.dashboard.averageScore} value={`${avg}%`} color="#22d3ee" />
@@ -141,58 +156,34 @@ export default function DashboardPage() {
               />
             </div>
 
-            {/* Score history chart */}
             <GlassCard className="mt-6 p-6 sm:p-8">
-              <h2 className="mb-5 font-display text-lg font-semibold text-white">
-                {t.dashboard.scoresOverTime}
-              </h2>
+              <h2 className="mb-5 font-display text-lg font-semibold text-white">{t.dashboard.scoresOverTime}</h2>
               <ScoreChart history={history} />
             </GlassCard>
 
-            {/* Strong / Weak */}
             <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <TopicPanel
-                title={t.dashboard.strengths}
-                icon={TrendingUp}
-                color="#34d399"
-                items={strong}
-                empty={t.dashboard.strengthsEmpty}
-                t={t}
-              />
-              <TopicPanel
-                title={t.dashboard.needsReview}
-                icon={Target}
-                color="#fb7185"
-                items={weak}
-                empty={t.dashboard.needsReviewEmpty}
-                t={t}
-              />
+              <TopicPanel title={t.dashboard.strengths} icon={TrendingUp} color="#34d399" items={strong} empty={t.dashboard.strengthsEmpty} subject={subject} locale={locale} />
+              <TopicPanel title={t.dashboard.needsReview} icon={Target} color="#fb7185" items={weak} empty={t.dashboard.needsReviewEmpty} subject={subject} locale={locale} />
             </div>
 
-            {/* Chapters to review */}
             <GlassCard className="mt-6 p-6 sm:p-8">
               <div className="mb-4 flex items-center gap-2">
                 <BookOpenCheck className="h-5 w-5 text-brand-300" />
-                <h2 className="font-display text-lg font-semibold text-white">
-                  {t.dashboard.chaptersToReview}
-                </h2>
+                <h2 className="font-display text-lg font-semibold text-white">{t.dashboard.chaptersToReview}</h2>
               </div>
               <div className="space-y-3">
                 {chapterNeeds.map(({ chapter, ratio }) => (
                   <div key={chapter}>
                     <div className="mb-1 flex justify-between text-xs">
                       <span className="text-brand-100/80">
-                        {t.exam.chShort} {chapter} · {t.chapterTitles[chapter]}
+                        {t.exam.chShort} {chapter} · {subject.chapterTitles[chapter]?.[locale] ?? ""}
                       </span>
                       <span className="text-brand-100/50">{Math.round(ratio * 100)}%</span>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/8">
                       <motion.div
                         className="h-full rounded-full"
-                        style={{
-                          background:
-                            ratio >= 0.7 ? "#34d399" : ratio >= 0.5 ? "#fbbf24" : "#fb7185",
-                        }}
+                        style={{ background: ratio >= 0.7 ? "#34d399" : ratio >= 0.5 ? "#fbbf24" : "#fb7185" }}
                         initial={{ width: 0 }}
                         animate={{ width: `${ratio * 100}%` }}
                         transition={{ duration: 0.8 }}
@@ -204,15 +195,13 @@ export default function DashboardPage() {
             </GlassCard>
 
             <div className="mt-8 flex justify-center gap-3">
-              <Link href="/#levels">
+              <Link href={`/course/${subjectId}`}>
                 <Button size="lg">
                   {t.dashboard.newExam} <ArrowRight className="h-4 w-4 rtl:rotate-180" />
                 </Button>
               </Link>
-              <Link href="/study">
-                <Button variant="outline" size="lg">
-                  {t.dashboard.study}
-                </Button>
+              <Link href={`/study?subject=${subjectId}`}>
+                <Button variant="outline" size="lg">{t.dashboard.study}</Button>
               </Link>
             </div>
           </>
@@ -234,15 +223,8 @@ function StatCard({
   color: string;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="glass rounded-2xl p-5"
-    >
-      <span
-        className="mb-3 grid h-10 w-10 place-items-center rounded-xl"
-        style={{ background: `${color}1f`, color }}
-      >
+    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-2xl p-5">
+      <span className="mb-3 grid h-10 w-10 place-items-center rounded-xl" style={{ background: `${color}1f`, color }}>
         <Icon className="h-5 w-5" />
       </span>
       <p className="font-display text-2xl font-bold text-white">{value}</p>
@@ -257,14 +239,16 @@ function TopicPanel({
   color,
   items,
   empty,
-  t,
+  subject,
+  locale,
 }: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
   items: { topic: TopicId; ratio: number }[];
   empty: string;
-  t: Messages;
+  subject: ReturnType<typeof getSubject>;
+  locale: Locale;
 }) {
   return (
     <GlassCard className="p-6">
@@ -276,7 +260,7 @@ function TopicPanel({
         <ul className="space-y-2.5">
           {items.map(({ topic, ratio }) => (
             <li key={topic} className="flex items-center justify-between text-sm">
-              <span className="text-brand-100/80">{t.topics[topic]}</span>
+              <span className="text-brand-100/80">{topicLabel(subject, topic, locale)}</span>
               <span className="font-semibold" style={{ color }}>
                 {Math.round(ratio * 100)}%
               </span>
@@ -297,10 +281,7 @@ function ScoreChart({ history }: { history: ExamResult[] }) {
   const pad = 20;
   const max = 100;
   const pts = history.map((r, i) => {
-    const x =
-      history.length === 1
-        ? w / 2
-        : pad + (i / (history.length - 1)) * (w - pad * 2);
+    const x = history.length === 1 ? w / 2 : pad + (i / (history.length - 1)) * (w - pad * 2);
     const y = pad + (1 - r.percentage / max) * (h - pad * 2);
     return { x, y, r };
   });
@@ -317,17 +298,7 @@ function ScoreChart({ history }: { history: ExamResult[] }) {
       </defs>
       {[0, 50, 100].map((g) => {
         const y = pad + (1 - g / max) * (h - pad * 2);
-        return (
-          <line
-            key={g}
-            x1={pad}
-            x2={w - pad}
-            y1={y}
-            y2={y}
-            stroke="rgba(255,255,255,0.06)"
-            strokeWidth="1"
-          />
-        );
+        return <line key={g} x1={pad} x2={w - pad} y1={y} y2={y} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />;
       })}
       <path d={area} fill="url(#scoreFill)" />
       <path d={path} fill="none" stroke="#818cf8" strokeWidth="2.5" strokeLinecap="round" />
@@ -335,5 +306,13 @@ function ScoreChart({ history }: { history: ExamResult[] }) {
         <circle key={i} cx={p.x} cy={p.y} r="4" fill={GRADE_COLORS[p.r.grade]} stroke="#0a0c1b" strokeWidth="2" />
       ))}
     </svg>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="grid min-h-screen place-items-center"><Sparkles className="h-8 w-8 animate-pulse text-brand-300" /></div>}>
+      <DashboardInner />
+    </Suspense>
   );
 }

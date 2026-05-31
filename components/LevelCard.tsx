@@ -9,13 +9,21 @@ import { EXAM_LENGTH } from "@/lib/exam-engine";
 import { getBestScore, type BestScore } from "@/lib/storage";
 import { useLocale } from "@/lib/locale-context";
 
-export function LevelCard({ level, index }: { level: LevelConfig; index: number }) {
+export function LevelCard({
+  level,
+  index,
+  subjectId,
+}: {
+  level: LevelConfig;
+  index: number;
+  subjectId: string;
+}) {
   const { t } = useLocale();
   const [best, setBest] = useState<BestScore | null>(null);
 
   useEffect(() => {
-    setBest(getBestScore(level.id));
-  }, [level.id]);
+    setBest(getBestScore(subjectId, level.id));
+  }, [subjectId, level.id]);
 
   return (
     <motion.div
@@ -31,7 +39,7 @@ export function LevelCard({ level, index }: { level: LevelConfig; index: number 
         style={{ background: level.glow }}
         aria-hidden
       />
-      <div className="glass relative flex h-full flex-col rounded-3xl p-7">
+      <div className="card-premium relative flex h-full flex-col p-7">
         <div className="mb-5 flex items-center justify-between">
           <span
             className="grid h-12 w-12 place-items-center rounded-2xl"
@@ -56,10 +64,7 @@ export function LevelCard({ level, index }: { level: LevelConfig; index: number 
 
         <div className="mt-6 flex items-center gap-4 text-sm text-brand-100/60">
           <span className="flex items-center gap-1.5">
-            <span
-              className="inline-block h-1.5 w-1.5 rounded-full"
-              style={{ background: level.accent }}
-            />
+            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: level.accent }} />
             {t.level.questions(EXAM_LENGTH)}
           </span>
           {best && (
@@ -71,7 +76,7 @@ export function LevelCard({ level, index }: { level: LevelConfig; index: number 
         </div>
 
         <Link
-          href={`/exam?level=${level.id}`}
+          href={`/exam?subject=${subjectId}&level=${level.id}`}
           className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-semibold text-white transition-all duration-300 active:scale-[0.97]"
           style={{
             background: `linear-gradient(110deg, ${level.accent}, #22d3ee)`,

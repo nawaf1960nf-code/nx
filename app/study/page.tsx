@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen,
@@ -12,18 +12,21 @@ import {
   Loader2,
   GraduationCap,
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
-import { QUESTION_BANK } from "@/lib/questions";
 import { shuffle } from "@/lib/utils";
 import { shuffleOptions } from "@/lib/exam-engine";
+import { getSubject, topicLabel } from "@/lib/subjects";
 import { aiTutor, type TutorMessage } from "@/lib/ai-client";
 import type { PreparedQuestion } from "@/lib/types";
 import { useLocale } from "@/lib/locale-context";
 
-export default function StudyPage() {
-  const { t } = useLocale();
+function StudyInner() {
+  const { t, locale } = useLocale();
+  const params = useSearchParams();
+  const subject = getSubject(params.get("subject"));
   const [deck, setDeck] = useState<PreparedQuestion[]>([]);
   const [pos, setPos] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -35,8 +38,11 @@ export default function StudyPage() {
   useEffect(() => {
     // Shuffle the deck AND each question's answer positions so the correct
     // choice is never always in the same slot.
-    setDeck(shuffle(QUESTION_BANK).map(shuffleOptions));
-  }, []);
+    setDeck(shuffle(subject.questions).map(shuffleOptions));
+    setPos(0);
+    setSelected(null);
+    setChat([]);
+  }, [subject]);
 
   const q = deck[pos];
   const answered = selected !== null;
@@ -52,6 +58,7 @@ export default function StudyPage() {
     // Ask the tutor to elaborate with an example (graceful fallback).
     setTutorLoading(true);
     const res = await aiTutor({
+      subjectId: subject.id,
       topic: q.topic,
       question: q.prompt,
       studentAnswer: `${q.options[i]} (${i === q.correctIndex ? "correct" : "incorrect"})`,
@@ -70,6 +77,7 @@ export default function StudyPage() {
     setInput("");
     setTutorLoading(true);
     const res = await aiTutor({
+      subjectId: subject.id,
       topic: q.topic,
       question: q.prompt,
       studentAnswer: userMsg.content,
@@ -121,7 +129,7 @@ export default function StudyPage() {
           <GlassCard strong className="p-6 sm:p-8">
             <p className="mb-1 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-brand-200/60">
               <BookOpen className="h-3.5 w-3.5" />
-              {t.topics[q.topic]} · {t.exam.chShort} {q.chapter}
+              {topicLabel(subject, q.topic, locale)} · {t.exam.chShort} {q.chapter}
             </p>
             <h2 className="font-display text-xl font-semibold leading-snug text-white">
               {q.prompt}
@@ -242,5 +250,19 @@ export default function StudyPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function StudyPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="grid min-h-screen place-items-center">
+          <Loader2 className="h-10 w-10 animate-spin text-brand-300" />
+        </div>
+      }
+    >
+      <StudyInner />
+    </Suspense>
   );
 }

@@ -8,17 +8,22 @@ import type {
   TopicId,
 } from "./types";
 
-const KEY = "smep:v1";
-const PROGRESS_KEY = "smep:in-progress:v1";
+const KEY = "smep:v2";
+const PROGRESS_KEY = "smep:in-progress:v2";
 
-interface StoreShape {
+interface SubjectBucket {
   results: ExamResult[];
-  /** Recently served question ids, newest last (capped). */
+  /** Recently served question ids, newest first (capped). */
   recentIds: string[];
-  studentName?: string;
 }
 
-const EMPTY: StoreShape = { results: [], recentIds: [] };
+interface StoreShape {
+  studentName?: string;
+  /** Per-subject data, keyed by subjectId. */
+  subjects: Record<string, SubjectBucket>;
+}
+
+const EMPTY: StoreShape = { subjects: {} };
 
 function read(): StoreShape {
   if (typeof window === "undefined") return EMPTY;
@@ -26,7 +31,7 @@ function read(): StoreShape {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return EMPTY;
     const parsed = JSON.parse(raw) as StoreShape;
-    return { ...EMPTY, ...parsed };
+    return { studentName: parsed.studentName, subjects: parsed.subjects ?? {} };
   } catch {
     return EMPTY;
   }
@@ -41,6 +46,10 @@ function write(data: StoreShape) {
   }
 }
 
+function bucket(data: StoreShape, subjectId: string): SubjectBucket {
+  return (data.subjects[subjectId] ??= { results: [], recentIds: [] });
+}
+
 export function getStudentName(): string {
   return read().studentName ?? "";
 }
@@ -51,19 +60,19 @@ export function setStudentName(name: string) {
   write(data);
 }
 
-export function getResults(): ExamResult[] {
-  return read().results.sort((a, b) => b.date - a.date);
+export function getResults(subjectId: string): ExamResult[] {
+  return [...(read().subjects[subjectId]?.results ?? [])].sort((a, b) => b.date - a.date);
 }
 
-export function getRecentIds(): string[] {
-  return read().recentIds;
+export function getRecentIds(subjectId: string): string[] {
+  return read().subjects[subjectId]?.recentIds ?? [];
 }
 
-export function saveResult(result: ExamResult, servedIds: string[]) {
+export function saveResult(subjectId: string, result: ExamResult, servedIds: string[]) {
   const data = read();
-  data.results = [result, ...data.results].slice(0, 100);
-  // Track recent ids to reduce repetition next attempt (cap at 60).
-  data.recentIds = [...servedIds, ...data.recentIds].slice(0, 60);
+  const b = bucket(data, subjectId);
+  b.results = [result, ...b.results].slice(0, 100);
+  b.recentIds = [...servedIds, ...b.recentIds].slice(0, 60);
   write(data);
 }
 
@@ -73,8 +82,8 @@ export interface BestScore {
   date: number;
 }
 
-export function getBestScore(difficulty?: Difficulty): BestScore | null {
-  const results = read().results.filter(
+export function getBestScore(subjectId: string, difficulty?: Difficulty): BestScore | null {
+  const results = (read().subjects[subjectId]?.results ?? []).filter(
     (r) => !difficulty || r.difficulty === difficulty,
   );
   if (results.length === 0) return null;
@@ -82,24 +91,21 @@ export function getBestScore(difficulty?: Difficulty): BestScore | null {
   return { percentage: best.percentage, grade: best.grade, date: best.date };
 }
 
-export function getAttemptCount(difficulty?: Difficulty): number {
-  return read().results.filter(
+export function getAttemptCount(subjectId: string, difficulty?: Difficulty): number {
+  return (read().subjects[subjectId]?.results ?? []).filter(
     (r) => !difficulty || r.difficulty === difficulty,
   ).length;
 }
 
-export function getAverageScore(): number {
-  const results = read().results;
+export function getAverageScore(subjectId: string): number {
+  const results = read().subjects[subjectId]?.results ?? [];
   if (results.length === 0) return 0;
-  return Math.round(
-    results.reduce((sum, r) => sum + r.percentage, 0) / results.length,
-  );
+  return Math.round(results.reduce((sum, r) => sum + r.percentage, 0) / results.length);
 }
 
-/** Aggregate per-topic mastery across all attempts for adaptive learning. */
-export function getTopicMastery(): Record<string, { correct: number; total: number }> {
+export function getTopicMastery(subjectId: string): Record<string, { correct: number; total: number }> {
   const agg: Record<string, { correct: number; total: number }> = {};
-  for (const r of read().results) {
+  for (const r of read().subjects[subjectId]?.results ?? []) {
     for (const a of r.answers) {
       const e = (agg[a.topic] ??= { correct: 0, total: 0 });
       e.total += 1;
@@ -109,24 +115,23 @@ export function getTopicMastery(): Record<string, { correct: number; total: numb
   return agg;
 }
 
-export function getWeakTopics(threshold = 0.6, minSeen = 2): TopicId[] {
-  const m = getTopicMastery();
+export function getWeakTopics(subjectId: string, threshold = 0.6, minSeen = 2): TopicId[] {
+  const m = getTopicMastery(subjectId);
   return Object.entries(m)
     .filter(([, v]) => v.total >= minSeen && v.correct / v.total < threshold)
     .sort((a, b) => a[1].correct / a[1].total - b[1].correct / b[1].total)
     .map(([t]) => t as TopicId);
 }
 
-export function getStrongTopics(threshold = 0.85, minSeen = 2): TopicId[] {
-  const m = getTopicMastery();
+export function getStrongTopics(subjectId: string, threshold = 0.85, minSeen = 2): TopicId[] {
+  const m = getTopicMastery(subjectId);
   return Object.entries(m)
     .filter(([, v]) => v.total >= minSeen && v.correct / v.total >= threshold)
     .map(([t]) => t as TopicId);
 }
 
-/** Improvement = latest percentage minus first percentage recorded. */
-export function getImprovement(): number | null {
-  const results = read().results.slice().sort((a, b) => a.date - b.date);
+export function getImprovement(subjectId: string): number | null {
+  const results = [...(read().subjects[subjectId]?.results ?? [])].sort((a, b) => a.date - b.date);
   if (results.length < 2) return null;
   return results[results.length - 1].percentage - results[0].percentage;
 }
@@ -150,29 +155,28 @@ export function buildResult(
   };
 }
 
-export function clearAll() {
+/** Clear all saved progress for one subject (or everything if omitted). */
+export function clearAll(subjectId?: string) {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(KEY);
-  window.localStorage.removeItem(PROGRESS_KEY);
+  if (!subjectId) {
+    window.localStorage.removeItem(KEY);
+    window.localStorage.removeItem(PROGRESS_KEY);
+    return;
+  }
+  const data = read();
+  delete data.subjects[subjectId];
+  write(data);
 }
 
 // ───────────────────── In-progress exam (resume support) ─────────────────────
 
-/**
- * A snapshot of an exam that is currently being taken. Persisted on every
- * answer so that a refresh, accidental tab close, or browser crash never makes
- * the student start over — they resume from exactly where they left off.
- */
 export interface InProgressExam {
+  subjectId: string;
   difficulty: Difficulty;
   studentName: string;
-  /** The exact questions (with shuffled options) being served this attempt. */
   questions: PreparedQuestion[];
-  /** One entry per question; null = not yet answered. */
   selections: (number | null)[];
-  /** Index of the question currently shown. */
   index: number;
-  /** When the attempt started (ms). */
   startedAt: number;
 }
 
@@ -181,7 +185,7 @@ export function saveInProgress(exam: InProgressExam) {
   try {
     window.localStorage.setItem(PROGRESS_KEY, JSON.stringify(exam));
   } catch {
-    /* storage full or unavailable — fail silently */
+    /* ignore */
   }
 }
 
@@ -191,7 +195,6 @@ export function getInProgress(): InProgressExam | null {
     const raw = window.localStorage.getItem(PROGRESS_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as InProgressExam;
-    // Basic integrity check.
     if (
       !parsed ||
       !Array.isArray(parsed.questions) ||

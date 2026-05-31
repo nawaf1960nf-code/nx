@@ -1,15 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, X } from "lucide-react";
 
 import { buildExam } from "@/lib/exam-engine";
-import { gradeAttempt, analyze, type Analysis } from "@/lib/grading";
+import { gradeAttempt, analyze, type Analysis, type LabelResolver } from "@/lib/grading";
 import { levelConfig } from "@/lib/levels";
-import type { Difficulty, PreparedQuestion } from "@/lib/types";
+import { getSubject, topicLabel, topicChapter } from "@/lib/subjects";
+import type { Difficulty, PreparedQuestion, TopicId } from "@/lib/types";
 import {
   buildResult,
   clearInProgress,
@@ -33,14 +34,30 @@ import { ReviewView } from "./ReviewView";
 type Phase = "welcome" | "loading" | "exam" | "results" | "review";
 
 function parseLevel(value: string | null): Difficulty {
-  return value === "easy" || value === "hard" ? value : value === "medium" ? "medium" : "medium";
+  return value === "easy" || value === "hard" ? value : "medium";
 }
 
 export function ExamFlow() {
   const params = useSearchParams();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const difficulty = parseLevel(params.get("level"));
+  const subject = getSubject(params.get("subject"));
   const level = levelConfig(difficulty);
+
+  // Localized topic-label resolver, used for analysis text and per-topic labels.
+  const labelFor = useCallback(
+    (topic: TopicId) => topicLabel(subject, topic, locale),
+    [subject, locale],
+  );
+
+  const resolver = useMemo<LabelResolver>(
+    () => ({
+      label: labelFor,
+      chapter: (topic: TopicId) => topicChapter(subject, topic),
+      phrases: t.analysis,
+    }),
+    [labelFor, subject, t],
+  );
 
   const [phase, setPhase] = useState<Phase>("welcome");
   const [questions, setQuestions] = useState<PreparedQuestion[]>([]);
@@ -51,12 +68,11 @@ export function ExamFlow() {
   const [studentName, setName] = useState("");
   const advancing = useRef(false);
 
-  // On mount: restore the saved name and, if an exam for this difficulty was
-  // in progress, resume it exactly where the student left off.
+  // Restore a saved name and resume an in-progress exam for THIS subject+level.
   useEffect(() => {
     setName(getStudentName());
     const saved = getInProgress();
-    if (saved && saved.difficulty === difficulty) {
+    if (saved && saved.subjectId === subject.id && saved.difficulty === difficulty) {
       setQuestions(saved.questions);
       setSelections(saved.selections);
       setIndex(saved.index);
@@ -64,7 +80,7 @@ export function ExamFlow() {
       advancing.current = false;
       setPhase("exam");
     }
-  }, [difficulty]);
+  }, [difficulty, subject.id]);
 
   const start = useCallback(
     async (name: string) => {
@@ -72,17 +88,16 @@ export function ExamFlow() {
       setStudentName(name);
       setPhase("loading");
 
-      const weakTopics = getWeakTopics();
-      const strongTopics = getStrongTopics();
-      const recentIds = getRecentIds();
+      const weakTopics = getWeakTopics(subject.id);
+      const strongTopics = getStrongTopics(subject.id);
+      const recentIds = getRecentIds(subject.id);
 
-      // Try to enrich the pool with fresh AI questions targeting weak topics.
+      // Optionally enrich the pool with fresh questions targeting weak topics.
       let extra: PreparedQuestion[] = [];
-      const focus = weakTopics.length
-        ? weakTopics.slice(0, 4)
-        : [];
+      const focus = weakTopics.length ? weakTopics.slice(0, 4) : [];
       if (focus.length) {
         const ai = await aiGenerateQuestions({
+          subjectId: subject.id,
           difficulty,
           topics: focus,
           count: 6,
@@ -93,6 +108,7 @@ export function ExamFlow() {
       }
 
       const exam = buildExam({
+        pool: subject.questions,
         difficulty,
         weakTopics,
         strongTopics,
@@ -104,8 +120,8 @@ export function ExamFlow() {
       setSelections(freshSelections);
       setIndex(0);
       advancing.current = false;
-      // Persist the brand-new attempt so a refresh resumes it immediately.
       saveInProgress({
+        subjectId: subject.id,
         difficulty,
         studentName: name,
         questions: exam,
@@ -115,28 +131,21 @@ export function ExamFlow() {
       });
       setPhase("exam");
     },
-    [difficulty],
+    [difficulty, subject],
   );
 
   const finish = useCallback(
     (finalSelections: (number | null)[]) => {
       const records = gradeAttempt(questions, finalSelections);
-      const a = analyze(records);
-      const result = buildResult(
-        difficulty,
-        records,
-        a.score,
-        a.percentage,
-        a.grade,
-      );
-      saveResult(result, questions.map((q) => q.id));
-      // The attempt is complete — drop the in-progress snapshot.
+      const a = analyze(records, resolver);
+      const result = buildResult(difficulty, records, a.score, a.percentage, a.grade);
+      saveResult(subject.id, result, questions.map((q) => q.id));
       clearInProgress();
       setAnalysis(a);
       setResultDate(result.date);
       setPhase("results");
     },
-    [questions, difficulty],
+    [questions, difficulty, subject.id, resolver],
   );
 
   const handleSelect = useCallback(
@@ -148,9 +157,9 @@ export function ExamFlow() {
       setSelections(next);
 
       const isLast = index + 1 >= questions.length;
-      // Persist progress immediately so a crash/refresh never loses the answer.
       if (!isLast) {
         saveInProgress({
+          subjectId: subject.id,
           difficulty,
           studentName,
           questions,
@@ -160,7 +169,6 @@ export function ExamFlow() {
         });
       }
 
-      // Auto-advance shortly after answering; block going back.
       window.setTimeout(() => {
         if (isLast) {
           finish(next);
@@ -170,7 +178,7 @@ export function ExamFlow() {
         }
       }, 420);
     },
-    [selections, index, questions.length, finish, difficulty, studentName],
+    [selections, index, questions, finish, difficulty, studentName, subject.id],
   );
 
   const retake = useCallback(() => {
@@ -181,9 +189,7 @@ export function ExamFlow() {
   function renderContent() {
     switch (phase) {
       case "welcome":
-        return (
-          <Welcome level={level} defaultName={studentName} onStart={start} />
-        );
+        return <Welcome level={level} defaultName={studentName} onStart={start} />;
       case "loading":
         return (
           <div className="flex flex-col items-center gap-4 text-center">
@@ -201,6 +207,7 @@ export function ExamFlow() {
               total={questions.length}
               selected={selections[index]}
               onSelect={handleSelect}
+              labelFor={labelFor}
             />
           </AnimatePresence>
         );
@@ -209,8 +216,10 @@ export function ExamFlow() {
           <ResultsView
             analysis={analysis}
             difficulty={difficulty}
+            subjectId={subject.id}
             studentName={studentName}
             date={resultDate}
+            labelFor={labelFor}
             onReview={() => setPhase("review")}
             onRetake={retake}
           />
@@ -220,6 +229,7 @@ export function ExamFlow() {
           <ReviewView
             questions={questions}
             selections={selections}
+            labelFor={labelFor}
             onBack={() => setPhase("results")}
           />
         );
@@ -230,7 +240,7 @@ export function ExamFlow() {
     <main className="min-h-screen px-4 py-8">
       <div className="mx-auto mb-6 flex max-w-3xl items-center justify-between">
         <Link
-          href="/"
+          href={`/course/${subject.id}`}
           className="flex items-center gap-2 text-sm text-brand-100/60 transition-colors hover:text-white"
         >
           <X className="h-4 w-4" /> {t.exam.exit}

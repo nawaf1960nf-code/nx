@@ -63,7 +63,7 @@ export function CourseCatalog() {
 
                 {s.available ? (
                   <Link
-                    href="#levels"
+                    href={`/course/${s.id}`}
                     className="group/btn mt-6 inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-semibold text-white transition-all duration-300 active:scale-[0.97]"
                     style={{
                       background: `linear-gradient(110deg, ${s.accent}, #22d3ee)`,

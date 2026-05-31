@@ -1,10 +1,11 @@
-import { QUESTION_BANK } from "./questions";
 import { shuffle, sample } from "./utils";
 import type { Difficulty, PreparedQuestion, Question, TopicId } from "./types";
 
 export const EXAM_LENGTH = 30;
 
 export interface BuildExamOptions {
+  /** The full question pool for the active subject. */
+  pool: Question[];
   difficulty: Difficulty;
   /** Topics the learner has historically struggled with (adaptive learning). */
   weakTopics?: TopicId[];
@@ -38,6 +39,7 @@ export function shuffleOptions(q: Question): PreparedQuestion {
  */
 export function buildExam(opts: BuildExamOptions): PreparedQuestion[] {
   const {
+    pool: fullPool,
     difficulty,
     weakTopics = [],
     strongTopics = [],
@@ -50,9 +52,7 @@ export function buildExam(opts: BuildExamOptions): PreparedQuestion[] {
   const strong = new Set(strongTopics);
   const recent = new Set(recentIds);
 
-  const pool = [...QUESTION_BANK, ...extra].filter(
-    (q) => q.difficulty === difficulty,
-  );
+  const pool = [...fullPool, ...extra].filter((q) => q.difficulty === difficulty);
 
   // Prefer questions not seen recently; fall back to the full pool if needed.
   const fresh = pool.filter((q) => !recent.has(q.id));
@@ -64,7 +64,6 @@ export function buildExam(opts: BuildExamOptions): PreparedQuestion[] {
     let weight = 1;
     if (weak.has(q.topic)) weight = 3;
     else if (strong.has(q.topic)) weight = 0.5;
-    // Represent fractional weights probabilistically.
     const copies = weight >= 1 ? Math.round(weight) : Math.random() < weight ? 1 : 0;
     for (let i = 0; i < copies; i++) weighted.push(q);
   }
@@ -91,7 +90,7 @@ export function buildExam(opts: BuildExamOptions): PreparedQuestion[] {
   return shuffle(picked).slice(0, length).map(shuffleOptions);
 }
 
-/** Count of available base-bank questions per difficulty (for the UI). */
-export function poolSize(difficulty: Difficulty): number {
-  return QUESTION_BANK.filter((q) => q.difficulty === difficulty).length;
+/** Count of available questions per difficulty in a pool (for the UI). */
+export function poolSize(pool: Question[], difficulty: Difficulty): number {
+  return pool.filter((q) => q.difficulty === difficulty).length;
 }

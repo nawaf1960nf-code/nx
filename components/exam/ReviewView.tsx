@@ -9,10 +9,12 @@ import { useLocale } from "@/lib/locale-context";
 export function ReviewView({
   questions,
   selections,
+  labelFor,
   onBack,
 }: {
   questions: PreparedQuestion[];
   selections: (number | null)[];
+  labelFor: (topic: string) => string;
   onBack: () => void;
 }) {
   const { t } = useLocale();
@@ -40,7 +42,7 @@ export function ReviewView({
             >
               <div className="mb-3 flex items-center justify-between gap-3">
                 <span className="text-xs font-medium uppercase tracking-wider text-brand-200/60">
-                  {i + 1}. {t.topics[q.topic]} · {t.exam.chShort} {q.chapter}
+                  {i + 1}. {labelFor(q.topic)} · {t.exam.chShort} {q.chapter}
                 </span>
                 <span
                   className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${

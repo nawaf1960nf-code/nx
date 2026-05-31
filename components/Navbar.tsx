@@ -1,20 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { GraduationCap, LayoutDashboard, BookOpen, Home, Languages } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { GraduationCap, Languages, LayoutGrid } from "lucide-react";
 import { useLocale } from "@/lib/locale-context";
 
 export function Navbar() {
-  const pathname = usePathname();
   const { t, toggle } = useLocale();
-
-  const links = [
-    { href: "/", label: t.nav.home, icon: Home },
-    { href: "/study", label: t.nav.study, icon: BookOpen },
-    { href: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard },
-  ];
 
   return (
     <header className="sticky top-0 z-40 px-4 pt-4">
@@ -32,24 +23,13 @@ export function Navbar() {
         </Link>
 
         <div className="flex items-center gap-1">
-          {links.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href;
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-all",
-                  active
-                    ? "bg-white/10 text-white"
-                    : "text-brand-100/60 hover:bg-white/5 hover:text-white",
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="hidden sm:block">{label}</span>
-              </Link>
-            );
-          })}
+          <Link
+            href="/#catalog"
+            className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-brand-100/70 transition-all hover:bg-white/5 hover:text-white"
+          >
+            <LayoutGrid className="h-4 w-4" />
+            <span className="hidden sm:block">{t.nav.courses}</span>
+          </Link>
 
           <button
             onClick={toggle}

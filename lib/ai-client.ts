@@ -14,6 +14,7 @@ export interface AIGenerateResponse {
 }
 
 export async function aiGenerateQuestions(params: {
+  subjectId: string;
   difficulty: Difficulty;
   topics: TopicId[];
   count: number;
@@ -63,6 +64,7 @@ export interface TutorMessage {
 }
 
 export async function aiTutor(payload: {
+  subjectId: string;
   topic: TopicId;
   question: string;
   studentAnswer?: string;
@@ -78,17 +80,5 @@ export async function aiTutor(payload: {
     return await res.json();
   } catch {
     return null;
-  }
-}
-
-/** Check whether the AI backend is configured (has an API key). */
-export async function aiStatus(): Promise<boolean> {
-  try {
-    const res = await fetch("/api/ai/status");
-    if (!res.ok) return false;
-    const data = await res.json();
-    return Boolean(data.enabled);
-  } catch {
-    return false;
   }
 }

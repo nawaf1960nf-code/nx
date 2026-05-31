@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { callClaude } from "@/lib/ai-server";
-import { KNOWLEDGE_BASE } from "@/lib/knowledge-base";
-import { TOPICS } from "@/lib/topics";
+import { getSubject } from "@/lib/subjects";
 import type { TopicId } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 interface Body {
+  subjectId: string;
   topic: TopicId;
   question: string;
   studentAnswer?: string;
@@ -22,11 +22,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ source: "fallback" }, { status: 400 });
   }
 
-  const topic = TOPICS[body.topic] ? body.topic : null;
-  const notes = topic ? KNOWLEDGE_BASE[topic] : "";
+  const subject = getSubject(body.subjectId);
+  const notes = subject.topics[body.topic] ? subject.knowledge[body.topic] ?? "" : "";
 
   const system =
-    "You are a friendly personal tutor for a Services Marketing course. " +
+    `You are a friendly personal tutor for a ${subject.name.en} course. ` +
     "Explain clearly and concisely (max ~120 words), give a concrete example, " +
     "and base everything ONLY on the provided notes. Be warm and encouraging.";
 
