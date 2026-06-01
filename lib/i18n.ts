@@ -160,7 +160,68 @@ const en = {
     studyCta: "Study Mode",
     dashboardCta: "Dashboard",
     chaptersCovered: "Chapters covered",
+    toolsHeading: "Exam prep toolkit",
+    toolsSubtitle: "Everything you need to be ready on exam day.",
+    flashcards: "Flashcards",
+    flashcardsDesc: "Flip through every concept — perfect for last-minute review.",
+    summary: "Chapter Summaries",
+    summaryDesc: "Key points of each chapter, condensed to read in minutes.",
+    simulator: "Exam Simulator",
+    simulatorDesc: "Timed, 30 questions, no pausing — just like the real thing.",
+    mistakes: "My Mistakes",
+    mistakesDesc: "A focused exam built only from questions you got wrong.",
+    open: "Open",
   },
+
+  flashcards: {
+    title: "Flashcards",
+    subtitle: "Tap a card to flip it. Mark what you know to focus your review.",
+    tapToFlip: "Tap to flip",
+    know: "I know this",
+    review: "Review again",
+    knewIt: "Known",
+    reviewing: "To review",
+    restart: "Restart",
+    shuffle: "Shuffle",
+    done: "All done!",
+    doneDesc: "You've been through every card.",
+    progress: (n: number, total: number) => `${n} / ${total}`,
+    onlyReview: "Review marked only",
+    allCards: "All cards",
+  },
+
+  summary: {
+    title: "Chapter Summaries",
+    subtitle: "The essentials of every chapter, ready to skim before the exam.",
+    points: (n: number) => `${n} key concepts`,
+  },
+
+  simulator: {
+    title: "Exam Simulator",
+    intro: "Real exam conditions",
+    introDesc:
+      "30 questions, one shot, a running timer, and no going back. Finish to see your Exam Readiness score.",
+    minutes: (m: number) => `${m} minutes`,
+    questions: "30 questions",
+    timed: "Timed",
+    begin: "Begin Simulation",
+    timeLeft: "Time left",
+    timeUp: "Time's up! Submitting…",
+    readiness: "Exam Readiness",
+    readyHigh: "You're exam-ready. Keep it sharp!",
+    readyMid: "Almost there — review your weak areas and re-run.",
+    readyLow: "More revision needed before the real exam.",
+  },
+
+  mistakes: {
+    title: "My Mistakes",
+    none: "No mistakes to review yet",
+    noneDesc: "Take a few exams first — the questions you miss will collect here for focused practice.",
+    count: (n: number) => `${n} questions to master`,
+    start: "Start mistakes review",
+    cleared: "🎉 You've mastered all your past mistakes!",
+  },
+
 
   analysis: {
     review: (label: string, chapter: number, correct: number, total: number) =>
@@ -497,7 +558,68 @@ const ar: Messages = {
     studyCta: "وضع الدراسة",
     dashboardCta: "لوحة التحكم",
     chaptersCovered: "الفصول المغطّاة",
+    toolsHeading: "أدوات الاستعداد للاختبار",
+    toolsSubtitle: "كل ما تحتاجه لتكون جاهزاً يوم الاختبار.",
+    flashcards: "البطاقات التعريفية",
+    flashcardsDesc: "قلّب كل المفاهيم — مثالية للمراجعة قبل الاختبار مباشرة.",
+    summary: "ملخصات الفصول",
+    summaryDesc: "أهم نقاط كل فصل، مختصرة تقرأها بدقائق.",
+    simulator: "محاكي الاختبار",
+    simulatorDesc: "مؤقّت، ٣٠ سؤالاً، بدون توقّف — تماماً مثل الاختبار الحقيقي.",
+    mistakes: "أخطائي",
+    mistakesDesc: "اختبار مركّز مبني فقط من الأسئلة التي أخطأت فيها.",
+    open: "افتح",
   },
+
+  flashcards: {
+    title: "البطاقات التعريفية",
+    subtitle: "اضغط البطاقة لتقلبها. حدّد ما تعرفه لتركّز مراجعتك.",
+    tapToFlip: "اضغط للقلب",
+    know: "أعرف هذا",
+    review: "أراجعه لاحقاً",
+    knewIt: "معروف",
+    reviewing: "للمراجعة",
+    restart: "إعادة",
+    shuffle: "خلط",
+    done: "خلصت كل البطاقات!",
+    doneDesc: "مررت على كل بطاقة.",
+    progress: (n: number, total: number) => `${n} / ${total}`,
+    onlyReview: "مراجعة المحدّد فقط",
+    allCards: "كل البطاقات",
+  },
+
+  summary: {
+    title: "ملخصات الفصول",
+    subtitle: "أساسيات كل فصل، جاهزة لتصفّحها قبل الاختبار.",
+    points: (n: number) => `${n} مفاهيم رئيسية`,
+  },
+
+  simulator: {
+    title: "محاكي الاختبار",
+    intro: "ظروف اختبار حقيقية",
+    introDesc:
+      "٣٠ سؤالاً، محاولة واحدة، مؤقّت يعمل، وبدون رجوع. أكمل لتشوف نسبة جاهزيتك للاختبار.",
+    minutes: (m: number) => `${m} دقيقة`,
+    questions: "٣٠ سؤالاً",
+    timed: "موقوت",
+    begin: "ابدأ المحاكاة",
+    timeLeft: "الوقت المتبقي",
+    timeUp: "انتهى الوقت! جارٍ التسليم…",
+    readiness: "الجاهزية للاختبار",
+    readyHigh: "أنت جاهز للاختبار. حافظ على مستواك!",
+    readyMid: "اقتربت — راجع نقاط ضعفك وأعد المحاولة.",
+    readyLow: "تحتاج مراجعة أكثر قبل الاختبار الحقيقي.",
+  },
+
+  mistakes: {
+    title: "أخطائي",
+    none: "لا توجد أخطاء للمراجعة بعد",
+    noneDesc: "خُض بعض الاختبارات أولاً — الأسئلة التي تخطئ فيها ستتجمّع هنا للتدرّب المركّز.",
+    count: (n: number) => `${n} سؤالاً لإتقانها`,
+    start: "ابدأ مراجعة الأخطاء",
+    cleared: "🎉 أتقنت كل أخطائك السابقة!",
+  },
+
 
   analysis: {
     review: (label: string, chapter: number, correct: number, total: number) =>

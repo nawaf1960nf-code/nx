@@ -97,6 +97,25 @@ export function getAttemptCount(subjectId: string, difficulty?: Difficulty): num
   ).length;
 }
 
+/**
+ * Question ids the learner has answered INCORRECTLY at least once and has not
+ * since gotten right more recently. Powers the "My Mistakes" focused exam.
+ */
+export function getWrongQuestionIds(subjectId: string): string[] {
+  const results = [...(read().subjects[subjectId]?.results ?? [])].sort(
+    (a, b) => a.date - b.date,
+  );
+  // Track the latest outcome per question id across all attempts.
+  const latest = new Map<string, boolean>();
+  for (const r of results) {
+    for (const a of r.answers) {
+      latest.set(a.questionId, a.isCorrect);
+    }
+  }
+  return [...latest.entries()].filter(([, ok]) => !ok).map(([id]) => id);
+}
+
+
 export function getAverageScore(subjectId: string): number {
   const results = read().subjects[subjectId]?.results ?? [];
   if (results.length === 0) return 0;

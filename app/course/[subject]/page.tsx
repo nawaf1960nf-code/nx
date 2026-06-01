@@ -3,7 +3,16 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, BookOpen, LayoutDashboard } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  LayoutDashboard,
+  Layers3,
+  FileText,
+  Clock,
+  Target,
+} from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import { LevelCard } from "@/components/LevelCard";
@@ -78,6 +87,48 @@ export default function CourseHubPage() {
         </div>
       </section>
 
+      {/* Exam-prep toolkit */}
+      <section className="mx-auto max-w-6xl px-4 pb-6">
+        <div className="mb-8">
+          <h2 className="font-display text-2xl font-bold text-white">{t.hub.toolsHeading}</h2>
+          <p className="mt-2 text-sm text-brand-100/60">{t.hub.toolsSubtitle}</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ToolCard
+            href={`/flashcards?subject=${subject.id}`}
+            icon={Layers3}
+            accent="#818cf8"
+            title={t.hub.flashcards}
+            desc={t.hub.flashcardsDesc}
+            cta={t.hub.open}
+          />
+          <ToolCard
+            href={`/summary?subject=${subject.id}`}
+            icon={FileText}
+            accent="#22d3ee"
+            title={t.hub.summary}
+            desc={t.hub.summaryDesc}
+            cta={t.hub.open}
+          />
+          <ToolCard
+            href={`/exam?subject=${subject.id}&mode=timed`}
+            icon={Clock}
+            accent="#fbbf24"
+            title={t.hub.simulator}
+            desc={t.hub.simulatorDesc}
+            cta={t.hub.open}
+          />
+          <ToolCard
+            href={`/exam?subject=${subject.id}&mode=mistakes`}
+            icon={Target}
+            accent="#fb7185"
+            title={t.hub.mistakes}
+            desc={t.hub.mistakesDesc}
+            cta={t.hub.open}
+          />
+        </div>
+      </section>
+
       {/* Chapters covered */}
       <section className="mx-auto max-w-4xl px-4 pb-20">
         <div className="card-premium p-8 sm:p-10">
@@ -105,5 +156,45 @@ export default function CourseHubPage() {
 
       <Footer />
     </main>
+  );
+}
+
+function ToolCard({
+  href,
+  icon: Icon,
+  accent,
+  title,
+  desc,
+  cta,
+}: {
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  accent: string;
+  title: string;
+  desc: string;
+  cta: string;
+}) {
+  return (
+    <Link href={href} className="group">
+      <motion.div whileHover={{ y: -4 }} className="card-premium flex h-full items-start gap-4 p-6">
+        <span
+          className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl transition-transform group-hover:scale-110"
+          style={{ background: `${accent}1f`, color: accent }}
+        >
+          <Icon className="h-6 w-6" />
+        </span>
+        <div className="flex-1">
+          <h3 className="font-display text-lg font-semibold text-white">{title}</h3>
+          <p className="mt-1 text-sm leading-relaxed text-brand-100/65">{desc}</p>
+          <span
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold"
+            style={{ color: accent }}
+          >
+            {cta}
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" />
+          </span>
+        </div>
+      </motion.div>
+    </Link>
   );
 }

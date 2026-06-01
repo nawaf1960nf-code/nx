@@ -32,6 +32,7 @@ export function ResultsView({
   studentName,
   date,
   labelFor,
+  readiness = false,
   onReview,
   onRetake,
 }: {
@@ -41,6 +42,7 @@ export function ResultsView({
   studentName: string;
   date: number;
   labelFor: (topic: string) => string;
+  readiness?: boolean;
   onReview: () => void;
   onRetake: () => void;
 }) {
@@ -120,7 +122,29 @@ export function ResultsView({
         </div>
       </div>
 
-      {/* Performance analysis */}
+      {/* Exam Readiness banner (timed simulator only) */}
+      {readiness && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-8 rounded-3xl border p-5 text-center"
+          style={{ borderColor: `${color}55`, background: `${color}14` }}
+        >
+          <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color }}>
+            {tr.simulator.readiness}
+          </p>
+          <p className="mt-2 font-display text-4xl font-extrabold text-white">{percentage}%</p>
+          <p className="mt-1 text-sm text-brand-100/70">
+            {percentage >= 80
+              ? tr.simulator.readyHigh
+              : percentage >= 60
+                ? tr.simulator.readyMid
+                : tr.simulator.readyLow}
+          </p>
+        </motion.div>
+      )}
+
       <GlassCard className="mt-10 p-6 sm:p-8">
         <div className="mb-3 flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-brand-300" />
