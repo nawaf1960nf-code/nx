@@ -108,7 +108,7 @@ export function ReviewView({
               </div>
 
               {sel === null && (
-                <p className="mt-2 text-xs text-brand-100/40">{t.review.noAnswer}</p>
+                <p className="mt-2 text-xs text-brand-100/60">{t.review.noAnswer}</p>
               )}
 
               <div className="mt-4 flex gap-2 rounded-xl bg-brand-500/8 p-3.5">

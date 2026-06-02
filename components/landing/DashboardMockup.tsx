@@ -34,9 +34,9 @@ export function DashboardMockup() {
         <div className="card-premium sm:col-span-2 p-5">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <p className="text-xs text-brand-100/50">{d.cardAnalytics}</p>
+              <p className="text-xs text-brand-100/60">{d.cardAnalytics}</p>
               <p className="font-display text-3xl font-bold text-white">
-                87<span className="text-lg text-brand-100/40">%</span>
+                87<span className="text-lg text-brand-100/60">%</span>
               </p>
             </div>
             <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2.5 py-1 text-xs font-semibold text-success">
@@ -65,7 +65,7 @@ export function DashboardMockup() {
               <Trophy className="h-4 w-4" />
             </span>
             <div>
-              <p className="text-[10px] uppercase tracking-wide text-brand-100/40">{d.bestLabel}</p>
+              <p className="text-[10px] uppercase tracking-wide text-brand-100/60">{d.bestLabel}</p>
               <p className="font-display text-lg font-bold text-white">96%</p>
             </div>
           </div>
@@ -74,7 +74,7 @@ export function DashboardMockup() {
               <Target className="h-4 w-4" />
             </span>
             <div>
-              <p className="text-[10px] uppercase tracking-wide text-brand-100/40">{d.attemptsLabel}</p>
+              <p className="text-[10px] uppercase tracking-wide text-brand-100/60">{d.attemptsLabel}</p>
               <p className="font-display text-lg font-bold text-white">12</p>
             </div>
           </div>
@@ -88,7 +88,7 @@ export function DashboardMockup() {
               <div key={tp.label}>
                 <div className="mb-1 flex justify-between text-[11px]">
                   <span className="text-brand-100/70">{tp.label}</span>
-                  <span className="text-brand-100/40">{tp.v}%</span>
+                  <span className="text-brand-100/60">{tp.v}%</span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-white/8">
                   <motion.div

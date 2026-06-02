@@ -104,7 +104,7 @@ function DashboardInner() {
                   refresh();
                 }
               }}
-              className="flex items-center gap-1.5 text-xs text-brand-100/40 transition-colors hover:text-danger"
+              className="flex items-center gap-1.5 text-xs text-brand-100/60 transition-colors hover:text-danger"
             >
               <Trash2 className="h-3.5 w-3.5" /> {t.dashboard.reset}
             </button>
@@ -179,7 +179,7 @@ function DashboardInner() {
                       <span className="text-brand-100/80">
                         {t.exam.chShort} {chapter} · {subject.chapterTitles[chapter]?.[locale] ?? ""}
                       </span>
-                      <span className="text-brand-100/50">{Math.round(ratio * 100)}%</span>
+                      <span className="text-brand-100/60">{Math.round(ratio * 100)}%</span>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/8">
                       <motion.div
@@ -229,7 +229,7 @@ function StatCard({
         <Icon className="h-5 w-5" />
       </span>
       <p className="font-display text-2xl font-bold text-white">{value}</p>
-      <p className="text-xs text-brand-100/50">{label}</p>
+      <p className="text-xs text-brand-100/60">{label}</p>
     </motion.div>
   );
 }
@@ -269,7 +269,7 @@ function TopicPanel({
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-brand-100/40">{empty}</p>
+        <p className="text-sm text-brand-100/60">{empty}</p>
       )}
     </GlassCard>
   );

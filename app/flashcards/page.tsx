@@ -82,7 +82,7 @@ function FlashcardsInner() {
           <span className="flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1 font-semibold text-success">
             <Check className="h-3 w-3" /> {knownCount} {t.flashcards.knewIt}
           </span>
-          <span className="text-brand-100/50">
+          <span className="text-brand-100/60">
             {deck.length ? t.flashcards.progress(Math.min(pos + 1, deck.length), deck.length) : "—"}
           </span>
           <span className="rounded-full bg-white/8 px-3 py-1 font-semibold text-brand-100/70">
@@ -137,7 +137,7 @@ function FlashcardsInner() {
                       {t.exam.chShort} {card.chapter}
                     </span>
                     <h2 className="font-display text-2xl font-bold text-white">{card.term}</h2>
-                    <span className="mt-6 text-xs text-brand-100/40">{t.flashcards.tapToFlip}</span>
+                    <span className="mt-6 text-xs text-brand-100/60">{t.flashcards.tapToFlip}</span>
                   </div>
                   {/* Back */}
                   <div
@@ -165,19 +165,19 @@ function FlashcardsInner() {
               <button
                 onClick={() => go(-1)}
                 disabled={pos === 0}
-                className="flex items-center gap-1.5 text-sm text-brand-100/50 transition-colors hover:text-white disabled:opacity-30"
+                className="flex items-center gap-1.5 text-sm text-brand-100/60 transition-colors hover:text-white disabled:opacity-30"
               >
                 <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
               </button>
               <button
                 onClick={() => { setDeck((d) => shuffle(d)); setPos(0); setFlipped(false); }}
-                className="flex items-center gap-1.5 text-xs text-brand-100/50 transition-colors hover:text-white"
+                className="flex items-center gap-1.5 text-xs text-brand-100/60 transition-colors hover:text-white"
               >
                 <Shuffle className="h-3.5 w-3.5" /> {t.flashcards.shuffle}
               </button>
               <button
                 onClick={() => go(1)}
-                className="flex items-center gap-1.5 text-sm text-brand-100/50 transition-colors hover:text-white"
+                className="flex items-center gap-1.5 text-sm text-brand-100/60 transition-colors hover:text-white"
               >
                 <ArrowRight className="h-4 w-4 rtl:rotate-180" />
               </button>

@@ -50,7 +50,7 @@ export function ScoreRing({
         >
           {label}
         </motion.p>
-        <p className="text-xs uppercase tracking-wider text-brand-100/50">
+        <p className="text-xs uppercase tracking-wider text-brand-100/60">
           {percentage}%
         </p>
       </div>

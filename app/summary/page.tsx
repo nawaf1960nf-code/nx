@@ -56,7 +56,7 @@ function SummaryInner() {
                   </span>
                   <div className="flex-1">
                     <p className="font-semibold text-white">{s.title}</p>
-                    <p className="text-xs text-brand-100/50">{t.summary.points(s.points.length)}</p>
+                    <p className="text-xs text-brand-100/60">{t.summary.points(s.points.length)}</p>
                   </div>
                   <motion.span animate={{ rotate: isOpen ? 180 : 0 }} className="text-brand-200">
                     <ChevronDown className="h-5 w-5" />

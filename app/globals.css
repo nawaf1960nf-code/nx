@@ -221,10 +221,28 @@ body {
   background-clip: padding-box;
 }
 
-/* Focus ring for accessibility */
+/*
+  Focus ring for accessibility — visible 3px ring with offset on every
+  keyboard-focused interactive element. The extra box-shadow halo guarantees
+  the ring stays visible even on gradient/colored buttons where the outline
+  alone could blend in.
+*/
 :focus-visible {
-  outline: 2px solid var(--color-brand-400);
+  outline: 3px solid var(--color-accent-400);
   outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid var(--color-accent-400);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(34, 211, 238, 0.25);
 }
 
 @media (prefers-reduced-motion: reduce) {

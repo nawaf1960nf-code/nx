@@ -17,7 +17,7 @@ export function Footer() {
           </span>
           <div>
             <p className="font-display text-sm font-bold text-white">{t.nav.brand}</p>
-            <p className="text-[11px] text-brand-100/50">{t.landing.footer.tagline}</p>
+            <p className="text-[11px] text-brand-100/60">{t.landing.footer.tagline}</p>
           </div>
         </div>
 

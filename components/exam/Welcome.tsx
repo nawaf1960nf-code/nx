@@ -62,7 +62,7 @@ export function Welcome({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={t.welcome.namePlaceholder}
-            className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-brand-100/30 focus:border-brand-400 focus:outline-none"
+            className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-brand-100/45 focus:border-brand-400 focus:outline-none"
           />
         </div>
 
@@ -74,7 +74,7 @@ export function Welcome({
           <Play className="h-4 w-4" /> {t.welcome.start}
         </Button>
 
-        <p className="mt-4 text-xs text-brand-100/40">{t.welcome.note}</p>
+        <p className="mt-4 text-xs text-brand-100/60">{t.welcome.note}</p>
       </GlassCard>
     </motion.div>
   );

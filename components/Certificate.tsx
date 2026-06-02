@@ -62,7 +62,7 @@ export function Certificate({
         <div className="mt-6 flex items-center justify-center gap-6">
           <div className="text-center">
             <p className="font-display text-2xl font-bold text-white">{grade}</p>
-            <p className="text-[11px] uppercase tracking-wider text-brand-100/50">
+            <p className="text-[11px] uppercase tracking-wider text-brand-100/60">
               {t.certificate.grade}
             </p>
           </div>
@@ -71,13 +71,13 @@ export function Certificate({
             <p className="flex items-center gap-1.5 font-display text-lg font-semibold text-success">
               <BadgeCheck className="h-5 w-5" /> {t.certificate.passed}
             </p>
-            <p className="text-[11px] uppercase tracking-wider text-brand-100/50">
+            <p className="text-[11px] uppercase tracking-wider text-brand-100/60">
               {dateStr}
             </p>
           </div>
         </div>
 
-        <p className="mt-6 text-[11px] tracking-wider text-brand-100/40">
+        <p className="mt-6 text-[11px] tracking-wider text-brand-100/60">
           {t.certificate.footer}
         </p>
       </div>

@@ -77,7 +77,7 @@ export function CourseCatalog() {
                 ) : (
                   <button
                     disabled
-                    className="mt-6 inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-2xl border border-white/10 px-6 py-3.5 text-sm font-semibold text-brand-100/40"
+                    className="mt-6 inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-2xl border border-white/10 px-6 py-3.5 text-sm font-semibold text-brand-100/60"
                   >
                     <BookMarked className="h-4 w-4" />
                     {t.landing.comingSoon}

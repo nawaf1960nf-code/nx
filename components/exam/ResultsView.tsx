@@ -152,7 +152,7 @@ export function ResultsView({
             {tr.results.analysis}
           </h2>
           {aiLoading && !ai && (
-            <span className="text-[11px] text-brand-100/40">{tr.results.analyzing}</span>
+            <span className="text-[11px] text-brand-100/60">{tr.results.analyzing}</span>
           )}
         </div>
         <p className="text-sm leading-relaxed text-brand-100/80">{summary}</p>
@@ -211,7 +211,7 @@ export function ResultsView({
             <div key={t.topic}>
               <div className="mb-1 flex justify-between text-xs">
                 <span className="text-brand-100/80">{labelFor(t.topic)}</span>
-                <span className="text-brand-100/50">
+                <span className="text-brand-100/60">
                   {t.correct}/{t.total}
                 </span>
               </div>
@@ -284,7 +284,7 @@ function Stat({
         )}
         <span className="font-display text-xl font-bold text-white">{value}</span>
       </div>
-      <span className="mt-0.5 text-[11px] uppercase tracking-wider text-brand-100/50">
+      <span className="mt-0.5 text-[11px] uppercase tracking-wider text-brand-100/60">
         {label}
       </span>
     </div>
@@ -319,7 +319,7 @@ function AreaList({
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-brand-100/40">{empty}</p>
+        <p className="text-sm text-brand-100/60">{empty}</p>
       )}
     </div>
   );

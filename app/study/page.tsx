@@ -117,7 +117,7 @@ function StudyInner() {
           <h1 className="font-display text-3xl font-bold text-white">{t.study.title}</h1>
           <p className="mt-2 text-sm text-brand-100/60">{t.study.subtitle}</p>
           <div className="mt-4 flex items-center justify-center gap-3">
-            <span className="text-xs text-brand-100/40">{progressLabel}</span>
+            <span className="text-xs text-brand-100/60">{progressLabel}</span>
           </div>
         </div>
 
@@ -217,7 +217,7 @@ function StudyInner() {
                       </div>
                     ))}
                     {tutorLoading && (
-                      <div className="flex items-center gap-2 text-xs text-brand-100/50">
+                      <div className="flex items-center gap-2 text-xs text-brand-100/60">
                         <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t.study.thinking}
                       </div>
                     )}
@@ -231,7 +231,7 @@ function StudyInner() {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && ask()}
                       placeholder={t.study.askPlaceholder}
-                      className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-brand-100/30 focus:border-brand-400 focus:outline-none"
+                      className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-brand-100/45 focus:border-brand-400 focus:outline-none"
                     />
                     <Button onClick={ask} size="md" disabled={!input.trim() || tutorLoading}>
                       <Send className="h-4 w-4" />
