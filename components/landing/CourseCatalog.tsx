@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, BookMarked, Layers, FileQuestion } from "lucide-react";
+import { ArrowRight, BookMarked, Layers, FileQuestion, Plus } from "lucide-react";
 import { SUBJECTS, subjectQuestionCount } from "@/lib/subjects";
 import { useLocale } from "@/lib/locale-context";
 import { Reveal } from "@/components/ui/Reveal";
+import { SubjectIcon } from "@/components/SubjectIcon";
 
 export function CourseCatalog() {
   const { t, locale } = useLocale();
@@ -31,10 +32,10 @@ export function CourseCatalog() {
               <div className="card-premium relative flex h-full flex-col p-7">
                 <div className="mb-5 flex items-center justify-between">
                   <span
-                    className="grid h-14 w-14 place-items-center rounded-2xl text-3xl"
-                    style={{ background: `${s.accent}1f` }}
+                    className="grid h-14 w-14 place-items-center rounded-2xl"
+                    style={{ background: `${s.accent}1f`, color: s.accent }}
                   >
-                    {s.icon}
+                    <SubjectIcon name={s.icon} className="h-7 w-7" />
                   </span>
                   {!s.available && (
                     <span className="rounded-full bg-white/8 px-3 py-1 text-[11px] font-semibold text-brand-100/60">
@@ -90,8 +91,10 @@ export function CourseCatalog() {
         {/* "Add your subject" placeholder card */}
         <Reveal delay={SUBJECTS.length * 0.08}>
           <div className="flex h-full min-h-[18rem] flex-col items-center justify-center rounded-3xl border border-dashed border-white/12 p-7 text-center">
-            <span className="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-white/5 text-2xl">＋</span>
-            <p className="text-sm font-medium text-brand-100/60">{t.landing.comingSoon}</p>
+            <span className="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-white/5 text-brand-100/70">
+              <Plus className="h-6 w-6" aria-hidden />
+            </span>
+            <p className="text-sm font-medium text-brand-100/70">{t.landing.comingSoon}</p>
           </div>
         </Reveal>
       </div>

@@ -12,6 +12,7 @@ export interface Subject {
   id: string;
   name: Bilingual;
   tagline: Bilingual;
+  /** lucide-react icon name (see components/SubjectIcon.tsx). */
   icon: string;
   accent: string;
   glow: string;
@@ -60,7 +61,7 @@ export const servicesMarketing: Subject = {
     en: "Lovelock & Wirtz · Chapters 4, 7, 8, 10 & 11",
     ar: "لوفلوك وويرتز · الفصول ٤ و٧ و٨ و١٠ و١١",
   },
-  icon: "🎯",
+  icon: "Megaphone",
   accent: "#818cf8",
   glow: "rgba(99, 102, 241, 0.45)",
   chapters: [4, 7, 8, 10, 11],

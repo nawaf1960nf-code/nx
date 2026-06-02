@@ -223,7 +223,7 @@ const en = {
     noneDesc: "Take a few exams first — the questions you miss will collect here for focused practice.",
     count: (n: number) => `${n} questions to master`,
     start: "Start mistakes review",
-    cleared: "🎉 You've mastered all your past mistakes!",
+    cleared: "You've mastered all your past mistakes!",
   },
 
 
@@ -278,9 +278,9 @@ const en = {
   } as Record<string, string>,
 
   results: {
-    exceptional: "Exceptional! 🎉",
-    wellDone: "Well done! 👏",
-    keepGoing: "Keep going 💪",
+    exceptional: "Exceptional!",
+    wellDone: "Well done!",
+    keepGoing: "Keep going",
     complete: (d: string) => `${d} exam complete`,
     correct: "Correct",
     wrong: "Wrong",
@@ -625,7 +625,7 @@ const ar: Messages = {
     noneDesc: "خُض بعض الاختبارات أولاً — الأسئلة التي تخطئ فيها ستتجمّع هنا للتدرّب المركّز.",
     count: (n: number) => `${n} سؤالاً لإتقانها`,
     start: "ابدأ مراجعة الأخطاء",
-    cleared: "🎉 أتقنت كل أخطائك السابقة!",
+    cleared: "أتقنت كل أخطائك السابقة!",
   },
 
 
@@ -680,9 +680,9 @@ const ar: Messages = {
   },
 
   results: {
-    exceptional: "ممتاز! 🎉",
-    wellDone: "أحسنت! 👏",
-    keepGoing: "واصل التقدّم 💪",
+    exceptional: "ممتاز!",
+    wellDone: "أحسنت!",
+    keepGoing: "واصل التقدّم",
     complete: (d: string) => `اكتمل اختبار مستوى ${d}`,
     correct: "صحيحة",
     wrong: "خاطئة",

@@ -19,6 +19,7 @@ import { LevelCard } from "@/components/LevelCard";
 import { LEVELS } from "@/lib/levels";
 import { getSubject } from "@/lib/subjects";
 import { useLocale } from "@/lib/locale-context";
+import { SubjectIcon } from "@/components/SubjectIcon";
 
 export default function CourseHubPage() {
   const params = useParams<{ subject: string }>();
@@ -44,10 +45,10 @@ export default function CourseHubPage() {
           className="mt-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center"
         >
           <span
-            className="grid h-16 w-16 place-items-center rounded-2xl text-4xl"
-            style={{ background: `${subject.accent}1f` }}
+            className="grid h-16 w-16 place-items-center rounded-2xl"
+            style={{ background: `${subject.accent}1f`, color: subject.accent }}
           >
-            {subject.icon}
+            <SubjectIcon name={subject.icon} className="h-8 w-8" />
           </span>
           <div>
             <h1 className="font-display text-3xl font-bold text-white sm:text-4xl">

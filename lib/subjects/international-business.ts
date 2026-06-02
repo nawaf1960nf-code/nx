@@ -591,7 +591,7 @@ export const internationalBusiness: Subject = {
     en: "FDI, Trade Blocs, Currencies, Strategy & Entry Modes · Ch 8, 9, 11, 12, 13, 14",
     ar: "الاستثمار، التكتلات، العملات، الاستراتيجية وأنماط الدخول · الفصول ٨ و٩ و١١ و١٢ و١٣ و١٤",
   },
-  icon: "🌍",
+  icon: "Globe2",
   accent: "#22d3ee",
   glow: "rgba(6, 182, 212, 0.45)",
   chapters: [8, 9, 11, 12, 13, 14],

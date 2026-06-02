@@ -32,6 +32,7 @@ import type { ExamResult, TopicId, Chapter } from "@/lib/types";
 import { useLocale } from "@/lib/locale-context";
 import type { Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { SubjectIcon } from "@/components/SubjectIcon";
 
 function DashboardInner() {
   const { t, locale } = useLocale();
@@ -123,7 +124,7 @@ function DashboardInner() {
                   : "border-white/8 text-brand-100/60 hover:bg-white/5 hover:text-white",
               )}
             >
-              <span>{s.icon}</span>
+              <SubjectIcon name={s.icon} className="h-4 w-4" />
               {s.name[locale]}
             </button>
           ))}
