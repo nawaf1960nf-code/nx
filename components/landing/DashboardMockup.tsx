@@ -24,8 +24,8 @@ export function DashboardMockup() {
         <span className="h-2.5 w-2.5 rounded-full bg-danger/70" />
         <span className="h-2.5 w-2.5 rounded-full bg-gold/70" />
         <span className="h-2.5 w-2.5 rounded-full bg-success/70" />
-        <span className="ms-3 inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-[10px] font-medium text-brand-100/60">
-          <Sparkles className="h-3 w-3 text-success" /> {d.badge}
+        <span className="ms-3 inline-flex items-center gap-1.5 rounded-full bg-gold/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-gold">
+          <Sparkles className="h-3 w-3" /> {d.previewLabel}
         </span>
       </div>
 

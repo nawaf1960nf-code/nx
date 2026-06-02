@@ -38,6 +38,8 @@ const en = {
     subtitle:
       "An interactive platform that generates fresh exams every attempt, explains every answer, and adapts to exactly where you need to improve — from the Flower of Service to the Cycle of Success.",
     chooseLevel: "Choose your level",
+    chooseCourse: "Choose your course",
+    freeNote: "Free to use — no sign-up required.",
     tryStudy: "Try Study Mode",
   },
 
@@ -83,6 +85,8 @@ const en = {
     },
     dashboardPreview: {
       badge: "Live analytics",
+      previewLabel: "Example · Preview",
+      previewCaption: "Sample data — your own dashboard fills in as you take exams.",
       heading: "See your progress come to life",
       subtitle:
         "Every attempt feeds a personal dashboard — scores over time, mastery by topic, and clear insights that tell you exactly what to review next.",
@@ -436,6 +440,8 @@ const ar: Messages = {
     subtitle:
       "منصة تفاعلية تولّد اختباراً جديداً في كل محاولة، تشرح كل إجابة، وتتكيّف مع المواضيع التي تحتاج تحسينها — من زهرة الخدمة إلى دورة النجاح.",
     chooseLevel: "اختر مستواك",
+    chooseCourse: "اختر مادتك",
+    freeNote: "مجاني بالكامل — بدون تسجيل.",
     tryStudy: "جرّب وضع الدراسة",
   },
 
@@ -481,6 +487,8 @@ const ar: Messages = {
     },
     dashboardPreview: {
       badge: "تحليلات حيّة",
+      previewLabel: "مثال · معاينة",
+      previewCaption: "بيانات توضيحية — لوحتك الخاصة تمتلئ كلما خُضت اختبارات.",
       heading: "شاهد تقدّمك يتجسّد أمامك",
       subtitle:
         "كل محاولة تغذّي لوحة تحكم شخصية — نتائجك عبر الوقت، إتقانك لكل موضوع، ورؤى واضحة تخبرك بالضبط بما تحتاج مراجعته.",

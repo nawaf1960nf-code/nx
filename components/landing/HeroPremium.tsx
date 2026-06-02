@@ -70,20 +70,28 @@ export function HeroPremium() {
         >
           <Link
             href="#catalog"
-            className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-accent-500 px-8 py-4 text-sm font-semibold text-white shadow-[0_20px_60px_-24px_rgba(99,102,241,0.9)] transition-all duration-300 hover:brightness-110 active:scale-[0.97]"
+            className="group inline-flex min-h-12 items-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-accent-500 px-8 py-4 text-sm font-semibold text-white shadow-[0_20px_60px_-24px_rgba(99,102,241,0.9)] transition-all duration-300 hover:brightness-110 active:scale-[0.97]"
           >
-            {t.hero.chooseLevel}
+            {t.hero.chooseCourse}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" />
           </Link>
           <Link
             href="/study"
-            className="inline-flex items-center gap-2 rounded-2xl border border-white/15 px-8 py-4 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/10 active:scale-[0.97]"
+            className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/15 px-8 py-4 text-sm font-semibold text-white transition-all duration-300 hover:bg-white/10 active:scale-[0.97]"
           >
             <BookOpen className="h-4 w-4" />
             {t.hero.tryStudy}
           </Link>
         </motion.div>
 
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.26 }}
+          className="mt-4 text-xs font-medium text-brand-100/65"
+        >
+          {t.hero.freeNote}
+        </motion.p>
       </div>
 
       {/* Dashboard mockup with parallax tilt */}
@@ -99,6 +107,9 @@ export function HeroPremium() {
         <motion.div style={{ rotateX: rx, rotateY: ry, transformStyle: "preserve-3d" }}>
           <DashboardMockup />
         </motion.div>
+        <p className="mt-4 text-center text-xs text-brand-100/55">
+          {t.landing.dashboardPreview.previewCaption}
+        </p>
       </motion.div>
     </section>
   );
