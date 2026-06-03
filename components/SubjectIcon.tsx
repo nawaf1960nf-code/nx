@@ -1,4 +1,4 @@
-import { Megaphone, Globe2, BookOpen, type LucideProps } from "lucide-react";
+import { Megaphone, Globe2, Users, BookOpen, type LucideProps } from "lucide-react";
 
 /**
  * Resolves a subject's `icon` name (lucide-react) to a real SVG component, so
@@ -8,6 +8,7 @@ import { Megaphone, Globe2, BookOpen, type LucideProps } from "lucide-react";
 const MAP: Record<string, React.ComponentType<LucideProps>> = {
   Megaphone,
   Globe2,
+  Users,
   BookOpen,
 };
 

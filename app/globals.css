@@ -43,10 +43,11 @@
   --color-base-700: #1f2547;
   --color-base-600: #2c3260;
 
-  --font-display: ui-sans-serif, "Segoe UI", -apple-system, BlinkMacSystemFont,
-    "Helvetica Neue", Arial, system-ui, sans-serif;
-  --font-body: ui-sans-serif, "Segoe UI", -apple-system, BlinkMacSystemFont,
-    "Helvetica Neue", Arial, system-ui, sans-serif;
+  /* `--font-latin` / `--font-arabic` are injected by next/font in layout.tsx. */
+  --font-display: var(--font-latin), ui-sans-serif, "Segoe UI", -apple-system,
+    BlinkMacSystemFont, "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-body: var(--font-latin), ui-sans-serif, "Segoe UI", -apple-system,
+    BlinkMacSystemFont, "Helvetica Neue", Arial, system-ui, sans-serif;
 
   --animate-float: float 6s ease-in-out infinite;
   --animate-aurora: aurora 18s ease-in-out infinite;
@@ -118,6 +119,22 @@ body {
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/*
+  Arabic (RTL) typography: use Cairo for proper Arabic shaping while keeping
+  Western digits (tabular where helpful). Latin runs inside Arabic text still
+  fall back to the Latin stack via the font list.
+*/
+[dir="rtl"] body,
+[dir="rtl"] {
+  --font-display: var(--font-arabic), "Segoe UI", Tahoma, sans-serif;
+  --font-body: var(--font-arabic), "Segoe UI", Tahoma, sans-serif;
+}
+
+/* Keep numerals Western even in Arabic UI (scores, %, counters). */
+[dir="rtl"] {
+  font-feature-settings: "lnum" 1;
 }
 
 /*

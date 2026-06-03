@@ -1,6 +1,23 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, Cairo } from "next/font/google";
 import { LocaleProvider } from "@/lib/locale-context";
 import "./globals.css";
+
+// Latin UI font.
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-latin",
+  display: "swap",
+  fallback: ["Segoe UI", "system-ui", "Arial", "sans-serif"],
+});
+
+// Arabic UI font (applied when dir=rtl, see globals.css).
+const cairo = Cairo({
+  subsets: ["arabic", "latin"],
+  variable: "--font-arabic",
+  display: "swap",
+  fallback: ["Segoe UI", "Tahoma", "sans-serif"],
+});
 
 export const metadata: Metadata = {
   title: "Services Marketing Exam Platform",
@@ -30,7 +47,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" dir="ltr" className={`${inter.variable} ${cairo.variable} h-full`}>
+      <head>
+        {/* Set lang/dir before paint so a returning Arabic user sees no flash of LTR. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var l=localStorage.getItem('smep:locale');if(l==='ar'){document.documentElement.lang='ar';document.documentElement.dir='rtl';}}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="min-h-full antialiased">
         <div className="bg-aurora" aria-hidden />
         <LocaleProvider>{children}</LocaleProvider>
