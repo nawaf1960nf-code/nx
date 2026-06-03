@@ -82,3 +82,63 @@ export async function aiTutor(payload: {
     return null;
   }
 }
+
+export type TutorMode = "chat" | "socratic" | "explain-wrong";
+
+export interface StreamTutorParams {
+  subjectId: string;
+  topic: TopicId;
+  locale: "en" | "ar";
+  mode?: TutorMode;
+  question?: string;
+  studentAnswer?: string;
+  correctAnswer?: string;
+  message?: string;
+  history?: TutorMessage[];
+}
+
+export type StreamResult = "ai" | "fallback" | "error";
+
+/**
+ * Stream a tutor reply token-by-token. Calls `onChunk` for each text delta and
+ * resolves with how it ended: "ai" (streamed ok), "fallback" (no API key
+ * configured — caller shows the offline message), or "error" (network/timeout —
+ * caller shows a retry). Pass an AbortSignal to cancel in flight.
+ */
+export async function streamTutor(
+  params: StreamTutorParams,
+  onChunk: (text: string) => void,
+  signal?: AbortSignal,
+): Promise<StreamResult> {
+  try {
+    const res = await fetch("/api/ai/tutor-stream", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+      signal,
+    });
+
+    // 204 = no API key configured on the server → graceful offline fallback.
+    if (res.status === 204 || res.headers.get("x-tutor") === "fallback") {
+      return "fallback";
+    }
+    if (!res.ok || !res.body) return "error";
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let received = false;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const text = decoder.decode(value, { stream: true });
+      if (text) {
+        received = true;
+        onChunk(text);
+      }
+    }
+    return received ? "ai" : "error";
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") return "error";
+    return "error";
+  }
+}

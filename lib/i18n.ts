@@ -354,6 +354,26 @@ const en = {
     next: "Next concept",
   },
 
+  tutor: {
+    title: "AI Tutor",
+    explainWrong: "Explain why I got this wrong",
+    placeholder: "Ask a follow-up…",
+    send: "Send",
+    thinking: "Tutor is thinking…",
+    retry: "Retry",
+    errorMsg: "Something went wrong reaching the tutor. Check your connection and try again.",
+    offlineMsg:
+      "The live tutor isn't enabled here. Tip: re-read the explanation and tie it to the chapter's key definition.",
+    socratic: "Socratic mode",
+    socraticOn: "Socratic mode on — I'll guide you with questions.",
+    quick: {
+      simpler: "Explain simpler",
+      analogy: "Give an analogy",
+      example: "Real example",
+    },
+    you: "You",
+  },
+
   difficulty: {
     easy: "Easy",
     medium: "Medium",
@@ -754,6 +774,26 @@ const ar: Messages = {
     offline:
       "نصيحة: أعد قراءة الشرح أعلاه واربطه بالتعريف الأساسي للفصل.",
     next: "المفهوم التالي",
+  },
+
+  tutor: {
+    title: "المدرّس الذكي",
+    explainWrong: "اشرح لي لماذا أخطأت",
+    placeholder: "اسأل سؤالاً متابعاً…",
+    send: "إرسال",
+    thinking: "المدرّس يفكّر…",
+    retry: "إعادة المحاولة",
+    errorMsg: "حدث خطأ في الوصول إلى المدرّس. تحقّق من اتصالك وحاول مرة أخرى.",
+    offlineMsg:
+      "المدرّس المباشر غير مُفعّل هنا. نصيحة: أعد قراءة الشرح واربطه بالتعريف الأساسي للفصل.",
+    socratic: "الوضع السقراطي",
+    socraticOn: "الوضع السقراطي مُفعّل — سأرشدك بالأسئلة.",
+    quick: {
+      simpler: "اشرح أبسط",
+      analogy: "أعطني تشبيهاً",
+      example: "مثال واقعي",
+    },
+    you: "أنت",
   },
 
   difficulty: {
