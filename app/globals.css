@@ -113,6 +113,13 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Guard against any stray element causing horizontal scroll on mobile. */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 body {
   background-color: var(--color-base-950);
   color: #e7e9f5;

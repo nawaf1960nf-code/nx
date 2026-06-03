@@ -25,7 +25,7 @@ export function Navbar() {
         <div className="flex items-center gap-1">
           <Link
             href="/#catalog"
-            className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-brand-100/70 transition-all hover:bg-white/5 hover:text-white"
+            className="flex min-h-11 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-brand-100/70 transition-all hover:bg-white/5 hover:text-white"
           >
             <LayoutGrid className="h-4 w-4" />
             <span className="hidden sm:block">{t.nav.courses}</span>
@@ -33,7 +33,7 @@ export function Navbar() {
 
           <button
             onClick={toggle}
-            className="ms-1 flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white transition-all hover:bg-white/10"
+            className="ms-1 flex min-h-11 items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white transition-all hover:bg-white/10"
             aria-label="Switch language"
           >
             <Languages className="h-4 w-4" />
