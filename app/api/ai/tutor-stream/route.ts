@@ -75,7 +75,7 @@ export async function POST(req: Request) {
   const client = getAnthropic();
   if (!client) {
     // No API key configured — signal the client to show its offline fallback.
-    return new Response("", { status: 204, headers: { "x-tutor": "fallback" } });
+    return new Response("", { status: 200, headers: { "x-tutor": "fallback" } });
   }
 
   const subject = getSubject(body.subjectId);

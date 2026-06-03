@@ -1,14 +1,12 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen,
   Check,
   X,
-  Sparkles,
   ArrowRight,
-  Send,
   Loader2,
   GraduationCap,
 } from "lucide-react";
@@ -16,10 +14,10 @@ import { useSearchParams } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
+import { TutorChat } from "@/components/tutor/TutorChat";
 import { shuffle } from "@/lib/utils";
 import { shuffleOptions } from "@/lib/exam-engine";
 import { getSubject, topicLabel } from "@/lib/subjects";
-import { aiTutor, type TutorMessage } from "@/lib/ai-client";
 import type { PreparedQuestion } from "@/lib/types";
 import { useLocale } from "@/lib/locale-context";
 
@@ -30,10 +28,6 @@ function StudyInner() {
   const [deck, setDeck] = useState<PreparedQuestion[]>([]);
   const [pos, setPos] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
-  const [chat, setChat] = useState<TutorMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [tutorLoading, setTutorLoading] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Shuffle the deck AND each question's answer positions so the correct
@@ -41,62 +35,19 @@ function StudyInner() {
     setDeck(shuffle(subject.questions).map(shuffleOptions));
     setPos(0);
     setSelected(null);
-    setChat([]);
   }, [subject]);
 
   const q = deck[pos];
   const answered = selected !== null;
   const correct = answered && selected === q?.correctIndex;
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chat, tutorLoading]);
-
-  async function choose(i: number) {
+  function choose(i: number) {
     if (answered || !q) return;
     setSelected(i);
-    // Ask the tutor to elaborate with an example (graceful fallback).
-    setTutorLoading(true);
-    const res = await aiTutor({
-      subjectId: subject.id,
-      topic: q.topic,
-      question: q.prompt,
-      studentAnswer: `${q.options[i]} (${i === q.correctIndex ? "correct" : "incorrect"})`,
-    });
-    if (res?.source === "ai") {
-      setChat([{ role: "assistant", content: res.reply }]);
-    }
-    setTutorLoading(false);
-  }
-
-  async function ask() {
-    if (!input.trim() || !q) return;
-    const userMsg: TutorMessage = { role: "user", content: input.trim() };
-    const history = [...chat, userMsg];
-    setChat(history);
-    setInput("");
-    setTutorLoading(true);
-    const res = await aiTutor({
-      subjectId: subject.id,
-      topic: q.topic,
-      question: q.prompt,
-      studentAnswer: userMsg.content,
-      history,
-    });
-    setChat([
-      ...history,
-      {
-        role: "assistant",
-        content: res?.source === "ai" ? res.reply : t.study.offline,
-      },
-    ]);
-    setTutorLoading(false);
   }
 
   function next() {
     setSelected(null);
-    setChat([]);
-    setInput("");
     setPos((p) => (p + 1) % Math.max(deck.length, 1));
   }
 
@@ -193,50 +144,15 @@ function StudyInner() {
                     <p className="leading-relaxed text-brand-100/85">{q.explanation}</p>
                   </div>
 
-                  {/* AI tutor conversation */}
-                  <div className="mt-4 space-y-3">
-                    {chat.map((m, i) => (
-                      <div
-                        key={i}
-                        className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-                      >
-                        <div
-                          className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                            m.role === "user"
-                              ? "bg-brand-500/25 text-white"
-                              : "bg-white/5 text-brand-100/90"
-                          }`}
-                        >
-                          {m.role === "assistant" && (
-                            <span className="mb-1 flex items-center gap-1 text-[11px] font-semibold text-brand-300">
-                              <Sparkles className="h-3 w-3" /> {t.study.tutor}
-                            </span>
-                          )}
-                          {m.content}
-                        </div>
-                      </div>
-                    ))}
-                    {tutorLoading && (
-                      <div className="flex items-center gap-2 text-xs text-brand-100/60">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t.study.thinking}
-                      </div>
-                    )}
-                    <div ref={chatEndRef} />
-                  </div>
-
-                  {/* Ask follow-up */}
-                  <div className="mt-4 flex gap-2">
-                    <input
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && ask()}
-                      placeholder={t.study.askPlaceholder}
-                      className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-brand-100/45 focus:border-brand-400 focus:outline-none"
-                    />
-                    <Button onClick={ask} size="md" disabled={!input.trim() || tutorLoading}>
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {/* Streaming AI tutor — chat, quick actions, Socratic mode */}
+                  <TutorChat
+                    key={q.id}
+                    seed={{
+                      subjectId: subject.id,
+                      topic: q.topic,
+                      question: q.prompt,
+                    }}
+                  />
 
                   <div className="mt-5 text-center">
                     <Button onClick={next} variant="subtle" size="lg">

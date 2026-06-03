@@ -1,23 +1,29 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, X, ArrowLeft, Info } from "lucide-react";
+import { Check, X, ArrowLeft, Info, Sparkles } from "lucide-react";
 import type { PreparedQuestion } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { useLocale } from "@/lib/locale-context";
+import { TutorChat } from "@/components/tutor/TutorChat";
 
 export function ReviewView({
   questions,
   selections,
   labelFor,
+  subjectId,
   onBack,
 }: {
   questions: PreparedQuestion[];
   selections: (number | null)[];
   labelFor: (topic: string) => string;
+  subjectId: string;
   onBack: () => void;
 }) {
   const { t } = useLocale();
+  // Which question ids have the tutor panel open.
+  const [openTutor, setOpenTutor] = useState<Record<string, boolean>>({});
   return (
     <div className="mx-auto w-full max-w-2xl pb-16">
       <div className="mb-6 flex items-center justify-between">
@@ -117,6 +123,33 @@ export function ReviewView({
                   {q.explanation}
                 </p>
               </div>
+
+              {/* Ask the AI tutor to explain a wrong answer in depth. */}
+              {!correct && (
+                <>
+                  {!openTutor[q.id] ? (
+                    <button
+                      type="button"
+                      onClick={() => setOpenTutor((o) => ({ ...o, [q.id]: true }))}
+                      className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-brand-400/30 bg-brand-500/10 px-3.5 py-2 text-xs font-semibold text-brand-200 transition-all hover:bg-brand-500/20"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" /> {t.tutor.explainWrong}
+                    </button>
+                  ) : (
+                    <TutorChat
+                      autoExplainWrong
+                      seed={{
+                        subjectId,
+                        topic: q.topic,
+                        question: q.prompt,
+                        studentAnswer:
+                          sel !== null ? q.options[sel] : t.review.noAnswer,
+                        correctAnswer: q.options[q.correctIndex],
+                      }}
+                    />
+                  )}
+                </>
+              )}
             </motion.div>
           );
         })}

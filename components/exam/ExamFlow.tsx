@@ -320,6 +320,7 @@ export function ExamFlow() {
             questions={questions}
             selections={selections}
             labelFor={labelFor}
+            subjectId={subject.id}
             onBack={() => setPhase("results")}
           />
         );
