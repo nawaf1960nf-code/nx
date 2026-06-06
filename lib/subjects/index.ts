@@ -3,11 +3,16 @@ import type { Locale } from "../i18n";
 import { servicesMarketing } from "./services-marketing";
 import type { Subject } from "./services-marketing";
 import { internationalBusiness } from "./international-business";
+import { compensationManagement } from "./compensation-management";
 
 export type { Subject, SubjectTopic } from "./services-marketing";
 
 /** Ordered list of all courses shown in the catalog. */
-export const SUBJECTS: Subject[] = [servicesMarketing, internationalBusiness];
+export const SUBJECTS: Subject[] = [
+  servicesMarketing,
+  internationalBusiness,
+  compensationManagement,
+];
 
 export const DEFAULT_SUBJECT_ID = servicesMarketing.id;
 
