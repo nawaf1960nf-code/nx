@@ -1,5 +1,6 @@
 import type { Bilingual, Chapter, Question } from "../types";
 import type { Subject, SubjectTopic } from "./services-marketing";
+import { INTERNATIONAL_BUSINESS_ESSAYS } from "../essays/international-business";
 
 /* ───────────────────────────── Topics ───────────────────────────── */
 
@@ -605,6 +606,7 @@ export const internationalBusiness: Subject = {
   },
   topics,
   questions,
+  essays: INTERNATIONAL_BUSINESS_ESSAYS,
   knowledge,
   available: true,
 };

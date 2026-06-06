@@ -1,6 +1,7 @@
-import type { Bilingual, TopicId, Chapter, Question } from "../types";
+import type { Bilingual, TopicId, Chapter, Question, EssayQuestion } from "../types";
 import { QUESTION_BANK } from "../questions";
 import { KNOWLEDGE_BASE } from "../knowledge-base";
+import { SERVICES_MARKETING_ESSAYS } from "../essays/services-marketing";
 
 export interface SubjectTopic {
   id: TopicId;
@@ -20,6 +21,8 @@ export interface Subject {
   chapterTitles: Record<number, Bilingual>;
   topics: Record<string, SubjectTopic>;
   questions: Question[];
+  /** Open-ended KSU-style questions, AI-graded. Optional per subject. */
+  essays?: EssayQuestion[];
   knowledge: Record<string, string>;
   available: boolean;
 }
@@ -74,6 +77,7 @@ export const servicesMarketing: Subject = {
   },
   topics,
   questions: QUESTION_BANK,
+  essays: SERVICES_MARKETING_ESSAYS,
   knowledge: KNOWLEDGE_BASE as Record<string, string>,
   available: true,
 };

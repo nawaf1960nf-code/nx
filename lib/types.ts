@@ -10,6 +10,25 @@ export type QuestionType =
   | "comparison";
 
 /**
+ * An open-ended (essay / short-answer) question — KSU-style. There is no single
+ * correct option; the student writes a free response that the AI tutor grades
+ * against `modelAnswer` and `keyPoints`.
+ */
+export interface EssayQuestion {
+  id: string;
+  difficulty: Difficulty;
+  chapter: Chapter;
+  topic: TopicId;
+  /** "essay" (discuss/explain) or "short" (short note / brief answer). */
+  kind: "essay" | "short";
+  prompt: string;
+  /** A concise model answer used to ground the AI grader. */
+  modelAnswer: string;
+  /** The key points an ideal answer should cover (drives partial credit). */
+  keyPoints: string[];
+}
+
+/**
  * Topics and chapters are plain strings/numbers so every subject can define
  * its own taxonomy. Each subject ships its own topic labels and chapter titles
  * (see lib/subjects/*).

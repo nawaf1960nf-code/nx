@@ -13,6 +13,39 @@ export interface AIGenerateResponse {
   source: "ai" | "fallback";
 }
 
+export interface EssayGrade {
+  score: number;
+  covered: string[];
+  missing: string[];
+  feedback: string;
+  source: "ai";
+}
+
+/** AI-grade a student's open-ended (essay/short) answer. Null if unavailable. */
+export async function gradeEssay(payload: {
+  subjectId: string;
+  topic: TopicId;
+  prompt: string;
+  modelAnswer: string;
+  keyPoints: string[];
+  answer: string;
+  locale: "en" | "ar";
+}): Promise<EssayGrade | null> {
+  try {
+    const res = await fetch("/api/ai/grade-essay", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data?.source !== "ai") return null;
+    return data as EssayGrade;
+  } catch {
+    return null;
+  }
+}
+
 export async function aiGenerateQuestions(params: {
   subjectId: string;
   difficulty: Difficulty;

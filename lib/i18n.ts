@@ -174,6 +174,8 @@ const en = {
     simulatorDesc: "Timed, 30 questions, no pausing — just like the real thing.",
     mistakes: "My Mistakes",
     mistakesDesc: "A focused exam built only from questions you got wrong.",
+    essays: "Essay Practice",
+    essaysDesc: "KSU-style written questions, graded with AI feedback.",
     open: "Open",
   },
 
@@ -372,6 +374,25 @@ const en = {
       example: "Real example",
     },
     you: "You",
+  },
+
+  essays: {
+    title: "Essay Practice",
+    subtitle: "KSU-style written questions — answer, then get AI-graded feedback.",
+    essay: "Essay",
+    shortNote: "Short note",
+    placeholder: "Write your answer here…",
+    submit: "Submit for grading",
+    grading: "Grading…",
+    showModel: "Show model answer",
+    aiGrade: "AI grade",
+    covered: "Points you covered",
+    missing: "Points to add",
+    modelAnswer: "Model answer",
+    keyPoints: "Key points",
+    offline: "AI grading isn't enabled here — compare your answer with the model answer below.",
+    next: "Next question",
+    none: "No essay questions for this course yet.",
   },
 
   difficulty: {
@@ -596,6 +617,8 @@ const ar: Messages = {
     simulatorDesc: "مؤقّت، ٣٠ سؤالاً، بدون توقّف — تماماً مثل الاختبار الحقيقي.",
     mistakes: "أخطائي",
     mistakesDesc: "اختبار مركّز مبني فقط من الأسئلة التي أخطأت فيها.",
+    essays: "تدرّب المقالي",
+    essaysDesc: "أسئلة كتابية بأسلوب جامعة الملك سعود مع تقييم ذكي.",
     open: "افتح",
   },
 
@@ -794,6 +817,25 @@ const ar: Messages = {
       example: "مثال واقعي",
     },
     you: "أنت",
+  },
+
+  essays: {
+    title: "تدرّب المقالي",
+    subtitle: "أسئلة كتابية بأسلوب جامعة الملك سعود — أجب ثم احصل على تقييم ذكي.",
+    essay: "مقالي",
+    shortNote: "ملاحظة قصيرة",
+    placeholder: "اكتب إجابتك هنا…",
+    submit: "أرسل للتقييم",
+    grading: "جارٍ التقييم…",
+    showModel: "اعرض الإجابة النموذجية",
+    aiGrade: "تقييم ذكي",
+    covered: "نقاط غطّيتها",
+    missing: "نقاط تحتاج إضافتها",
+    modelAnswer: "الإجابة النموذجية",
+    keyPoints: "النقاط الأساسية",
+    offline: "التقييم الذكي غير مُفعّل هنا — قارن إجابتك بالإجابة النموذجية أدناه.",
+    next: "السؤال التالي",
+    none: "لا توجد أسئلة مقالية لهذه المادة بعد.",
   },
 
   difficulty: {

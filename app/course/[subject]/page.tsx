@@ -12,6 +12,7 @@ import {
   FileText,
   Clock,
   Target,
+  PenLine,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/landing/Footer";
@@ -127,6 +128,16 @@ export default function CourseHubPage() {
             desc={t.hub.mistakesDesc}
             cta={t.hub.open}
           />
+          {subject.essays && subject.essays.length > 0 && (
+            <ToolCard
+              href={`/essays?subject=${subject.id}`}
+              icon={PenLine}
+              accent="#f59e0b"
+              title={t.hub.essays}
+              desc={t.hub.essaysDesc}
+              cta={t.hub.open}
+            />
+          )}
         </div>
       </section>
 

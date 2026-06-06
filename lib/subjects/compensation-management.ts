@@ -1,5 +1,6 @@
 import type { Bilingual, Chapter, Question } from "../types";
 import type { Subject, SubjectTopic } from "./services-marketing";
+import { COMPENSATION_MANAGEMENT_ESSAYS } from "../essays/compensation-management";
 
 /* ───────────────────────────── Topics ───────────────────────────── */
 
@@ -385,6 +386,7 @@ export const compensationManagement: Subject = {
   },
   topics,
   questions,
+  essays: COMPENSATION_MANAGEMENT_ESSAYS,
   knowledge,
   available: true,
 };
