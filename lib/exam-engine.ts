@@ -17,6 +17,37 @@ export interface BuildExamOptions {
   extra?: Question[];
   /** How many questions to include (defaults to 30). */
   length?: number;
+  /**
+   * Restrict the exam to these topics only (any difficulty). Used by the
+   * "retake from your weaknesses" flow after an exam.
+   */
+  focusTopics?: TopicId[];
+}
+
+/**
+ * Build a focused exam from ONLY the given weak topics (across all difficulties).
+ * Falls back to the full pool if the focus set is too small.
+ */
+export function buildFocusExam(
+  pool: Question[],
+  focusTopics: TopicId[],
+  length = EXAM_LENGTH,
+): PreparedQuestion[] {
+  const focus = new Set(focusTopics);
+  const focused = pool.filter((q) => focus.has(q.topic));
+  const base = focused.length > 0 ? focused : pool;
+  // Repeat the pool if it's smaller than the exam length so we still fill it.
+  const picked: Question[] = [];
+  let guard = 0;
+  while (picked.length < length && guard < 50) {
+    for (const q of shuffle(base)) {
+      picked.push(q);
+      if (picked.length >= length) break;
+    }
+    guard += 1;
+    if (base.length === 0) break;
+  }
+  return picked.slice(0, length).map(shuffleOptions);
 }
 
 /**

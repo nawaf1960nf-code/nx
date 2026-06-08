@@ -295,9 +295,13 @@ const en = {
     weakEmpty: "No major weak spots — great work!",
     recommendations: "Recommendations",
     breakdown: "Topic Breakdown",
+    chapterBreakdown: "Performance by Chapter",
+    weakChapters: "Chapters to focus on",
     review: "Review Answers",
     retake: "Retake Exam",
+    retakeWeak: "Retake from my weak points",
     dashboard: "Dashboard",
+    questionsLabel: "questions",
   },
 
   review: {
@@ -738,9 +742,13 @@ const ar: Messages = {
     weakEmpty: "لا توجد نقاط ضعف كبيرة — عمل رائع!",
     recommendations: "التوصيات",
     breakdown: "تفصيل المواضيع",
+    chapterBreakdown: "الأداء حسب الفصل",
+    weakChapters: "فصول تحتاج التركيز عليها",
     review: "مراجعة الإجابات",
     retake: "إعادة الاختبار",
+    retakeWeak: "أعد الاختبار من نقاط ضعفي",
     dashboard: "لوحة التحكم",
+    questionsLabel: "سؤال",
   },
 
   review: {

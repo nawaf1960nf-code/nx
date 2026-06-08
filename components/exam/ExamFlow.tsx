@@ -6,7 +6,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, X, Clock, Timer, AlertTriangle } from "lucide-react";
 
-import { buildExam, shuffleOptions, EXAM_LENGTH } from "@/lib/exam-engine";
+import { buildExam, buildFocusExam, shuffleOptions, EXAM_LENGTH } from "@/lib/exam-engine";
 import { gradeAttempt, analyze, type Analysis, type LabelResolver } from "@/lib/grading";
 import { levelConfig } from "@/lib/levels";
 import { getSubject, topicLabel, topicChapter } from "@/lib/subjects";
@@ -235,6 +235,22 @@ export function ExamFlow() {
     start(studentName);
   }, [start, studentName]);
 
+  // Retake an exam built ONLY from the topics the student just got wrong.
+  const retakeWeak = useCallback(
+    (focusTopics: TopicId[]) => {
+      setAnalysis(null);
+      const exam = buildFocusExam(subject.questions, focusTopics, EXAM_LENGTH);
+      const fresh = Array(exam.length).fill(null) as (number | null)[];
+      setQuestions(exam);
+      setSelections(fresh);
+      setIndex(0);
+      advancing.current = false;
+      clearInProgress();
+      setPhase("exam");
+    },
+    [subject.questions],
+  );
+
   function renderWelcome() {
     if (mode === "timed") {
       return (
@@ -309,9 +325,11 @@ export function ExamFlow() {
             studentName={studentName}
             date={resultDate}
             labelFor={labelFor}
+            chapterTitle={(ch) => subject.chapterTitles[ch]?.[locale] ?? `${t.coverage.chapterWord} ${ch}`}
             readiness={mode === "timed"}
             onReview={() => setPhase("review")}
             onRetake={retake}
+            onRetakeWeak={retakeWeak}
           />
         ) : null;
       case "review":

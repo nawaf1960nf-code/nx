@@ -32,6 +32,13 @@ export interface TopicScore {
   ratio: number;
 }
 
+export interface ChapterScore {
+  chapter: number;
+  correct: number;
+  total: number;
+  ratio: number;
+}
+
 /** Resolves human-readable labels/chapters for the active subject + locale. */
 export interface LabelResolver {
   label: (topic: TopicId) => string;
@@ -50,8 +57,15 @@ export interface Analysis {
   percentage: number;
   grade: Grade;
   byTopic: TopicScore[];
+  byChapter: ChapterScore[];
   strongTopics: TopicScore[];
   weakTopics: TopicScore[];
+  /** Chapters the student was weak in THIS attempt (ratio < 0.6). */
+  weakChapters: ChapterScore[];
+  /** Topic ids the student should retake (any topic with a wrong answer). */
+  retakeTopics: TopicId[];
+  /** Count of questions answered wrong this attempt. */
+  wrongCount: number;
   recommendations: string[];
   summary: string;
 }
@@ -102,6 +116,25 @@ export function analyze(answers: AnswerRecord[], r: LabelResolver): Analysis {
     .sort((a, b) => a.ratio - b.ratio)
     .slice(0, 4);
 
+  // Per-chapter breakdown for this attempt.
+  const chMap = new Map<number, ChapterScore>();
+  for (const a of answers) {
+    const e = chMap.get(a.chapter) ?? { chapter: a.chapter, correct: 0, total: 0, ratio: 0 };
+    e.total += 1;
+    if (a.isCorrect) e.correct += 1;
+    chMap.set(a.chapter, e);
+  }
+  const byChapter = [...chMap.values()]
+    .map((c) => ({ ...c, ratio: c.total === 0 ? 0 : c.correct / c.total }))
+    .sort((a, b) => a.chapter - b.chapter);
+  const weakChapters = [...byChapter]
+    .filter((c) => c.ratio < 0.6)
+    .sort((a, b) => a.ratio - b.ratio);
+
+  // Topics with at least one wrong answer — the pool for "retry from weaknesses".
+  const retakeTopics = [...map.values()].filter((t) => t.correct < t.total).map((t) => t.topic);
+  const wrongCount = total - score;
+
   const recommendations: string[] = [];
   for (const t of weakTopics) {
     recommendations.push(r.phrases.review(r.label(t.topic), r.chapter(t.topic), t.correct, t.total));
@@ -114,7 +147,21 @@ export function analyze(answers: AnswerRecord[], r: LabelResolver): Analysis {
     weakTopics.map((t) => r.label(t.topic)),
   );
 
-  return { score, total, percentage, grade, byTopic: sorted, strongTopics, weakTopics, recommendations, summary };
+  return {
+    score,
+    total,
+    percentage,
+    grade,
+    byTopic: sorted,
+    byChapter,
+    strongTopics,
+    weakTopics,
+    weakChapters,
+    retakeTopics,
+    wrongCount,
+    recommendations,
+    summary,
+  };
 }
 
 export const PASS_THRESHOLD = 60;

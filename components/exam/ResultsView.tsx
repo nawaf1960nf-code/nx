@@ -12,11 +12,13 @@ import {
   RotateCcw,
   ListChecks,
   Home,
+  Target,
+  BookOpen,
 } from "lucide-react";
 import Link from "next/link";
 import type { Analysis } from "@/lib/grading";
 import { GRADE_COLORS, CERTIFICATE_THRESHOLD, PASS_THRESHOLD } from "@/lib/grading";
-import type { Difficulty } from "@/lib/types";
+import type { Difficulty, TopicId } from "@/lib/types";
 import { ScoreRing } from "./ScoreRing";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
@@ -32,9 +34,11 @@ export function ResultsView({
   studentName,
   date,
   labelFor,
+  chapterTitle,
   readiness = false,
   onReview,
   onRetake,
+  onRetakeWeak,
 }: {
   analysis: Analysis;
   difficulty: Difficulty;
@@ -42,9 +46,11 @@ export function ResultsView({
   studentName: string;
   date: number;
   labelFor: (topic: string) => string;
+  chapterTitle?: (chapter: number) => string;
   readiness?: boolean;
   onReview: () => void;
   onRetake: () => void;
+  onRetakeWeak?: (topics: TopicId[]) => void;
 }) {
   const { t: tr } = useLocale();
   const { score, total, percentage, grade } = analysis;
@@ -232,6 +238,59 @@ export function ResultsView({
         </div>
       </GlassCard>
 
+      {/* Per-chapter breakdown — pinpoints which chapter is weak */}
+      <GlassCard className="mt-6 p-6 sm:p-8">
+        <div className="mb-4 flex items-center gap-2">
+          <BookOpen className="h-5 w-5 text-brand-300" />
+          <h2 className="font-display text-lg font-semibold text-white">
+            {tr.results.chapterBreakdown}
+          </h2>
+        </div>
+        <div className="space-y-3">
+          {analysis.byChapter.map((c) => (
+            <div key={c.chapter}>
+              <div className="mb-1 flex justify-between text-xs">
+                <span className="text-brand-100/80">
+                  {tr.coverage.chapterWord} {c.chapter}
+                  {chapterTitle ? ` · ${chapterTitle(c.chapter)}` : ""}
+                </span>
+                <span className="text-brand-100/60">
+                  {c.correct}/{c.total} ({Math.round(c.ratio * 100)}%)
+                </span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/8">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{
+                    background: c.ratio >= 0.7 ? "#34d399" : c.ratio >= 0.5 ? "#fbbf24" : "#fb7185",
+                  }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${c.ratio * 100}%` }}
+                  transition={{ duration: 0.8 }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {analysis.weakChapters.length > 0 && (
+          <div className="mt-5 rounded-2xl bg-danger/10 p-4">
+            <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-danger">
+              <Target className="h-3.5 w-3.5" /> {tr.results.weakChapters}
+            </p>
+            <p className="text-sm text-brand-100/80">
+              {analysis.weakChapters
+                .map((c) =>
+                  chapterTitle
+                    ? `${tr.coverage.chapterWord} ${c.chapter} — ${chapterTitle(c.chapter)}`
+                    : `${tr.coverage.chapterWord} ${c.chapter}`,
+                )
+                .join(" · ")}
+            </p>
+          </div>
+        )}
+      </GlassCard>
+
       {/* Certificate */}
       {earnedCert && (
         <div className="mt-8">
@@ -245,15 +304,28 @@ export function ResultsView({
         </div>
       )}
 
+      {/* Primary CTA: retake focused on the weak points from THIS attempt */}
+      {onRetakeWeak && analysis.retakeTopics.length > 0 && (
+        <div className="mt-8">
+          <Button
+            onClick={() => onRetakeWeak(analysis.retakeTopics)}
+            size="lg"
+            className="w-full"
+          >
+            <Target className="h-4 w-4" /> {tr.results.retakeWeak}
+          </Button>
+        </div>
+      )}
+
       {/* Actions */}
-      <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+      <div className="mt-4 flex flex-col items-center justify-center gap-3 sm:flex-row">
         <Button onClick={onReview} variant="subtle" size="lg">
           <ListChecks className="h-4 w-4" /> {tr.results.review}
         </Button>
-        <Button onClick={onRetake} size="lg">
+        <Button onClick={onRetake} variant="subtle" size="lg">
           <RotateCcw className="h-4 w-4" /> {tr.results.retake}
         </Button>
-        <Link href="/dashboard">
+        <Link href={`/dashboard?subject=${subjectId}`}>
           <Button variant="outline" size="lg">
             <Home className="h-4 w-4" /> {tr.results.dashboard}
           </Button>
