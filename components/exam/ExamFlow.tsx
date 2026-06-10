@@ -84,8 +84,12 @@ export function ExamFlow() {
   const [resultDate, setResultDate] = useState(Date.now());
   const [studentName, setName] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(TIMED_SECONDS);
+  const [times, setTimes] = useState<number[]>([]);
   const advancing = useRef(false);
   const finishRef = useRef<(s: (number | null)[]) => void>(() => {});
+  // Per-question stopwatch: when the current question appeared + seconds spent.
+  const questionStartRef = useRef(Date.now());
+  const timesRef = useRef<number[]>([]);
 
   // For mistakes mode: how many wrong questions are available.
   const mistakeCount = useMemo(
@@ -104,6 +108,8 @@ export function ExamFlow() {
       setIndex(saved.index);
       setName(saved.studentName || getStudentName());
       advancing.current = false;
+      timesRef.current = [];
+      questionStartRef.current = Date.now();
       setPhase("exam");
     }
   }, [difficulty, subject.id, mode]);
@@ -115,6 +121,7 @@ export function ExamFlow() {
       const result = buildResult(difficulty, records, a.score, a.percentage, a.grade);
       saveResult(subject.id, result, questions.map((q) => q.id));
       clearInProgress();
+      setTimes([...timesRef.current]);
       setAnalysis(a);
       setResultDate(result.date);
       setPhase("results");
@@ -170,6 +177,8 @@ export function ExamFlow() {
       setIndex(0);
       setSecondsLeft(TIMED_SECONDS);
       advancing.current = false;
+      timesRef.current = [];
+      questionStartRef.current = Date.now();
       if (mode === "normal") {
         saveInProgress({
           subjectId: subject.id,
@@ -201,6 +210,10 @@ export function ExamFlow() {
     (choice: number) => {
       if (advancing.current) return;
       advancing.current = true;
+      timesRef.current[index] = Math.max(
+        1,
+        Math.round((Date.now() - questionStartRef.current) / 1000),
+      );
       const next = [...selections];
       next[index] = choice;
       setSelections(next);
@@ -223,6 +236,7 @@ export function ExamFlow() {
           finish(next);
         } else {
           setIndex((i) => i + 1);
+          questionStartRef.current = Date.now();
           advancing.current = false;
         }
       }, 420);
@@ -245,6 +259,8 @@ export function ExamFlow() {
       setSelections(fresh);
       setIndex(0);
       advancing.current = false;
+      timesRef.current = [];
+      questionStartRef.current = Date.now();
       clearInProgress();
       setPhase("exam");
     },
@@ -327,6 +343,7 @@ export function ExamFlow() {
             labelFor={labelFor}
             chapterTitle={(ch) => subject.chapterTitles[ch]?.[locale] ?? `${t.coverage.chapterWord} ${ch}`}
             readiness={mode === "timed"}
+            times={times}
             onReview={() => setPhase("review")}
             onRetake={retake}
             onRetakeWeak={retakeWeak}
@@ -337,6 +354,7 @@ export function ExamFlow() {
           <ReviewView
             questions={questions}
             selections={selections}
+            times={times}
             labelFor={labelFor}
             subjectId={subject.id}
             onBack={() => setPhase("results")}

@@ -14,6 +14,9 @@ import {
   Home,
   Target,
   BookOpen,
+  Clock,
+  Zap,
+  Hourglass,
 } from "lucide-react";
 import Link from "next/link";
 import type { Analysis } from "@/lib/grading";
@@ -36,6 +39,7 @@ export function ResultsView({
   labelFor,
   chapterTitle,
   readiness = false,
+  times,
   onReview,
   onRetake,
   onRetakeWeak,
@@ -48,6 +52,8 @@ export function ResultsView({
   labelFor: (topic: string) => string;
   chapterTitle?: (chapter: number) => string;
   readiness?: boolean;
+  /** Seconds spent on each question (index-aligned with the exam). */
+  times?: number[];
   onReview: () => void;
   onRetake: () => void;
   onRetakeWeak?: (topics: TopicId[]) => void;
@@ -92,6 +98,19 @@ export function ResultsView({
   const summary = ai?.summary || analysis.summary;
   const recommendations =
     ai?.recommendations?.length ? ai.recommendations : analysis.recommendations;
+
+  // Pace analysis: seconds spent per question (only entries actually recorded).
+  const timed = (times ?? [])
+    .map((seconds, index) => ({ index, seconds }))
+    .filter((e) => typeof e.seconds === "number" && e.seconds > 0);
+  const totalSeconds = timed.reduce((acc, e) => acc + e.seconds, 0);
+  const avgSeconds = timed.length ? Math.round(totalSeconds / timed.length) : 0;
+  const fastest = timed.length
+    ? timed.reduce((a, b) => (b.seconds < a.seconds ? b : a))
+    : null;
+  const slowest = timed.length
+    ? timed.reduce((a, b) => (b.seconds > a.seconds ? b : a))
+    : null;
 
   return (
     <div className="mx-auto w-full max-w-3xl pb-16">
@@ -291,6 +310,44 @@ export function ResultsView({
         )}
       </GlassCard>
 
+      {/* Pace analysis — how the student spent their time */}
+      {timed.length > 0 && fastest && slowest && (
+        <GlassCard className="mt-6 p-6 sm:p-8">
+          <div className="mb-4 flex items-center gap-2">
+            <Clock className="h-5 w-5 text-brand-300" />
+            <h2 className="font-display text-lg font-semibold text-white">
+              {tr.results.timing}
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <TimeStat
+              icon={Clock}
+              color="#818cf8"
+              value={fmtClock(totalSeconds)}
+              label={tr.results.totalTime}
+            />
+            <TimeStat
+              icon={Hourglass}
+              color="#fbbf24"
+              value={tr.results.secondsShort(avgSeconds)}
+              label={tr.results.avgPerQuestion}
+            />
+            <TimeStat
+              icon={Zap}
+              color="#34d399"
+              value={tr.results.secondsShort(fastest.seconds)}
+              label={`${tr.results.fastestAnswer} · ${tr.results.questionN(fastest.index + 1)}`}
+            />
+            <TimeStat
+              icon={Hourglass}
+              color="#fb7185"
+              value={tr.results.secondsShort(slowest.seconds)}
+              label={`${tr.results.slowestAnswer} · ${tr.results.questionN(slowest.index + 1)}`}
+            />
+          </div>
+        </GlassCard>
+      )}
+
       {/* Certificate */}
       {earnedCert && (
         <div className="mt-8">
@@ -331,6 +388,34 @@ export function ResultsView({
           </Button>
         </Link>
       </div>
+    </div>
+  );
+}
+
+function fmtClock(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function TimeStat({
+  icon: Icon,
+  color,
+  value,
+  label,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  value: string;
+  label: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1 rounded-2xl bg-white/[0.04] px-3 py-4 text-center">
+      <span style={{ color }}>
+        <Icon className="h-4 w-4" />
+      </span>
+      <span className="font-display text-lg font-bold tabular-nums text-white">{value}</span>
+      <span className="text-[11px] leading-tight text-brand-100/60">{label}</span>
     </div>
   );
 }

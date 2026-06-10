@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Check, X, ArrowLeft, Info, Sparkles } from "lucide-react";
+import { Check, X, ArrowLeft, Info, Sparkles, Clock } from "lucide-react";
 import type { PreparedQuestion } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { useLocale } from "@/lib/locale-context";
@@ -11,12 +11,15 @@ import { TutorChat } from "@/components/tutor/TutorChat";
 export function ReviewView({
   questions,
   selections,
+  times,
   labelFor,
   subjectId,
   onBack,
 }: {
   questions: PreparedQuestion[];
   selections: (number | null)[];
+  /** Seconds spent on each question (index-aligned with `questions`). */
+  times?: number[];
   labelFor: (topic: string) => string;
   subjectId: string;
   onBack: () => void;
@@ -50,15 +53,22 @@ export function ReviewView({
                 <span className="text-xs font-medium uppercase tracking-wider text-brand-200/60">
                   {i + 1}. {labelFor(q.topic)} · {t.exam.chShort} {q.chapter}
                 </span>
-                <span
-                  className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    correct
-                      ? "bg-success/15 text-success"
-                      : "bg-danger/15 text-danger"
-                  }`}
-                >
-                  {correct ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                  {correct ? t.review.correct : t.review.incorrect}
+                <span className="flex items-center gap-2">
+                  {typeof times?.[i] === "number" && times[i] > 0 && (
+                    <span className="flex items-center gap-1 rounded-full bg-white/8 px-2.5 py-0.5 text-xs tabular-nums text-brand-100/70">
+                      <Clock className="h-3 w-3" /> {t.results.secondsShort(times[i])}
+                    </span>
+                  )}
+                  <span
+                    className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      correct
+                        ? "bg-success/15 text-success"
+                        : "bg-danger/15 text-danger"
+                    }`}
+                  >
+                    {correct ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                    {correct ? t.review.correct : t.review.incorrect}
+                  </span>
                 </span>
               </div>
 
