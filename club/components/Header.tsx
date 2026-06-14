@@ -12,6 +12,7 @@ export function Header() {
 
   const links = [
     { href: "/", label: t.nav.map },
+    { href: "/exercises", label: t.nav.library },
     { href: "/workout", label: t.nav.generator },
     { href: "/calories", label: t.nav.calories },
     { href: "/consultant", label: t.nav.consultant },

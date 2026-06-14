@@ -11,7 +11,7 @@ export const dict = {
   en: {
     brandName: "Apex Club",
     tagline: "Your personal training studio",
-    nav: { map: "Muscle Map", generator: "Workout", consultant: "Consultant", calories: "Calories", progress: "Progress" },
+    nav: { map: "Muscle Map", generator: "Workout", consultant: "Consultant", calories: "Calories", progress: "Progress", library: "Library" },
     hero: {
       eyebrow: "Train smarter",
       title: "Pick a muscle. Get the exercises.",
@@ -99,6 +99,17 @@ export const dict = {
       comebackCta: "Start today",
       dismiss: "Later",
     },
+    library: {
+      title: "Exercise Library",
+      subtitle: "Browse every exercise — search and filter by muscle, gear and level.",
+      search: "Search exercises…",
+      allMuscles: "All muscles",
+      allEquip: "All equipment",
+      allLevels: "All levels",
+      results: (n: number) => `${n} exercise${n === 1 ? "" : "s"}`,
+      none: "No exercises match your filters.",
+      steps: "How to perform",
+    },
     session: {
       title: "Workout Session",
       subtitle: "Train through your plan set by set, with a rest timer.",
@@ -169,7 +180,7 @@ export const dict = {
   ar: {
     brandName: "نادي أبيكس",
     tagline: "ستوديو تدريبك الشخصي",
-    nav: { map: "خريطة العضلات", generator: "التمارين", consultant: "المستشار", calories: "السعرات", progress: "تقدّمي" },
+    nav: { map: "خريطة العضلات", generator: "التمارين", consultant: "المستشار", calories: "السعرات", progress: "تقدّمي", library: "المكتبة" },
     hero: {
       eyebrow: "تدرّب بذكاء",
       title: "اختر العضلة. تظهر لك التمارين.",
@@ -256,6 +267,17 @@ export const dict = {
       comeback: (days: number) => `مرّ ${days} يوم. حصة واحدة اليوم تُرجِع لك حماسك — يلا نبدأ.`,
       comebackCta: "ابدأ اليوم",
       dismiss: "لاحقًا",
+    },
+    library: {
+      title: "مكتبة التمارين",
+      subtitle: "تصفّح كل التمارين — ابحث وفلتر حسب العضلة والمعدّات والمستوى.",
+      search: "ابحث عن تمرين…",
+      allMuscles: "كل العضلات",
+      allEquip: "كل المعدّات",
+      allLevels: "كل المستويات",
+      results: (n: number) => `${n} تمرين`,
+      none: "لا توجد تمارين تطابق الفلاتر.",
+      steps: "طريقة الأداء",
     },
     session: {
       title: "جلسة التمرين",
