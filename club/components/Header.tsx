@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Dumbbell, Languages } from "lucide-react";
+import { Dumbbell, Languages, UserCircle2 } from "lucide-react";
 import { useLocale } from "@/lib/locale-context";
 import { StreakChip } from "./StreakChip";
 
@@ -51,6 +51,15 @@ export function Header() {
 
         <div className="flex items-center gap-2">
           <StreakChip />
+          <Link
+            href="/account"
+            aria-label={t.nav.account}
+            className={`grid h-9 w-9 place-items-center rounded-full border border-white/12 bg-white/[0.04] transition-colors hover:text-white ${
+              pathname === "/account" ? "text-white" : "text-energy-100/80"
+            }`}
+          >
+            <UserCircle2 className="h-5 w-5" />
+          </Link>
           <button
             type="button"
             onClick={toggle}

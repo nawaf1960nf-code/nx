@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Cairo } from "next/font/google";
 import { LocaleProvider } from "@/lib/locale-context";
+import { AuthProvider } from "@/lib/auth-context";
 import { ReengagementToast } from "@/components/ReengagementToast";
 import "./globals.css";
 
@@ -45,8 +46,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="min-h-full antialiased">
         <div className="bg-aurora" aria-hidden />
         <LocaleProvider>
-          {children}
-          <ReengagementToast />
+          <AuthProvider>
+            {children}
+            <ReengagementToast />
+          </AuthProvider>
         </LocaleProvider>
       </body>
     </html>

@@ -82,6 +82,14 @@ export function getWorkoutDays(): number[] {
   return Array.from(new Set(workouts.map(startOfDay))).sort((a, b) => a - b);
 }
 
+/** Replace logged workout days (used when restoring from the cloud). */
+export function setWorkoutDays(days: number[]): void {
+  const state = load();
+  const valid = days.filter((d) => typeof d === "number" && d > 0).map(startOfDay);
+  state.workouts = Array.from(new Set(valid)).sort((a, b) => a - b);
+  save(state);
+}
+
 export interface ActivityStats {
   total: number;
   thisWeek: number;

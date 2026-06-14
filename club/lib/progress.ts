@@ -42,6 +42,18 @@ export function addWeight(kg: number): void {
   }
 }
 
+/** Replace the full weight history (used when restoring from the cloud). */
+export function setWeights(list: WeightEntry[]): void {
+  try {
+    const clean = list
+      .filter((e) => e && typeof e.day === "number" && typeof e.kg === "number")
+      .sort((a, b) => a.day - b.day);
+    localStorage.setItem(KEY, JSON.stringify(clean));
+  } catch {
+    /* ignore */
+  }
+}
+
 export interface WeightSummary {
   latest: number | null;
   start: number | null;

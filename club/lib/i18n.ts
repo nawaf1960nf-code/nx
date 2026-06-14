@@ -11,7 +11,7 @@ export const dict = {
   en: {
     brandName: "Apex Club",
     tagline: "Your personal training studio",
-    nav: { map: "Muscle Map", generator: "Workout", consultant: "Consultant", calories: "Calories", progress: "Progress", library: "Library" },
+    nav: { map: "Muscle Map", generator: "Workout", consultant: "Consultant", calories: "Calories", progress: "Progress", library: "Library", account: "Account" },
     hero: {
       eyebrow: "Train smarter",
       title: "Pick a muscle. Get the exercises.",
@@ -99,6 +99,26 @@ export const dict = {
       comebackCta: "Start today",
       dismiss: "Later",
     },
+    account: {
+      title: "Account",
+      subtitle: "Sign in to back up your plan, weight and progress to the cloud.",
+      notConfigured:
+        "Accounts aren't connected on this deployment yet. Add your Supabase URL and anon key in the project settings, then run the schema in supabase/schema.sql.",
+      email: "Email",
+      password: "Password",
+      signIn: "Sign in",
+      signUp: "Create account",
+      signOut: "Sign out",
+      toSignUp: "New here? Create an account",
+      toSignIn: "Already have an account? Sign in",
+      signedInAs: "Signed in as",
+      backup: "Back up to cloud",
+      restore: "Restore from cloud",
+      syncing: "Syncing…",
+      synced: "Done ✓",
+      confirmEmail: "Check your email to confirm your account, then sign in.",
+      error: "Something went wrong. Please try again.",
+    },
     library: {
       title: "Exercise Library",
       subtitle: "Browse every exercise — search and filter by muscle, gear and level.",
@@ -180,7 +200,7 @@ export const dict = {
   ar: {
     brandName: "نادي أبيكس",
     tagline: "ستوديو تدريبك الشخصي",
-    nav: { map: "خريطة العضلات", generator: "التمارين", consultant: "المستشار", calories: "السعرات", progress: "تقدّمي", library: "المكتبة" },
+    nav: { map: "خريطة العضلات", generator: "التمارين", consultant: "المستشار", calories: "السعرات", progress: "تقدّمي", library: "المكتبة", account: "الحساب" },
     hero: {
       eyebrow: "تدرّب بذكاء",
       title: "اختر العضلة. تظهر لك التمارين.",
@@ -267,6 +287,26 @@ export const dict = {
       comeback: (days: number) => `مرّ ${days} يوم. حصة واحدة اليوم تُرجِع لك حماسك — يلا نبدأ.`,
       comebackCta: "ابدأ اليوم",
       dismiss: "لاحقًا",
+    },
+    account: {
+      title: "الحساب",
+      subtitle: "سجّل الدخول لحفظ جدولك ووزنك وتقدّمك في السحابة.",
+      notConfigured:
+        "الحسابات غير مفعّلة على هذا النشر بعد. أضف رابط Supabase ومفتاح anon في إعدادات المشروع، ثم نفّذ السكيمة من supabase/schema.sql.",
+      email: "البريد الإلكتروني",
+      password: "كلمة المرور",
+      signIn: "تسجيل الدخول",
+      signUp: "إنشاء حساب",
+      signOut: "تسجيل الخروج",
+      toSignUp: "جديد هنا؟ أنشئ حسابًا",
+      toSignIn: "لديك حساب؟ سجّل الدخول",
+      signedInAs: "مسجّل الدخول كـ",
+      backup: "نسخ احتياطي للسحابة",
+      restore: "استعادة من السحابة",
+      syncing: "جارٍ المزامنة…",
+      synced: "تم ✓",
+      confirmEmail: "تحقق من بريدك لتأكيد حسابك، ثم سجّل الدخول.",
+      error: "حدث خطأ. حاول مرة أخرى.",
     },
     library: {
       title: "مكتبة التمارين",
