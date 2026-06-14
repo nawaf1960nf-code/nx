@@ -163,9 +163,14 @@ body {
   stroke-width: 2;
 }
 .bodymap .silhouette {
-  fill: rgba(255, 255, 255, 0.03);
-  stroke: rgba(255, 255, 255, 0.1);
+  fill: rgba(255, 255, 255, 0.06);
+  stroke: rgba(255, 255, 255, 0.12);
   stroke-width: 1;
+}
+.bodymap .body-outline {
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
 }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
