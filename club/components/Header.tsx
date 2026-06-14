@@ -14,6 +14,7 @@ export function Header() {
     { href: "/", label: t.nav.map },
     { href: "/workout", label: t.nav.generator },
     { href: "/calories", label: t.nav.calories },
+    { href: "/consultant", label: t.nav.consultant },
     { href: "/progress", label: t.nav.progress },
   ];
 

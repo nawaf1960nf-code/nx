@@ -11,7 +11,7 @@ export function FeatureGrid() {
     { key: "map", icon: Activity, color: "#34d399", ready: true, href: "/#map" },
     { key: "generator", icon: CalendarRange, color: "#22d3ee", ready: true, href: "/workout" },
     { key: "calories", icon: Flame, color: "#fb923c", ready: true, href: "/calories" },
-    { key: "consultant", icon: BrainCircuit, color: "#a3e635", ready: false, href: "" },
+    { key: "consultant", icon: BrainCircuit, color: "#a3e635", ready: true, href: "/consultant" },
   ] as const;
 
   return (
