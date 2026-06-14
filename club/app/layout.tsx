@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Cairo } from "next/font/google";
 import { LocaleProvider } from "@/lib/locale-context";
+import { ReengagementToast } from "@/components/ReengagementToast";
 import "./globals.css";
 
 const inter = Inter({
@@ -43,7 +44,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       </head>
       <body className="min-h-full antialiased">
         <div className="bg-aurora" aria-hidden />
-        <LocaleProvider>{children}</LocaleProvider>
+        <LocaleProvider>
+          {children}
+          <ReengagementToast />
+        </LocaleProvider>
       </body>
     </html>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Activity, BrainCircuit, CalendarRange, Flame } from "lucide-react";
 import { useLocale } from "@/lib/locale-context";
@@ -7,10 +8,10 @@ import { useLocale } from "@/lib/locale-context";
 export function FeatureGrid() {
   const { t } = useLocale();
   const items = [
-    { key: "map", icon: Activity, color: "#34d399", ready: true },
-    { key: "generator", icon: CalendarRange, color: "#22d3ee", ready: false },
-    { key: "consultant", icon: BrainCircuit, color: "#a3e635", ready: false },
-    { key: "calories", icon: Flame, color: "#fb923c", ready: false },
+    { key: "map", icon: Activity, color: "#34d399", ready: true, href: "/#map" },
+    { key: "generator", icon: CalendarRange, color: "#22d3ee", ready: true, href: "/workout" },
+    { key: "calories", icon: Flame, color: "#fb923c", ready: true, href: "/calories" },
+    { key: "consultant", icon: BrainCircuit, color: "#a3e635", ready: false, href: "" },
   ] as const;
 
   return (
@@ -23,14 +24,15 @@ export function FeatureGrid() {
         {items.map((it, i) => {
           const f = t.features.items[it.key];
           const Icon = it.icon;
-          return (
+          const inner = (
             <motion.div
-              key={it.key}
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.05 }}
-              className="card-premium relative p-5"
+              className={`card-premium relative h-full p-5 ${
+                it.ready ? "transition-colors hover:border-energy-400/30" : ""
+              }`}
             >
               {!it.ready && (
                 <span className="absolute end-4 top-4 rounded-full bg-white/8 px-2 py-0.5 text-[10px] font-semibold text-energy-100/60">
@@ -46,6 +48,13 @@ export function FeatureGrid() {
               <h3 className="mt-4 font-display text-lg font-semibold text-white">{f.title}</h3>
               <p className="mt-1.5 text-sm leading-relaxed text-energy-100/65">{f.desc}</p>
             </motion.div>
+          );
+          return it.ready && it.href ? (
+            <Link key={it.key} href={it.href} className="block">
+              {inner}
+            </Link>
+          ) : (
+            <div key={it.key}>{inner}</div>
           );
         })}
       </div>
