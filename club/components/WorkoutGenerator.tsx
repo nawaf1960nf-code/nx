@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { CalendarRange, CheckCircle2, Dumbbell, RefreshCw, Sparkles } from "lucide-react";
+import { CalendarRange, CheckCircle2, Dumbbell, PlayCircle, RefreshCw, Sparkles } from "lucide-react";
 import { useLocale } from "@/lib/locale-context";
 import { MUSCLES } from "@/lib/muscles";
 import {
@@ -159,7 +160,13 @@ export function WorkoutGenerator() {
             ))}
           </div>
 
-          <div className="mt-6 flex justify-center">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/session"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-energy-500 px-5 font-semibold text-base-950 transition-transform hover:scale-[1.02]"
+            >
+              <PlayCircle className="h-5 w-5" /> {t.session.start}
+            </Link>
             {logged ? (
               <span className="inline-flex items-center gap-2 rounded-xl bg-energy-500/15 px-5 py-3 font-semibold text-energy-300">
                 <CheckCircle2 className="h-5 w-5" /> {t.workout.doneToday}
