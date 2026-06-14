@@ -76,6 +76,12 @@ export function logWorkout(): void {
   }
 }
 
+/** Distinct calendar days (start-of-day timestamps) that have a logged workout. */
+export function getWorkoutDays(): number[] {
+  const { workouts } = load();
+  return Array.from(new Set(workouts.map(startOfDay))).sort((a, b) => a - b);
+}
+
 export interface ActivityStats {
   total: number;
   thisWeek: number;
