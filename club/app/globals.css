@@ -1,0 +1,204 @@
+@import "tailwindcss";
+
+/*
+  Club — Fitness training platform · Design System
+  Premium dark theme with glassmorphism, energetic emerald/lime accents.
+*/
+
+@theme {
+  /* Energy — emerald/lime family (primary brand for the gym) */
+  --color-energy-50: #ecfdf5;
+  --color-energy-100: #d1fae5;
+  --color-energy-200: #a7f3d0;
+  --color-energy-300: #6ee7b7;
+  --color-energy-400: #34d399;
+  --color-energy-500: #10b981;
+  --color-energy-600: #059669;
+  --color-energy-700: #047857;
+
+  --color-lime-400: #a3e635;
+  --color-lime-500: #84cc16;
+
+  --color-cyan-400: #22d3ee;
+  --color-cyan-500: #06b6d4;
+
+  /* Accent for highlights / "advanced" / power */
+  --color-flame-400: #fb923c;
+  --color-flame-500: #f97316;
+
+  /* Semantic */
+  --color-success: #34d399;
+  --color-danger: #f43f5e;
+  --color-gold: #fbbf24;
+
+  /* Deep neutral scale */
+  --color-base-950: #05080a;
+  --color-base-900: #080d10;
+  --color-base-850: #0c1318;
+  --color-base-800: #111a20;
+  --color-base-700: #1a2730;
+  --color-base-600: #25373f;
+
+  /* `--font-latin` / `--font-arabic` are injected by next/font in layout.tsx. */
+  --font-display: var(--font-latin), ui-sans-serif, "Segoe UI", -apple-system,
+    BlinkMacSystemFont, "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-body: var(--font-latin), ui-sans-serif, "Segoe UI", -apple-system,
+    BlinkMacSystemFont, "Helvetica Neue", Arial, system-ui, sans-serif;
+
+  --shadow-premium: 0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+    0 20px 50px -20px rgba(0, 0, 0, 0.7);
+  --shadow-glow-energy: 0 20px 60px -24px rgba(16, 185, 129, 0.55);
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+body {
+  background-color: var(--color-base-950);
+  color: #e6f0ec;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Arabic (RTL) typography: Cairo, Western numerals. */
+[dir="rtl"] body,
+[dir="rtl"] {
+  --font-display: var(--font-arabic), "Segoe UI", Tahoma, sans-serif;
+  --font-body: var(--font-arabic), "Segoe UI", Tahoma, sans-serif;
+}
+[dir="rtl"] {
+  font-feature-settings: "lnum" 1;
+}
+
+/* Ambient page background — static gradients, no animated blur (smooth on mobile). */
+.bg-aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background:
+    radial-gradient(60rem 45rem at 50% -12%, rgba(16, 185, 129, 0.18), transparent 60%),
+    radial-gradient(45rem 40rem at 8% 8%, rgba(34, 211, 238, 0.10), transparent 60%),
+    radial-gradient(45rem 40rem at 100% 100%, rgba(163, 230, 53, 0.10), transparent 60%),
+    var(--color-base-950);
+}
+
+@utility glass {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  backdrop-filter: blur(12px) saturate(130%);
+  -webkit-backdrop-filter: blur(12px) saturate(130%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@utility glass-strong {
+  background: linear-gradient(135deg, rgba(12, 19, 24, 0.72), rgba(12, 19, 24, 0.55));
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+@utility text-gradient {
+  background: linear-gradient(110deg, #6ee7b7 0%, #34d399 35%, #22d3ee 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility card-premium {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-premium);
+  border-radius: 1.5rem;
+}
+
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* ── Interactive body map ───────────────────────────────────────────── */
+.bodymap .region {
+  cursor: pointer;
+  outline: none;
+}
+.bodymap .region > * {
+  fill: rgba(255, 255, 255, 0.06);
+  stroke: rgba(255, 255, 255, 0.16);
+  stroke-width: 1.1;
+  transition: fill 0.16s ease, filter 0.16s ease;
+}
+.bodymap .region:hover > * {
+  fill: rgba(52, 211, 153, 0.38);
+}
+.bodymap .region.is-active > * {
+  fill: rgba(52, 211, 153, 0.72);
+  filter: drop-shadow(0 0 7px rgba(52, 211, 153, 0.6));
+}
+.bodymap .region:focus-visible > * {
+  stroke: var(--color-cyan-400);
+  stroke-width: 2;
+}
+.bodymap .silhouette {
+  fill: rgba(255, 255, 255, 0.03);
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 1;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(52, 211, 153, 0.35);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(52, 211, 153, 0.6); background-clip: padding-box; }
+
+:focus-visible {
+  outline: 3px solid var(--color-cyan-400);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid var(--color-cyan-400);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(34, 211, 238, 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
