@@ -8,6 +8,8 @@ import { useLocale } from "@/lib/locale-context";
 import { MUSCLES } from "@/lib/muscles";
 import type { Goal, WorkoutPlan } from "@/lib/generator";
 import { logWorkout } from "@/lib/activity";
+import { EXERCISES } from "@/lib/exercises";
+import { ExerciseDemo } from "./ExerciseDemo";
 
 const PLAN_KEY = "club:plan";
 
@@ -244,6 +246,12 @@ export function SessionPlayer() {
             <p className="mt-1 text-sm text-energy-100/55">
               {MUSCLES[exercise.muscle].label[locale]} · {exercise.equipment[locale]}
             </p>
+            <div className="mx-auto mt-4 max-w-[240px]">
+              <ExerciseDemo
+                images={EXERCISES.find((e) => e.id === exercise.id)?.images}
+                alt={exercise.name[locale]}
+              />
+            </div>
 
             <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/[0.05] px-5 py-2">
               <span className="text-sm text-energy-100/60">{t.session.set}</span>

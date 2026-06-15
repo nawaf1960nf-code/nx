@@ -6,6 +6,7 @@ import { ListChecks, Search } from "lucide-react";
 import { useLocale } from "@/lib/locale-context";
 import { EXERCISES, type Level } from "@/lib/exercises";
 import { MUSCLES, type MuscleId } from "@/lib/muscles";
+import { ExerciseDemo } from "./ExerciseDemo";
 
 const LEVEL_COLOR: Record<Level, string> = {
   beginner: "#34d399",
@@ -116,6 +117,7 @@ export function ExerciseLibrary() {
                 </span>
               </summary>
               <div className="mt-3">
+                <ExerciseDemo images={ex.images} alt={ex.name[locale]} className="mb-3 max-w-[220px]" />
                 <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-energy-300">
                   <ListChecks className="h-3.5 w-3.5" /> {t.library.steps}
                 </p>

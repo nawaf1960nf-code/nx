@@ -5,6 +5,7 @@ import { Dumbbell, ListChecks, MousePointerClick } from "lucide-react";
 import { useLocale } from "@/lib/locale-context";
 import { MUSCLES, type MuscleId } from "@/lib/muscles";
 import { exercisesForMuscle, type Level } from "@/lib/exercises";
+import { ExerciseDemo } from "./ExerciseDemo";
 
 const LEVEL_COLOR: Record<Level, string> = {
   beginner: "#34d399",
@@ -62,6 +63,7 @@ export function ExercisePanel({ muscle }: { muscle: MuscleId | null }) {
             </summary>
 
             <div className="mt-3 space-y-3 text-sm">
+              <ExerciseDemo images={ex.images} alt={ex.name[locale]} className="max-w-[220px]" />
               <p className="text-energy-100/70">
                 <span className="font-medium text-energy-100/90">{t.map.equipment}:</span>{" "}
                 {ex.equipment[locale]}
