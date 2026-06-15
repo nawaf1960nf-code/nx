@@ -50,10 +50,16 @@ export function ExercisePanel({ muscle }: { muscle: MuscleId | null }) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: Math.min(i * 0.03, 0.3) }}
-            className="group rounded-2xl border border-white/8 bg-white/[0.03] p-4 open:bg-white/[0.05]"
+            className="group overflow-hidden rounded-2xl border border-white/8 bg-white/[0.03] open:bg-white/[0.05]"
           >
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
-              <span className="font-semibold text-white">{ex.name[locale]}</span>
+            <summary className="flex cursor-pointer list-none items-center gap-3 p-3">
+              <span className="w-16 shrink-0 overflow-hidden rounded-xl">
+                <ExerciseDemo images={ex.images} alt={ex.name[locale]} playOnHover />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold text-white">{ex.name[locale]}</span>
+                <span className="block truncate text-xs text-energy-100/55">{ex.equipment[locale]}</span>
+              </span>
               <span
                 className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
                 style={{ background: `${LEVEL_COLOR[ex.level]}22`, color: LEVEL_COLOR[ex.level] }}
@@ -62,12 +68,8 @@ export function ExercisePanel({ muscle }: { muscle: MuscleId | null }) {
               </span>
             </summary>
 
-            <div className="mt-3 space-y-3 text-sm">
-              <ExerciseDemo images={ex.images} alt={ex.name[locale]} className="max-w-[220px]" />
-              <p className="text-energy-100/70">
-                <span className="font-medium text-energy-100/90">{t.map.equipment}:</span>{" "}
-                {ex.equipment[locale]}
-              </p>
+            <div className="space-y-3 px-4 pb-4 text-sm">
+              <ExerciseDemo images={ex.images} alt={ex.name[locale]} className="max-w-[240px] rounded-xl" />
               <div>
                 <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-energy-300">
                   <ListChecks className="h-3.5 w-3.5" /> {t.map.steps}

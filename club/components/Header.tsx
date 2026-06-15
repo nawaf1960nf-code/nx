@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Dumbbell, Languages, UserCircle2 } from "lucide-react";
+import {
+  Activity,
+  BrainCircuit,
+  CalendarRange,
+  Dumbbell,
+  Flame,
+  Languages,
+  LineChart,
+  UserCircle2,
+} from "lucide-react";
+import type { ComponentType } from "react";
 import { useLocale } from "@/lib/locale-context";
 import { StreakChip } from "./StreakChip";
 
@@ -10,13 +20,13 @@ export function Header() {
   const { t, locale, toggle } = useLocale();
   const pathname = usePathname();
 
-  const links = [
-    { href: "/", label: t.nav.map },
-    { href: "/exercises", label: t.nav.library },
-    { href: "/workout", label: t.nav.generator },
-    { href: "/calories", label: t.nav.calories },
-    { href: "/consultant", label: t.nav.consultant },
-    { href: "/progress", label: t.nav.progress },
+  const links: { href: string; label: string; icon: ComponentType<{ className?: string }> }[] = [
+    { href: "/", label: t.nav.map, icon: Activity },
+    { href: "/exercises", label: t.nav.library, icon: Dumbbell },
+    { href: "/workout", label: t.nav.generator, icon: CalendarRange },
+    { href: "/calories", label: t.nav.calories, icon: Flame },
+    { href: "/consultant", label: t.nav.consultant, icon: BrainCircuit },
+    { href: "/progress", label: t.nav.progress, icon: LineChart },
   ];
 
   return (
@@ -39,10 +49,11 @@ export function Header() {
               <Link
                 key={l.href}
                 href={l.href}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                   active ? "bg-white/8 text-white" : "text-energy-100/70 hover:text-white"
                 }`}
               >
+                <l.icon className="h-4 w-4" />
                 {l.label}
               </Link>
             );
@@ -71,18 +82,19 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile nav */}
-      <nav className="flex items-center justify-center gap-1 border-t border-white/6 py-1.5 md:hidden">
+      {/* Mobile nav — horizontally scrollable icon chips, no wrapping. */}
+      <nav className="flex items-center gap-1.5 overflow-x-auto border-t border-white/6 px-3 py-2 md:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {links.map((l) => {
           const active = pathname === l.href;
           return (
             <Link
               key={l.href}
               href={l.href}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                active ? "bg-white/8 text-white" : "text-energy-100/70 hover:text-white"
+              className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                active ? "bg-energy-500 text-base-950" : "bg-white/[0.05] text-energy-100/75"
               }`}
             >
+              <l.icon className="h-3.5 w-3.5" />
               {l.label}
             </Link>
           );

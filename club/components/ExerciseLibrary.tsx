@@ -93,35 +93,37 @@ export function ExerciseLibrary() {
           {t.library.none}
         </p>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((ex, i) => (
-            <motion.details
+            <motion.div
               key={ex.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.015, 0.2) }}
-              className="group card-premium p-5 open:bg-white/[0.05]"
+              transition={{ delay: Math.min(i * 0.012, 0.2) }}
+              className="card-premium flex flex-col overflow-hidden"
             >
-              <summary className="flex cursor-pointer list-none items-start justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-white">{ex.name[locale]}</p>
-                  <p className="mt-0.5 text-xs text-energy-100/50">
-                    {MUSCLES[ex.primary].label[locale]} · {ex.equipment[locale]}
-                  </p>
-                </div>
+              {/* Always-visible demo image (animates on hover) */}
+              <div className="relative">
+                <ExerciseDemo images={ex.images} alt={ex.name[locale]} playOnHover />
                 <span
-                  className="shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
-                  style={{ background: `${LEVEL_COLOR[ex.level]}22`, color: LEVEL_COLOR[ex.level] }}
+                  className="absolute end-2 top-2 rounded-full px-2.5 py-0.5 text-[11px] font-semibold backdrop-blur"
+                  style={{ background: `${LEVEL_COLOR[ex.level]}dd`, color: "#05080a" }}
                 >
                   {t.map.level[ex.level]}
                 </span>
-              </summary>
-              <div className="mt-3">
-                <ExerciseDemo images={ex.images} alt={ex.name[locale]} className="mb-3 max-w-[220px]" />
-                <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-energy-300">
-                  <ListChecks className="h-3.5 w-3.5" /> {t.library.steps}
-                </p>
-                <ol className="space-y-1.5 text-sm">
+              </div>
+
+              <details className="group flex flex-1 flex-col p-4 open:bg-white/[0.04]">
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-white">{ex.name[locale]}</p>
+                    <p className="mt-0.5 truncate text-xs text-energy-100/50">
+                      {MUSCLES[ex.primary].label[locale]} · {ex.equipment[locale]}
+                    </p>
+                  </div>
+                  <ListChecks className="mt-1 h-4 w-4 shrink-0 text-energy-300 transition-transform group-open:rotate-90" />
+                </summary>
+                <ol className="mt-3 space-y-1.5 text-sm">
                   {ex.steps[locale].map((s, si) => (
                     <li key={si} className="flex gap-2 text-energy-100/75">
                       <span className="font-display text-xs font-bold text-energy-400">{si + 1}.</span>
@@ -129,8 +131,8 @@ export function ExerciseLibrary() {
                     </li>
                   ))}
                 </ol>
-              </div>
-            </motion.details>
+              </details>
+            </motion.div>
           ))}
         </div>
       )}

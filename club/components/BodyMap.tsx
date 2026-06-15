@@ -78,9 +78,15 @@ export function BodyMap({
         ))}
       </div>
 
-      <p className="text-xs text-energy-100/55">{t.map.hint}</p>
+      {selected ? (
+        <p className="rounded-full bg-energy-500/15 px-4 py-1 text-sm font-semibold text-energy-300">
+          {MUSCLES[selected].label[locale]}
+        </p>
+      ) : (
+        <p className="text-xs text-energy-100/55">{t.map.hint}</p>
+      )}
 
-      <div className="bodymap w-full max-w-[280px]">
+      <div className="bodymap w-full max-w-[320px]">
         <svg
           viewBox={view.viewBox}
           className="h-auto w-full"
