@@ -12,15 +12,6 @@ const nextConfig: NextConfig = {
     root,
   },
   outputFileTracingRoot: root,
-  // Exercise demo images are proxied/optimized through this app's own domain
-  // (Vercel fetches them server-side), so they load even if a user's network
-  // blocks the source CDN directly.
-  images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "cdn.jsdelivr.net" },
-      { protocol: "https", hostname: "raw.githubusercontent.com" },
-    ],
-  },
 };
 
 export default nextConfig;

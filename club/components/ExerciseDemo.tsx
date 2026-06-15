@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { Dumbbell } from "lucide-react";
 
 /**
  * Animated exercise demonstration. Cross-fades between the start and end
- * frames on a loop to mimic the movement (the dataset ships two stills per
- * exercise). Images are served through next/image (proxied by the app's own
- * domain) so they load even when the source CDN is blocked client-side.
- * Always renders a framed box so there's a clear slot even while loading or
- * if an image fails.
+ * frames on a loop to mimic the movement (two stills per exercise). Images
+ * are self-hosted under /public/exercises, so they load from this app's own
+ * origin with no external CDN dependency. Always renders a framed box with a
+ * dumbbell placeholder so there's a clear slot while loading or on failure.
  */
 export function ExerciseDemo({
   images,
@@ -49,14 +47,14 @@ export function ExerciseDemo({
         </div>
       ) : (
         valid.map((src, i) => (
-          <Image
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
             key={src}
             src={src}
             alt={alt}
-            fill
-            sizes="(max-width: 768px) 80vw, 240px"
+            loading="lazy"
             onError={() => i === 0 && setFailed(true)}
-            className="object-contain transition-opacity duration-500"
+            className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
             style={{ opacity: i === frame ? 1 : 0 }}
           />
         ))
