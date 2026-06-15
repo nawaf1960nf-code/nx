@@ -45,6 +45,8 @@ export interface PlanExercise {
   equipment: Bilingual;
   sets: number;
   reps: string;
+  /** Demonstration image URLs, carried so the session player can show them. */
+  images?: string[];
 }
 
 export interface PlanDay {
@@ -100,6 +102,7 @@ function toPlanExercise(e: Exercise, goal: Goal): PlanExercise {
     equipment: e.equipment,
     sets: SCHEME[goal].sets,
     reps: SCHEME[goal].reps,
+    images: e.images,
   };
 }
 

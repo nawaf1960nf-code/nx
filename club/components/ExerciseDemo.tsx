@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { Dumbbell } from "lucide-react";
 
 /**
  * Animated exercise demonstration. Cross-fades between the start and end
  * frames on a loop to mimic the movement (the dataset ships two stills per
- * exercise). Falls back to a single image, or nothing if none exist.
+ * exercise). Images are served through next/image (proxied by the app's own
+ * domain) so they load even when the source CDN is blocked client-side.
+ * Always renders a framed box so there's a clear slot even while loading or
+ * if an image fails.
  */
 export function ExerciseDemo({
   images,
@@ -32,24 +37,30 @@ export function ExerciseDemo({
     };
   }, [valid.length]);
 
-  if (!valid.length || failed) return null;
+  const showPlaceholder = valid.length === 0 || failed;
 
   return (
     <div
-      className={`relative aspect-square w-full overflow-hidden rounded-xl bg-white ${className}`}
+      className={`relative aspect-square w-full overflow-hidden rounded-xl border border-white/10 bg-white ${className}`}
     >
-      {valid.map((src, i) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={src}
-          src={src}
-          alt={alt}
-          loading="lazy"
-          onError={() => i === 0 && setFailed(true)}
-          className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-          style={{ opacity: i === frame ? 1 : 0 }}
-        />
-      ))}
+      {showPlaceholder ? (
+        <div className="absolute inset-0 grid place-items-center bg-base-850 text-energy-100/30">
+          <Dumbbell className="h-10 w-10" />
+        </div>
+      ) : (
+        valid.map((src, i) => (
+          <Image
+            key={src}
+            src={src}
+            alt={alt}
+            fill
+            sizes="(max-width: 768px) 80vw, 240px"
+            onError={() => i === 0 && setFailed(true)}
+            className="object-contain transition-opacity duration-500"
+            style={{ opacity: i === frame ? 1 : 0 }}
+          />
+        ))
+      )}
     </div>
   );
 }

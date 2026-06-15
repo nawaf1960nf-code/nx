@@ -36,7 +36,17 @@ export function SessionPlayer() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(PLAN_KEY);
-      if (raw) setPlan(JSON.parse(raw));
+      if (!raw) return;
+      const saved = JSON.parse(raw) as WorkoutPlan;
+      // Drop plans saved before the exercise library changed (stale ids with
+      // no demo images) so the member regenerates a fresh, illustrated plan.
+      const known = new Set(EXERCISES.map((e) => e.id));
+      const stale = saved.days?.some((d) => d.exercises.some((e) => !known.has(e.id) && !e.images));
+      if (stale) {
+        localStorage.removeItem(PLAN_KEY);
+        return;
+      }
+      setPlan(saved);
     } catch {
       /* ignore */
     }
@@ -248,7 +258,7 @@ export function SessionPlayer() {
             </p>
             <div className="mx-auto mt-4 max-w-[240px]">
               <ExerciseDemo
-                images={EXERCISES.find((e) => e.id === exercise.id)?.images}
+                images={exercise.images ?? EXERCISES.find((e) => e.id === exercise.id)?.images}
                 alt={exercise.name[locale]}
               />
             </div>
