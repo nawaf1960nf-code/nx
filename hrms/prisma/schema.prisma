@@ -585,11 +585,22 @@ model LoanRequest {
 }
 
 enum EndOfServiceReason {
+  // استحقاق كامل (المادة 84)
+  TERMINATION // إنهاء من صاحب العمل
+  END_OF_CONTRACT // انتهاء العقد محدّد المدة
+  RETIREMENT // التقاعد
+  DEATH // الوفاة (تُصرف للورثة)
+  DISABILITY // العجز أو المرض المُقعِد
+  // الاستقالة وسلّم التخفيض (المادة 85)
   RESIGNATION
-  TERMINATION
-  END_OF_CONTRACT
-  RETIREMENT
-  DEATH
+  // استثناءات الاستحقاق الكامل (المادة 87)
+  RESIGNATION_FORCE_MAJEURE // ترك العمل لقوة قاهرة
+  FEMALE_MARRIAGE // إنهاء العاملة خلال 6 أشهر من الزواج
+  FEMALE_CHILDBIRTH // إنهاء العاملة خلال 3 أشهر من الوضع
+  // ترك مبرر بخطأ صاحب العمل (المادة 81)
+  WORKER_LEFT_EMPLOYER_FAULT
+  // الحرمان من المكافأة (المادة 80)
+  MISCONDUCT_DISMISSAL
 }
 
 model EndOfService {

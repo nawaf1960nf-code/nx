@@ -1,28 +1,72 @@
 /**
- * خدمة حساب مكافأة نهاية الخدمة وفق نظام العمل السعودي.
+ * خدمة حساب مكافأة نهاية الخدمة وفق نظام العمل السعودي — بجميع المواد ذات
+ * العلاقة، مع اختلاف الاستحقاق حسب سبب انتهاء العلاقة العمّالية.
  *
- * المرجع:
- *  - المادة (84): تُحسب المكافأة بواقع أجر نصف شهر عن كل سنة من السنوات
- *    الخمس الأولى، وأجر شهر كامل عن كل سنة من السنوات التالية، ويُحسب
- *    جزء السنة بنسبة ما قضاه العامل منها.
- *  - المادة (85): في حال الاستقالة تُخفّض المكافأة كالتالي:
- *      • أقل من سنتين: لا يستحق شيئاً.
- *      • من سنتين إلى أقل من خمس سنوات: يستحق ثلث المكافأة.
- *      • من خمس سنوات إلى أقل من عشر سنوات: يستحق ثلثي المكافأة.
- *      • عشر سنوات فأكثر: يستحق المكافأة كاملة.
- *  - المادة (87): تستحق العاملة كامل المكافأة إذا أنهت العقد خلال ستة أشهر
- *    من زواجها أو ثلاثة أشهر من وضعها، وكذلك حالات الوفاة والعجز.
+ * الأساس (المادة 84):
+ *   أجر نصف شهر عن كل سنة من السنوات الخمس الأولى، وأجر شهر كامل عن كل سنة
+ *   تالية، ويُحسب جزء السنة بنسبة ما قضاه العامل منها. ويُحتسب على الأجر
+ *   الأخير الشامل (الأساسي + البدلات الثابتة).
  *
- * ملاحظة: الأجر المعتمد في الحساب هو الأجر الأخير الشامل (الأساسي + البدلات
- * الثابتة) ما لم يُحدّد خلاف ذلك.
+ * الاستقالة (المادة 85):
+ *   • أقل من سنتين: لا يستحق شيئاً.
+ *   • من سنتين إلى أقل من خمس: يستحق ثلث المكافأة.
+ *   • من خمس إلى أقل من عشر: يستحق ثلثيها.
+ *   • عشر سنوات فأكثر: يستحقها كاملة.
+ *
+ * استثناءات الاستحقاق الكامل رغم ترك العامل للعمل:
+ *   • المادة 87: ترك العمل لقوة قاهرة خارجة عن الإرادة، أو إنهاء العاملة
+ *     عقدها خلال ستة أشهر من زواجها أو ثلاثة أشهر من وضعها → مكافأة كاملة.
+ *   • المادة 81: ترك العامل العمل لسبب مشروع يعود لخطأ صاحب العمل → يُعامل
+ *     معاملة الإنهاء من صاحب العمل ويستحق المكافأة كاملة.
+ *
+ * الحرمان من المكافأة (المادة 80):
+ *   • فصل العامل لارتكابه إحدى المخالفات الجسيمة المنصوص عليها → لا يستحق
+ *     مكافأة نهاية خدمة.
+ *
+ * الوفاة والعجز والتقاعد (المادة 84): تُصرف المكافأة كاملة (وللورثة عند
+ * الوفاة).
  */
 
 export type EndOfServiceReason =
+  // استحقاق كامل (المادة 84)
+  | 'TERMINATION' // إنهاء من صاحب العمل
+  | 'END_OF_CONTRACT' // انتهاء العقد محدّد المدة
+  | 'RETIREMENT' // التقاعد
+  | 'DEATH' // الوفاة (تُصرف للورثة)
+  | 'DISABILITY' // العجز أو المرض المُقعِد
+  // الاستقالة وسلّم التخفيض (المادة 85)
   | 'RESIGNATION'
-  | 'TERMINATION'
-  | 'END_OF_CONTRACT'
-  | 'RETIREMENT'
-  | 'DEATH';
+  // استثناءات الاستحقاق الكامل (المادة 87)
+  | 'RESIGNATION_FORCE_MAJEURE' // ترك العمل لقوة قاهرة
+  | 'FEMALE_MARRIAGE' // إنهاء العاملة خلال 6 أشهر من الزواج
+  | 'FEMALE_CHILDBIRTH' // إنهاء العاملة خلال 3 أشهر من الوضع
+  // ترك مبرر بخطأ صاحب العمل (المادة 81)
+  | 'WORKER_LEFT_EMPLOYER_FAULT'
+  // الحرمان من المكافأة (المادة 80)
+  | 'MISCONDUCT_DISMISSAL';
+
+type EntitlementBasis = 'FULL' | 'ART85_SCALE' | 'NONE';
+
+interface ReasonRule {
+  article: string;
+  basis: EntitlementBasis;
+  label: string;
+}
+
+/** قاعدة الاستحقاق لكل سبب، مع المادة النظامية المستندة إليها. */
+const REASON_RULES: Record<EndOfServiceReason, ReasonRule> = {
+  TERMINATION: { article: '84', basis: 'FULL', label: 'إنهاء من صاحب العمل' },
+  END_OF_CONTRACT: { article: '84', basis: 'FULL', label: 'انتهاء مدة العقد' },
+  RETIREMENT: { article: '84', basis: 'FULL', label: 'التقاعد' },
+  DEATH: { article: '84', basis: 'FULL', label: 'الوفاة (تُصرف للورثة)' },
+  DISABILITY: { article: '84', basis: 'FULL', label: 'العجز أو المرض المُقعِد' },
+  RESIGNATION: { article: '85', basis: 'ART85_SCALE', label: 'الاستقالة' },
+  RESIGNATION_FORCE_MAJEURE: { article: '87', basis: 'FULL', label: 'ترك العمل لقوة قاهرة' },
+  FEMALE_MARRIAGE: { article: '87', basis: 'FULL', label: 'إنهاء العاملة عقدها خلال ستة أشهر من الزواج' },
+  FEMALE_CHILDBIRTH: { article: '87', basis: 'FULL', label: 'إنهاء العاملة عقدها خلال ثلاثة أشهر من الوضع' },
+  WORKER_LEFT_EMPLOYER_FAULT: { article: '81', basis: 'FULL', label: 'ترك العمل لسبب مشروع بخطأ صاحب العمل' },
+  MISCONDUCT_DISMISSAL: { article: '80', basis: 'NONE', label: 'الفصل لارتكاب مخالفة جسيمة' },
+};
 
 export interface WageComponents {
   baseSalary: number;
@@ -39,8 +83,6 @@ export interface EosInput {
   wage: WageComponents;
   /** أيام إجازات مستحقة لم تُصرف، تُضاف كرصيد منفصل عن المكافأة. */
   accruedLeaveDays?: number;
-  /** استثناء المادة (87): استحقاق كامل المكافأة رغم الاستقالة (زواج/وضع/عجز). */
-  fullEntitlementOverride?: boolean;
 }
 
 export interface EosBreakdownTier {
@@ -55,7 +97,11 @@ export interface EosResult {
   dailyWage: number;
   yearsOfService: number;
   reason: EndOfServiceReason;
-  /** المكافأة الكاملة قبل تطبيق تخفيض الاستقالة. */
+  /** المادة النظامية المُطبّقة. */
+  legalArticle: string;
+  /** أساس الاستحقاق: كامل، سلّم الاستقالة، أو محروم. */
+  entitlementBasis: EntitlementBasis;
+  /** المكافأة الكاملة قبل تطبيق أي تخفيض. */
   grossGratuity: number;
   /** نسبة الاستحقاق المطبّقة (1، 2/3، 1/3، أو 0). */
   entitlementFactor: number;
@@ -89,12 +135,8 @@ export function sumWage(wage: WageComponents): number {
 }
 
 /**
- * مدة الخدمة بالسنوات (مع الكسور) بين تاريخ التعيين وآخر يوم عمل.
- *
- * يُحسب بأسلوب تقويمي حتى تقع السنوات الكاملة على تواريخ الذكرى بالضبط؛
- * فمن أتمّ سنتين تقويميتين تُحسب له سنتان تامّتان (وهو ما يهمّ في حدود
- * المادة 85)، ثم يُضاف جزء السنة الأخيرة بنسبة أيامه. ويُحتسب آخر يوم عمل
- * ضمن المدة المستحقة.
+ * مدة الخدمة بالسنوات (مع الكسور) بأسلوب تقويمي تقع فيه السنوات الكاملة على
+ * تواريخ الذكرى بالضبط، مع احتساب آخر يوم عمل ضمن المدة المستحقة.
  */
 export function calculateYearsOfService(hireDate: Date, lastWorkingDay: Date): number {
   if (lastWorkingDay.getTime() <= hireDate.getTime()) return 0;
@@ -102,7 +144,6 @@ export function calculateYearsOfService(hireDate: Date, lastWorkingDay: Date): n
   let fullYears = 0;
   let cursor = new Date(hireDate);
 
-  // التقدّم سنةً بسنة طالما أن الذكرى التالية تقع ضمن مدة الخدمة.
   while (true) {
     const next = new Date(cursor);
     next.setFullYear(next.getFullYear() + 1);
@@ -114,15 +155,14 @@ export function calculateYearsOfService(hireDate: Date, lastWorkingDay: Date): n
     }
   }
 
-  // جزء السنة الأخيرة (مع احتساب آخر يوم عمل).
   const remainderDays = (lastWorkingDay.getTime() - cursor.getTime()) / MS_PER_DAY + 1;
   const yearDays = daysInYearStartingAt(cursor);
   return fullYears + remainderDays / yearDays;
 }
 
 /**
- * المكافأة الكاملة وفق المادة (84): نصف شهر لكل سنة من الخمس الأولى،
- * وشهر كامل عن كل سنة بعدها، مع احتساب كسور السنوات بالتناسب.
+ * المكافأة الكاملة وفق المادة (84): نصف شهر لكل سنة من الخمس الأولى، وشهر
+ * كامل عن كل سنة بعدها، مع احتساب كسور السنوات بالتناسب.
  */
 function computeGrossGratuity(
   years: number,
@@ -155,9 +195,7 @@ function computeGrossGratuity(
   return { gross: firstTierAmount + secondTierAmount, tiers };
 }
 
-/**
- * نسبة الاستحقاق في حال الاستقالة وفق المادة (85).
- */
+/** نسبة الاستحقاق في حال الاستقالة وفق المادة (85). */
 export function resignationEntitlementFactor(years: number): number {
   if (years < 2) return 0;
   if (years < 5) return 1 / 3;
@@ -169,8 +207,15 @@ function round(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
+function describeResignationFactor(factor: number): string {
+  if (factor === 0) return 'لا تستحق مكافأة لأن مدة الخدمة أقل من سنتين (المادة 85).';
+  if (factor === 1 / 3) return 'استحقاق ثلث المكافأة (خدمة من سنتين إلى أقل من خمس سنوات) — المادة 85.';
+  if (factor === 2 / 3) return 'استحقاق ثلثي المكافأة (خدمة من خمس إلى أقل من عشر سنوات) — المادة 85.';
+  return 'استحقاق كامل المكافأة (خدمة عشر سنوات فأكثر) — المادة 85.';
+}
+
 /**
- * حساب مكافأة نهاية الخدمة كاملةً.
+ * حساب مكافأة نهاية الخدمة كاملةً مع تحديد المادة النظامية وأساس الاستحقاق.
  */
 export function calculateEndOfService(input: EosInput): EosResult {
   const monthlyWage = sumWage(input.wage);
@@ -179,29 +224,24 @@ export function calculateEndOfService(input: EosInput): EosResult {
 
   const { gross, tiers } = computeGrossGratuity(years, monthlyWage);
 
+  const rule = REASON_RULES[input.reason];
   const notes: string[] = [];
-  let entitlementFactor = 1;
+  let entitlementFactor: number;
 
-  if (input.reason === 'RESIGNATION') {
-    if (input.fullEntitlementOverride) {
+  switch (rule.basis) {
+    case 'FULL':
       entitlementFactor = 1;
-      notes.push('استحقاق كامل المكافأة استثناءً وفق المادة (87).');
-    } else {
+      notes.push(`${rule.label}: استحقاق كامل المكافأة وفق المادة (${rule.article}).`);
+      break;
+    case 'NONE':
+      entitlementFactor = 0;
+      notes.push(`${rule.label}: لا يستحق مكافأة نهاية الخدمة وفق المادة (${rule.article}).`);
+      break;
+    case 'ART85_SCALE':
+    default:
       entitlementFactor = resignationEntitlementFactor(years);
-      if (entitlementFactor === 0) {
-        notes.push('لا تستحق مكافأة لأن مدة الخدمة أقل من سنتين (المادة 85).');
-      } else if (entitlementFactor === 1 / 3) {
-        notes.push('استحقاق ثلث المكافأة (خدمة من سنتين إلى أقل من خمس سنوات).');
-      } else if (entitlementFactor === 2 / 3) {
-        notes.push('استحقاق ثلثي المكافأة (خدمة من خمس إلى أقل من عشر سنوات).');
-      } else {
-        notes.push('استحقاق كامل المكافأة (خدمة عشر سنوات فأكثر).');
-      }
-    }
-  } else {
-    // إنهاء من صاحب العمل، انتهاء عقد، تقاعد، أو وفاة: المكافأة كاملة.
-    entitlementFactor = 1;
-    notes.push('استحقاق كامل المكافأة وفق المادة (84).');
+      notes.push(describeResignationFactor(entitlementFactor));
+      break;
   }
 
   const gratuityAfterReduction = gross * entitlementFactor;
@@ -219,6 +259,8 @@ export function calculateEndOfService(input: EosInput): EosResult {
     dailyWage: round(dailyWage),
     yearsOfService: round(years),
     reason: input.reason,
+    legalArticle: rule.article,
+    entitlementBasis: rule.basis,
     grossGratuity: round(gross),
     entitlementFactor: round(entitlementFactor),
     gratuityAfterReduction: round(gratuityAfterReduction),
@@ -231,7 +273,8 @@ export function calculateEndOfService(input: EosInput): EosResult {
 
 /**
  * تقدير مخصص نهاية الخدمة (Provision) لموظف لا يزال على رأس العمل، كما لو
- * أُنهيت خدمته في تاريخ مرجعي — يُستخدم في التقارير المالية والمخصصات.
+ * أُنهيت خدمته في تاريخ مرجعي — يُستخدم في التقارير المالية والمخصصات،
+ * ويُحتسب على أساس الاستحقاق الكامل (المادة 84).
  */
 export function calculateEosProvision(
   hireDate: Date,
@@ -241,7 +284,7 @@ export function calculateEosProvision(
   return calculateEndOfService({
     hireDate,
     lastWorkingDay: asOfDate,
-    reason: 'TERMINATION', // المخصص يُقدّر على أساس الاستحقاق الكامل.
+    reason: 'TERMINATION',
     wage,
   });
 }
