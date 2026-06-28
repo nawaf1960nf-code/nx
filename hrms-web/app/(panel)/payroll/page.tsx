@@ -130,6 +130,8 @@ export default function PayrollPage() {
                     <th className="px-5 py-3 font-medium">البدلات</th>
                     <th className="px-5 py-3 font-medium">الإجمالي</th>
                     <th className="px-5 py-3 font-medium">التأمينات</th>
+                    <th className="px-5 py-3 font-medium">السلف</th>
+                    <th className="px-5 py-3 font-medium">خصومات</th>
                     <th className="px-5 py-3 font-medium">الصافي</th>
                   </tr>
                 </thead>
@@ -141,13 +143,15 @@ export default function PayrollPage() {
                       <td className="px-5 py-3 text-slate-600">{formatSAR(l.allowances)}</td>
                       <td className="px-5 py-3 text-slate-600">{formatSAR(l.gross)}</td>
                       <td className="px-5 py-3 text-danger">{l.gosi ? `- ${formatSAR(l.gosi)}` : "—"}</td>
+                      <td className="px-5 py-3 text-danger">{l.loanDeduction ? `- ${formatSAR(l.loanDeduction)}` : "—"}</td>
+                      <td className="px-5 py-3 text-danger">{l.otherDeductions ? `- ${formatSAR(l.otherDeductions)}` : "—"}</td>
                       <td className="px-5 py-3 font-semibold text-ink">{formatSAR(l.net)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-slate-200 bg-slate-50 font-semibold">
-                    <td className="px-5 py-3 text-slate-700" colSpan={5}>
+                    <td className="px-5 py-3 text-slate-700" colSpan={7}>
                       الإجمالي
                     </td>
                     <td className="px-5 py-3 text-ink">{formatSAR(current.total)}</td>

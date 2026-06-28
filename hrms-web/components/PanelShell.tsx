@@ -19,6 +19,8 @@ import {
   FileText,
   Megaphone,
   Bell,
+  HandCoins,
+  Star,
   ChevronLeft,
 } from "lucide-react";
 import { useStore } from "@/store/useStore";
@@ -77,8 +79,10 @@ export function PanelShell({ children }: { children: ReactNode }) {
     nav.push({ href: "/leaves", label: "الإجازات", icon: <Plane size={18} /> });
     nav.push({ href: "/requests", label: "الطلبات", icon: <FileText size={18} /> });
     nav.push({ href: "/announcements", label: "الإعلانات", icon: <Megaphone size={18} /> });
+    nav.push({ href: "/performance", label: "تقييم الأداء", icon: <Star size={18} /> });
     if (roleHasPermission(currentUser.role, "FINANCIAL_VIEW")) {
       nav.push({ href: "/payroll", label: "الرواتب", icon: <Wallet size={18} /> });
+      nav.push({ href: "/loans", label: "السلف والخصومات", icon: <HandCoins size={18} /> });
     }
     nav.push({ href: "/reports", label: "التقارير", icon: <BarChart3 size={18} /> });
     if (roleHasPermission(currentUser.role, "EMPLOYEE_EDIT")) {

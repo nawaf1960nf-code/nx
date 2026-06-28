@@ -23,6 +23,9 @@ const ACTION_META: Record<AuditAction, { label: string; tone: "info" | "success"
   SUBMIT_REQUEST: { label: "طلب جديد", tone: "info" },
   DECIDE_REQUEST: { label: "قرار طلب", tone: "success" },
   PUBLISH_ANNOUNCEMENT: { label: "إعلان", tone: "warning" },
+  GRANT_LOAN: { label: "سلفة", tone: "info" },
+  ADD_DEDUCTION: { label: "خصم", tone: "danger" },
+  ADD_REVIEW: { label: "تقييم", tone: "success" },
   REVERT: { label: "تراجع", tone: "neutral" },
 };
 

@@ -12,8 +12,8 @@ function isSaudi(nationality: string): boolean {
   return nationality.includes("سعودي");
 }
 
-/** احتساب سطر راتب موظف واحد. */
-export function computePayrollLine(emp: Employee): PayrollLine {
+/** احتساب سطر راتب موظف واحد مع خصم أقساط السلف والخصومات الأخرى. */
+export function computePayrollLine(emp: Employee, loanDeduction = 0, otherDeductions = 0): PayrollLine {
   const gross = sumWage({
     baseSalary: emp.baseSalary,
     housingAllowance: emp.housingAllowance,
@@ -24,7 +24,7 @@ export function computePayrollLine(emp: Employee): PayrollLine {
   // التأمينات تُحتسب على (الأساسي + بدل السكن) للسعوديين.
   const gosiBase = emp.baseSalary + emp.housingAllowance;
   const gosi = isSaudi(emp.nationality) ? round(gosiBase * GOSI_EMPLOYEE_RATE) : 0;
-  const net = round(gross - gosi);
+  const net = round(gross - gosi - loanDeduction - otherDeductions);
   return {
     employeeId: emp.id,
     employeeName: emp.displayName,
@@ -32,6 +32,8 @@ export function computePayrollLine(emp: Employee): PayrollLine {
     allowances: round(allowances),
     gross: round(gross),
     gosi,
+    loanDeduction: round(loanDeduction),
+    otherDeductions: round(otherDeductions),
     net,
   };
 }

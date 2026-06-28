@@ -14,12 +14,16 @@ import type {
   CompanyRequest,
   CompanyStatus,
   CurrentUser,
+  Deduction,
   Employee,
   LeaveRequest,
   LeaveStatus,
+  Loan,
   NotificationType,
   PayrollRun,
   PayrollStatus,
+  PerformanceReview,
+  ReviewCriterion,
   RequestStatus,
   UserRole,
 } from "@/lib/types";
@@ -27,10 +31,13 @@ import {
   SEED_ANNOUNCEMENTS,
   SEED_ATTENDANCE,
   SEED_COMPANIES,
+  SEED_DEDUCTIONS,
   SEED_EMPLOYEES,
   SEED_LEAVES,
+  SEED_LOANS,
   SEED_NOTIFICATIONS,
   SEED_REQUESTS,
+  SEED_REVIEWS,
   SEED_USERS,
 } from "@/lib/seed";
 import { computePayrollLine, lateMinutesFor, MONTH_NAMES } from "@/lib/payroll";
@@ -52,6 +59,9 @@ interface StoreState {
   requests: CompanyRequest[];
   announcements: Announcement[];
   notifications: AppNotification[];
+  loans: Loan[];
+  deductions: Deduction[];
+  reviews: PerformanceReview[];
 
   // المصادقة
   login: (user: { name: string; role: UserRole; companyId?: string }) => void;
@@ -92,6 +102,13 @@ interface StoreState {
   // الإشعارات
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: (companyId: string) => void;
+
+  // السلف والخصومات
+  grantLoan: (data: { companyId: string; employeeId: string; employeeName: string; amount: number; installments: number; startMonth: number; startYear: number }) => void;
+  addDeduction: (data: Omit<Deduction, "id" | "createdAt">) => void;
+
+  // تقييم الأداء
+  addReview: (data: { companyId: string; employeeId: string; employeeName: string; cycle: string; criteria: ReviewCriterion[]; comments?: string }) => void;
 
   // التدقيق والتراجع
   revertAudit: (entryId: string) => void;
@@ -152,6 +169,9 @@ export const useStore = create<StoreState>()(
         requests: SEED_REQUESTS,
         announcements: SEED_ANNOUNCEMENTS,
         notifications: SEED_NOTIFICATIONS,
+        loans: SEED_LOANS,
+        deductions: SEED_DEDUCTIONS,
+        reviews: SEED_REVIEWS,
 
         login: (user) =>
           set({
@@ -304,7 +324,19 @@ export const useStore = create<StoreState>()(
           const exists = get().payrollRuns.find((r) => r.companyId === companyId && r.month === month && r.year === year);
           if (exists) return null;
           const list = get().employees.filter((e) => e.companyId === companyId && e.status !== "TERMINATED" && e.status !== "RESIGNED");
-          const lines = list.map(computePayrollLine);
+          const loans = get().loans;
+          const deductions = get().deductions;
+          const lines = list.map((emp) => {
+            // قسط السلفة الشهري (لا يتجاوز المتبقّي).
+            const loanDed = loans
+              .filter((l) => l.employeeId === emp.id && l.status === "ACTIVE" && l.remaining > 0)
+              .reduce((s, l) => s + Math.min(l.installmentAmount, l.remaining), 0);
+            // خصومات الشهر.
+            const otherDed = deductions
+              .filter((d) => d.employeeId === emp.id && d.month === month && d.year === year)
+              .reduce((s, d) => s + d.amount, 0);
+            return computePayrollLine(emp, loanDed, otherDed);
+          });
           const total = lines.reduce((sum, l) => sum + l.net, 0);
           const run: PayrollRun = {
             id: genId("pr"),
@@ -324,8 +356,23 @@ export const useStore = create<StoreState>()(
         setPayrollStatus: (runId, status) => {
           const run = get().payrollRuns.find((r) => r.id === runId);
           set((s) => ({ payrollRuns: s.payrollRuns.map((r) => (r.id === runId ? { ...r, status } : r)) }));
-          if (run && status === "PAID")
+          if (run && status === "PAID" && run.status !== "PAID") {
+            // عند الصرف: خصم قسط من سلف الموظفين الذين خُصم منهم في هذا الكشف.
+            const debtors = new Set(run.lines.filter((l) => l.loanDeduction > 0).map((l) => l.employeeId));
+            set((s) => ({
+              loans: s.loans.map((l) => {
+                if (l.companyId !== run.companyId || l.status !== "ACTIVE" || !debtors.has(l.employeeId)) return l;
+                const remaining = Math.max(0, l.remaining - l.installmentAmount);
+                return {
+                  ...l,
+                  paidInstallments: l.paidInstallments + 1,
+                  remaining,
+                  status: remaining <= 0 ? "SETTLED" : "ACTIVE",
+                };
+              }),
+            }));
             audit("PAY_PAYROLL", `اعتماد صرف رواتب ${MONTH_NAMES[run.month - 1]} ${run.year}`, run.companyId);
+          }
         },
 
         submitRequest: (data) => {
@@ -380,6 +427,57 @@ export const useStore = create<StoreState>()(
             notifications: s.notifications.map((n) => (n.companyId === companyId ? { ...n, read: true } : n)),
           })),
 
+        grantLoan: (data) => {
+          const installmentAmount = Math.round((data.amount / Math.max(1, data.installments)) * 100) / 100;
+          const loan: Loan = {
+            id: genId("ln"),
+            companyId: data.companyId,
+            employeeId: data.employeeId,
+            employeeName: data.employeeName,
+            amount: data.amount,
+            installments: data.installments,
+            installmentAmount,
+            paidInstallments: 0,
+            remaining: data.amount,
+            startMonth: data.startMonth,
+            startYear: data.startYear,
+            status: "ACTIVE",
+            createdAt: new Date().toISOString().slice(0, 10),
+          };
+          set((s) => ({ loans: [loan, ...s.loans] }));
+          notify(data.companyId, "سلفة معتمدة", `تم منح سلفة بقيمة ${data.amount} ر.س لـ${data.employeeName} على ${data.installments} قسط.`, "APPROVAL");
+          audit("GRANT_LOAN", `منح سلفة ${data.amount} ر.س لـ«${data.employeeName}»`, data.companyId);
+        },
+
+        addDeduction: (data) => {
+          const deduction: Deduction = { ...data, id: genId("dd"), createdAt: new Date().toISOString().slice(0, 10) };
+          set((s) => ({ deductions: [deduction, ...s.deductions] }));
+          audit("ADD_DEDUCTION", `خصم ${data.amount} ر.س على «${data.employeeName}» (${data.reason})`, data.companyId);
+        },
+
+        addReview: (data) => {
+          const finalRating =
+            data.criteria.length > 0
+              ? Math.round((data.criteria.reduce((s, c) => s + c.score, 0) / data.criteria.length) * 100) / 100
+              : 0;
+          const review: PerformanceReview = {
+            id: genId("pr"),
+            companyId: data.companyId,
+            employeeId: data.employeeId,
+            employeeName: data.employeeName,
+            cycle: data.cycle,
+            reviewerName: get().currentUser?.name ?? "الإدارة",
+            criteria: data.criteria,
+            finalRating,
+            comments: data.comments,
+            status: "COMPLETED",
+            createdAt: new Date().toISOString().slice(0, 10),
+          };
+          set((s) => ({ reviews: [review, ...s.reviews] }));
+          notify(data.companyId, "تقييم جديد", `تم إنجاز تقييم ${data.employeeName} بنتيجة ${finalRating} من 5.`, "INFO");
+          audit("ADD_REVIEW", `تقييم «${data.employeeName}» (${finalRating}/5)`, data.companyId);
+        },
+
         revertAudit: (entryId) => {
           const entry = get().auditLog.find((a) => a.id === entryId);
           if (!entry || !entry.undo || entry.reverted) return;
@@ -417,6 +515,6 @@ export const useStore = create<StoreState>()(
         },
       };
     },
-    { name: "hrms-store", version: 4 },
+    { name: "hrms-store", version: 5 },
   ),
 );

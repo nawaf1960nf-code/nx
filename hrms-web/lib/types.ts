@@ -100,6 +100,9 @@ export type AuditAction =
   | "SUBMIT_REQUEST"
   | "DECIDE_REQUEST"
   | "PUBLISH_ANNOUNCEMENT"
+  | "GRANT_LOAN"
+  | "ADD_DEDUCTION"
+  | "ADD_REVIEW"
   | "REVERT";
 
 // حمولة التراجع: ما يلزم لعكس الإجراء.
@@ -166,7 +169,61 @@ export interface PayrollLine {
   allowances: number;
   gross: number;
   gosi: number;
+  loanDeduction: number;
+  otherDeductions: number;
   net: number;
+}
+
+// ── السلف والخصومات ──
+export type LoanStatus = "ACTIVE" | "SETTLED";
+export interface Loan {
+  id: string;
+  companyId: string;
+  employeeId: string;
+  employeeName: string;
+  amount: number;
+  installments: number;
+  installmentAmount: number;
+  paidInstallments: number;
+  remaining: number;
+  startMonth: number;
+  startYear: number;
+  status: LoanStatus;
+  createdAt: string;
+}
+
+export type DeductionType = "PENALTY" | "ADVANCE" | "OTHER";
+export interface Deduction {
+  id: string;
+  companyId: string;
+  employeeId: string;
+  employeeName: string;
+  amount: number;
+  reason: string;
+  type: DeductionType;
+  month: number;
+  year: number;
+  createdAt: string;
+}
+
+// ── تقييم الأداء ──
+export type ReviewStatus = "DRAFT" | "COMPLETED";
+export interface ReviewCriterion {
+  name: string;
+  score: number; // 1-5
+}
+export interface PerformanceReview {
+  id: string;
+  companyId: string;
+  employeeId: string;
+  employeeName: string;
+  cycle: string; // مثل "التقييم السنوي 2025"
+  reviewerName: string;
+  criteria: ReviewCriterion[];
+  finalRating: number; // 1-5
+  comments?: string;
+  status: ReviewStatus;
+  createdAt: string;
 }
 
 export interface PayrollRun {

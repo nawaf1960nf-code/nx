@@ -5,8 +5,11 @@ import type {
   AttendanceRecord,
   Company,
   CompanyRequest,
+  Deduction,
   Employee,
   LeaveRequest,
+  Loan,
+  PerformanceReview,
 } from "./types";
 
 const today = new Date().toISOString().slice(0, 10);
@@ -130,6 +133,77 @@ export const SEED_NOTIFICATIONS: AppNotification[] = [
   { id: "nt-1", companyId: "c-alfajr", title: "طلب جديد", body: "طلب عمل عن بُعد من عبدالله محمد القحطاني بانتظار الاعتماد.", type: "REQUEST", read: false, createdAt: new Date(Date.now() - 3600000).toISOString() },
   { id: "nt-2", companyId: "c-alfajr", title: "طلب سلفة", body: "طلب سلفة بقيمة 15,000 ر.س من خالد ناصر الشمري.", type: "REQUEST", read: false, createdAt: new Date(Date.now() - 7200000).toISOString() },
   { id: "nt-3", companyId: "c-alfajr", title: "إعلان منشور", body: "تم نشر إعلان: تحديث مواعيد الدوام في رمضان.", type: "ANNOUNCEMENT", read: true, createdAt: new Date(Date.now() - 86400000).toISOString() },
+];
+
+export const SEED_LOANS: Loan[] = [
+  {
+    id: "ln-1",
+    companyId: "c-alfajr",
+    employeeId: "e-1001",
+    employeeName: "عبدالله محمد القحطاني",
+    amount: 15000,
+    installments: 10,
+    installmentAmount: 1500,
+    paidInstallments: 3,
+    remaining: 10500,
+    startMonth: 3,
+    startYear: 2026,
+    status: "ACTIVE",
+    createdAt: "2026-03-01",
+  },
+];
+
+export const SEED_DEDUCTIONS: Deduction[] = [
+  {
+    id: "dd-1",
+    companyId: "c-alfajr",
+    employeeId: "e-1003",
+    employeeName: "خالد ناصر الشمري",
+    amount: 300,
+    reason: "غياب بدون إذن",
+    type: "PENALTY",
+    month: new Date().getMonth() + 1,
+    year: new Date().getFullYear(),
+    createdAt: today,
+  },
+];
+
+export const SEED_REVIEWS: PerformanceReview[] = [
+  {
+    id: "pr-1",
+    companyId: "c-alfajr",
+    employeeId: "e-1001",
+    employeeName: "عبدالله محمد القحطاني",
+    cycle: "التقييم السنوي 2025",
+    reviewerName: "إدارة الموارد البشرية",
+    criteria: [
+      { name: "جودة العمل", score: 5 },
+      { name: "الالتزام والانضباط", score: 4 },
+      { name: "العمل الجماعي", score: 5 },
+      { name: "المبادرة والتطوير", score: 4 },
+    ],
+    finalRating: 4.5,
+    comments: "أداء متميز خلال العام مع قيادة فعّالة للفريق.",
+    status: "COMPLETED",
+    createdAt: "2025-12-20",
+  },
+  {
+    id: "pr-2",
+    companyId: "c-alfajr",
+    employeeId: "e-1002",
+    employeeName: "سارة فهد العتيبي",
+    cycle: "التقييم السنوي 2025",
+    reviewerName: "إدارة الموارد البشرية",
+    criteria: [
+      { name: "جودة العمل", score: 4 },
+      { name: "الالتزام والانضباط", score: 5 },
+      { name: "العمل الجماعي", score: 4 },
+      { name: "المبادرة والتطوير", score: 4 },
+    ],
+    finalRating: 4.25,
+    status: "COMPLETED",
+    createdAt: "2025-12-21",
+  },
 ];
 
 export const SEED_ATTENDANCE: AttendanceRecord[] = [
