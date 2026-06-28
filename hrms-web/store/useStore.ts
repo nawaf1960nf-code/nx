@@ -3,22 +3,36 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type {
+  Announcement,
+  AppNotification,
   AppUser,
   AttendanceRecord,
   AuditAction,
   AuditEntry,
   AuditUndo,
   Company,
+  CompanyRequest,
   CompanyStatus,
   CurrentUser,
   Employee,
   LeaveRequest,
   LeaveStatus,
+  NotificationType,
   PayrollRun,
   PayrollStatus,
+  RequestStatus,
   UserRole,
 } from "@/lib/types";
-import { SEED_ATTENDANCE, SEED_COMPANIES, SEED_EMPLOYEES, SEED_LEAVES, SEED_USERS } from "@/lib/seed";
+import {
+  SEED_ANNOUNCEMENTS,
+  SEED_ATTENDANCE,
+  SEED_COMPANIES,
+  SEED_EMPLOYEES,
+  SEED_LEAVES,
+  SEED_NOTIFICATIONS,
+  SEED_REQUESTS,
+  SEED_USERS,
+} from "@/lib/seed";
 import { computePayrollLine, lateMinutesFor, MONTH_NAMES } from "@/lib/payroll";
 
 function genId(prefix: string): string {
@@ -35,6 +49,9 @@ interface StoreState {
   leaveRequests: LeaveRequest[];
   attendance: AttendanceRecord[];
   payrollRuns: PayrollRun[];
+  requests: CompanyRequest[];
+  announcements: Announcement[];
+  notifications: AppNotification[];
 
   // المصادقة
   login: (user: { name: string; role: UserRole; companyId?: string }) => void;
@@ -65,9 +82,29 @@ interface StoreState {
   runPayroll: (companyId: string, month: number, year: number) => string | null;
   setPayrollStatus: (runId: string, status: PayrollStatus) => void;
 
+  // الطلبات
+  submitRequest: (data: Omit<CompanyRequest, "id" | "status" | "createdAt">) => void;
+  setRequestStatus: (id: string, status: Extract<RequestStatus, "APPROVED" | "REJECTED">) => void;
+
+  // الإعلانات
+  publishAnnouncement: (data: Omit<Announcement, "id" | "recipients" | "createdByName" | "createdAt">) => void;
+
+  // الإشعارات
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: (companyId: string) => void;
+
   // التدقيق والتراجع
   revertAudit: (entryId: string) => void;
 }
+
+const REQUEST_KIND_LABELS: Record<CompanyRequest["kind"], string> = {
+  LEAVE: "إجازة",
+  PERMISSION: "استئذان",
+  LOAN: "سلفة",
+  REMOTE: "عمل عن بُعد",
+  DOCUMENT: "مستند",
+  OTHER: "طلب",
+};
 
 export const useStore = create<StoreState>()(
   persist(
@@ -88,6 +125,20 @@ export const useStore = create<StoreState>()(
         set((s) => ({ auditLog: [entry, ...s.auditLog] }));
       }
 
+      // إنشاء إشعار للشركة.
+      function notify(companyId: string, title: string, body: string, type: NotificationType) {
+        const n: AppNotification = {
+          id: genId("nt"),
+          companyId,
+          title,
+          body,
+          type,
+          read: false,
+          createdAt: new Date().toISOString(),
+        };
+        set((s) => ({ notifications: [n, ...s.notifications] }));
+      }
+
       return {
         currentUser: null,
         activeCompanyId: null,
@@ -98,6 +149,9 @@ export const useStore = create<StoreState>()(
         leaveRequests: SEED_LEAVES,
         attendance: SEED_ATTENDANCE,
         payrollRuns: [],
+        requests: SEED_REQUESTS,
+        announcements: SEED_ANNOUNCEMENTS,
+        notifications: SEED_NOTIFICATIONS,
 
         login: (user) =>
           set({
@@ -274,6 +328,58 @@ export const useStore = create<StoreState>()(
             audit("PAY_PAYROLL", `اعتماد صرف رواتب ${MONTH_NAMES[run.month - 1]} ${run.year}`, run.companyId);
         },
 
+        submitRequest: (data) => {
+          const req: CompanyRequest = {
+            ...data,
+            id: genId("rq"),
+            status: "PENDING",
+            createdAt: new Date().toISOString().slice(0, 10),
+          };
+          set((s) => ({ requests: [req, ...s.requests] }));
+          const label = REQUEST_KIND_LABELS[req.kind];
+          notify(req.companyId, "طلب جديد", `طلب ${label} من ${req.employeeName} بانتظار الاعتماد.`, "REQUEST");
+          audit("SUBMIT_REQUEST", `طلب ${label} من «${req.employeeName}»`, req.companyId);
+        },
+
+        setRequestStatus: (id, status) => {
+          const req = get().requests.find((r) => r.id === id);
+          set((s) => ({ requests: s.requests.map((r) => (r.id === id ? { ...r, status } : r)) }));
+          if (req) {
+            const label = REQUEST_KIND_LABELS[req.kind];
+            const verb = status === "APPROVED" ? "اعتماد" : "رفض";
+            notify(req.companyId, `${verb} طلب`, `تم ${verb} طلب ${label} الخاص بـ${req.employeeName}.`, "APPROVAL");
+            audit("DECIDE_REQUEST", `${verb} طلب ${label} «${req.employeeName}»`, req.companyId);
+          }
+        },
+
+        publishAnnouncement: (data) => {
+          const employees = get().employees.filter((e) => e.companyId === data.companyId);
+          let recipients = employees.length;
+          if (data.audience === "DEPARTMENT") {
+            recipients = employees.filter((e) => e.department === data.targetDept).length;
+          } else if (data.audience === "EMPLOYEES") {
+            recipients = data.targetEmployeeIds?.length ?? 0;
+          }
+          const announcement: Announcement = {
+            ...data,
+            id: genId("an"),
+            recipients,
+            createdByName: get().currentUser?.name ?? "الإدارة",
+            createdAt: new Date().toISOString().slice(0, 10),
+          };
+          set((s) => ({ announcements: [announcement, ...s.announcements] }));
+          notify(data.companyId, "إعلان منشور", `${announcement.title} (إلى ${recipients} مستلم).`, "ANNOUNCEMENT");
+          audit("PUBLISH_ANNOUNCEMENT", `نشر إعلان «${announcement.title}»`, data.companyId);
+        },
+
+        markNotificationRead: (id) =>
+          set((s) => ({ notifications: s.notifications.map((n) => (n.id === id ? { ...n, read: true } : n)) })),
+
+        markAllNotificationsRead: (companyId) =>
+          set((s) => ({
+            notifications: s.notifications.map((n) => (n.companyId === companyId ? { ...n, read: true } : n)),
+          })),
+
         revertAudit: (entryId) => {
           const entry = get().auditLog.find((a) => a.id === entryId);
           if (!entry || !entry.undo || entry.reverted) return;
@@ -311,6 +417,6 @@ export const useStore = create<StoreState>()(
         },
       };
     },
-    { name: "hrms-store", version: 3 },
+    { name: "hrms-store", version: 4 },
   ),
 );

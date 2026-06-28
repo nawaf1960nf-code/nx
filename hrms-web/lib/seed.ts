@@ -1,4 +1,13 @@
-import type { AppUser, AttendanceRecord, Company, Employee, LeaveRequest } from "./types";
+import type {
+  Announcement,
+  AppNotification,
+  AppUser,
+  AttendanceRecord,
+  Company,
+  CompanyRequest,
+  Employee,
+  LeaveRequest,
+} from "./types";
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -42,6 +51,85 @@ export const SEED_LEAVES: LeaveRequest[] = [
     status: "PENDING",
     createdAt: today,
   },
+];
+
+export const SEED_REQUESTS: CompanyRequest[] = [
+  {
+    id: "rq-1",
+    companyId: "c-alfajr",
+    employeeId: "e-1001",
+    employeeName: "عبدالله محمد القحطاني",
+    kind: "REMOTE",
+    date: "2026-07-02",
+    reason: "متابعة مشروع عن بُعد",
+    status: "PENDING",
+    createdAt: today,
+  },
+  {
+    id: "rq-2",
+    companyId: "c-alfajr",
+    employeeId: "e-1003",
+    employeeName: "خالد ناصر الشمري",
+    kind: "LOAN",
+    amount: 15000,
+    installments: 10,
+    reason: "سلفة شخصية",
+    status: "PENDING",
+    createdAt: today,
+  },
+  {
+    id: "rq-3",
+    companyId: "c-alfajr",
+    employeeId: "e-1002",
+    employeeName: "سارة فهد العتيبي",
+    kind: "PERMISSION",
+    date: "2026-06-29",
+    hours: 2,
+    reason: "مراجعة جهة حكومية",
+    status: "APPROVED",
+    createdAt: "2026-06-27",
+  },
+  {
+    id: "rq-4",
+    companyId: "c-noor",
+    employeeId: "e-2002",
+    employeeName: "نوف عبدالعزيز الدوسري",
+    kind: "DOCUMENT",
+    docType: "تعريف بالراتب",
+    reason: "فتح حساب بنكي",
+    status: "PENDING",
+    createdAt: today,
+  },
+];
+
+export const SEED_ANNOUNCEMENTS: Announcement[] = [
+  {
+    id: "an-1",
+    companyId: "c-alfajr",
+    title: "تحديث مواعيد الدوام في رمضان",
+    content: "نُعلمكم بأن مواعيد الدوام خلال شهر رمضان المبارك ستكون من العاشرة صباحاً حتى الرابعة عصراً.",
+    audience: "ALL",
+    recipients: 3,
+    createdByName: "إدارة الموارد البشرية",
+    createdAt: "2026-06-20",
+  },
+  {
+    id: "an-2",
+    companyId: "c-alfajr",
+    title: "اجتماع قسم المالية",
+    content: "اجتماع مراجعة الإقفال الشهري يوم الأحد القادم في قاعة الاجتماعات الرئيسية.",
+    audience: "DEPARTMENT",
+    targetDept: "المالية",
+    recipients: 1,
+    createdByName: "إدارة الموارد البشرية",
+    createdAt: "2026-06-25",
+  },
+];
+
+export const SEED_NOTIFICATIONS: AppNotification[] = [
+  { id: "nt-1", companyId: "c-alfajr", title: "طلب جديد", body: "طلب عمل عن بُعد من عبدالله محمد القحطاني بانتظار الاعتماد.", type: "REQUEST", read: false, createdAt: new Date(Date.now() - 3600000).toISOString() },
+  { id: "nt-2", companyId: "c-alfajr", title: "طلب سلفة", body: "طلب سلفة بقيمة 15,000 ر.س من خالد ناصر الشمري.", type: "REQUEST", read: false, createdAt: new Date(Date.now() - 7200000).toISOString() },
+  { id: "nt-3", companyId: "c-alfajr", title: "إعلان منشور", body: "تم نشر إعلان: تحديث مواعيد الدوام في رمضان.", type: "ANNOUNCEMENT", read: true, createdAt: new Date(Date.now() - 86400000).toISOString() },
 ];
 
 export const SEED_ATTENDANCE: AttendanceRecord[] = [

@@ -16,6 +16,9 @@ import {
   Plane,
   Wallet,
   BarChart3,
+  FileText,
+  Megaphone,
+  Bell,
   ChevronLeft,
 } from "lucide-react";
 import { useStore } from "@/store/useStore";
@@ -32,12 +35,16 @@ export function PanelShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [showNotif, setShowNotif] = useState(false);
 
   const currentUser = useStore((s) => s.currentUser);
   const companies = useStore((s) => s.companies);
   const activeCompanyId = useStore((s) => s.activeCompanyId);
   const setActiveCompany = useStore((s) => s.setActiveCompany);
   const logout = useStore((s) => s.logout);
+  const notifications = useStore((s) => s.notifications);
+  const markNotificationRead = useStore((s) => s.markNotificationRead);
+  const markAllNotificationsRead = useStore((s) => s.markAllNotificationsRead);
 
   useEffect(() => setMounted(true), []);
 
@@ -52,6 +59,12 @@ export function PanelShell({ children }: { children: ReactNode }) {
   const isSuperAdmin = currentUser.role === "SUPER_ADMIN";
   const activeCompany = companies.find((c) => c.id === activeCompanyId) ?? null;
 
+  const notifScope = currentUser.companyId ?? activeCompanyId;
+  const scopedNotifs = notifications
+    .filter((n) => n.companyId === notifScope)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const unreadCount = scopedNotifs.filter((n) => !n.read).length;
+
   const nav: NavItem[] = [];
   if (isSuperAdmin) {
     nav.push({ href: "/overview", label: "نظرة عامة", icon: <LayoutGrid size={18} /> });
@@ -62,6 +75,8 @@ export function PanelShell({ children }: { children: ReactNode }) {
     nav.push({ href: "/employees", label: "الموظفون", icon: <Users size={18} /> });
     nav.push({ href: "/attendance", label: "الحضور والانصراف", icon: <CalendarClock size={18} /> });
     nav.push({ href: "/leaves", label: "الإجازات", icon: <Plane size={18} /> });
+    nav.push({ href: "/requests", label: "الطلبات", icon: <FileText size={18} /> });
+    nav.push({ href: "/announcements", label: "الإعلانات", icon: <Megaphone size={18} /> });
     if (roleHasPermission(currentUser.role, "FINANCIAL_VIEW")) {
       nav.push({ href: "/payroll", label: "الرواتب", icon: <Wallet size={18} /> });
     }
@@ -69,6 +84,7 @@ export function PanelShell({ children }: { children: ReactNode }) {
     if (roleHasPermission(currentUser.role, "EMPLOYEE_EDIT")) {
       nav.push({ href: "/import", label: "استيراد بيانات", icon: <UploadCloud size={18} /> });
     }
+    nav.push({ href: "/notifications", label: "الإشعارات", icon: <Bell size={18} /> });
     nav.push({ href: "/settings", label: "الإعدادات", icon: <Settings size={18} /> });
   }
   // سجل النشاط لمدير النظام ومسؤولي الموارد البشرية.
@@ -148,6 +164,72 @@ export function PanelShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* جرس الإشعارات */}
+            {notifScope && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotif((v) => !v)}
+                  className="relative flex h-9 w-9 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100"
+                  aria-label="الإشعارات"
+                >
+                  <Bell size={18} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {showNotif && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowNotif(false)} aria-hidden />
+                    <div className="absolute left-0 z-20 mt-2 w-80 overflow-hidden rounded-lg border border-slate-200 bg-surface shadow-xl">
+                      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2.5">
+                        <span className="text-sm font-semibold text-slate-800">الإشعارات</span>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={() => markAllNotificationsRead(notifScope)}
+                            className="text-xs text-ink hover:underline"
+                          >
+                            تعليم الكل كمقروء
+                          </button>
+                        )}
+                      </div>
+                      <div className="max-h-80 overflow-y-auto">
+                        {scopedNotifs.length === 0 ? (
+                          <p className="p-6 text-center text-sm text-slate-400">لا توجد إشعارات.</p>
+                        ) : (
+                          scopedNotifs.slice(0, 6).map((n) => (
+                            <button
+                              key={n.id}
+                              onClick={() => markNotificationRead(n.id)}
+                              className={cn(
+                                "block w-full border-b border-slate-50 px-4 py-3 text-right hover:bg-slate-50",
+                                !n.read && "bg-ink-50/40",
+                              )}
+                            >
+                              <div className="flex items-center gap-2">
+                                {!n.read && <span className="h-2 w-2 shrink-0 rounded-full bg-ink" />}
+                                <span className="text-sm font-medium text-slate-800">{n.title}</span>
+                              </div>
+                              <span className="mt-0.5 block text-xs text-slate-500">{n.body}</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                      <Link
+                        href="/notifications"
+                        onClick={() => setShowNotif(false)}
+                        className="block border-t border-slate-200 px-4 py-2.5 text-center text-sm font-medium text-ink hover:bg-slate-50"
+                      >
+                        عرض كل الإشعارات
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             <div className="text-left">
               <p className="text-sm font-semibold text-slate-800">{currentUser.name}</p>
               <p className="text-[11px] text-slate-400">{ROLE_LABELS[currentUser.role]}</p>

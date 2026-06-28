@@ -97,6 +97,9 @@ export type AuditAction =
   | "RECORD_ATTENDANCE"
   | "RUN_PAYROLL"
   | "PAY_PAYROLL"
+  | "SUBMIT_REQUEST"
+  | "DECIDE_REQUEST"
+  | "PUBLISH_ANNOUNCEMENT"
   | "REVERT";
 
 // حمولة التراجع: ما يلزم لعكس الإجراء.
@@ -174,5 +177,59 @@ export interface PayrollRun {
   status: PayrollStatus;
   lines: PayrollLine[];
   total: number;
+  createdAt: string;
+}
+
+// ── الطلبات (منظومة موحّدة) ──
+export type RequestKind = "LEAVE" | "PERMISSION" | "LOAN" | "REMOTE" | "DOCUMENT" | "OTHER";
+export type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface CompanyRequest {
+  id: string;
+  companyId: string;
+  employeeId: string;
+  employeeName: string;
+  kind: RequestKind;
+  // حقول اختيارية بحسب نوع الطلب
+  leaveType?: LeaveType;
+  startDate?: string;
+  endDate?: string;
+  days?: number;
+  date?: string; // للاستئذان / العمل عن بعد ليوم واحد
+  hours?: number; // الاستئذان
+  amount?: number; // السلفة
+  installments?: number; // أقساط السلفة
+  docType?: string; // نوع المستند المطلوب
+  reason?: string;
+  status: RequestStatus;
+  createdAt: string;
+}
+
+// ── الإشعارات ──
+export type NotificationType = "REQUEST" | "APPROVAL" | "ANNOUNCEMENT" | "INFO";
+
+export interface AppNotification {
+  id: string;
+  companyId: string;
+  title: string;
+  body: string;
+  type: NotificationType;
+  read: boolean;
+  createdAt: string; // ISO
+}
+
+// ── الإعلانات ──
+export type AnnouncementAudience = "ALL" | "DEPARTMENT" | "EMPLOYEES";
+
+export interface Announcement {
+  id: string;
+  companyId: string;
+  title: string;
+  content: string;
+  audience: AnnouncementAudience;
+  targetDept?: string;
+  targetEmployeeIds?: string[];
+  recipients: number;
+  createdByName: string;
   createdAt: string;
 }

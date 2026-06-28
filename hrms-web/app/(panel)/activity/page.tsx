@@ -20,6 +20,9 @@ const ACTION_META: Record<AuditAction, { label: string; tone: "info" | "success"
   RECORD_ATTENDANCE: { label: "حضور", tone: "info" },
   RUN_PAYROLL: { label: "تشغيل رواتب", tone: "info" },
   PAY_PAYROLL: { label: "صرف رواتب", tone: "success" },
+  SUBMIT_REQUEST: { label: "طلب جديد", tone: "info" },
+  DECIDE_REQUEST: { label: "قرار طلب", tone: "success" },
+  PUBLISH_ANNOUNCEMENT: { label: "إعلان", tone: "warning" },
   REVERT: { label: "تراجع", tone: "neutral" },
 };
 
