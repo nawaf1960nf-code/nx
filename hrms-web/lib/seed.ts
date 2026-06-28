@@ -1,4 +1,55 @@
-import type { AppUser, Company, Employee } from "./types";
+import type { AppUser, AttendanceRecord, Company, Employee, LeaveRequest } from "./types";
+
+const today = new Date().toISOString().slice(0, 10);
+
+export const SEED_LEAVES: LeaveRequest[] = [
+  {
+    id: "lv-1",
+    companyId: "c-alfajr",
+    employeeId: "e-1003",
+    employeeName: "خالد ناصر الشمري",
+    type: "ANNUAL",
+    startDate: "2026-07-05",
+    endDate: "2026-07-09",
+    days: 5,
+    reason: "إجازة سنوية",
+    status: "PENDING",
+    createdAt: today,
+  },
+  {
+    id: "lv-2",
+    companyId: "c-alfajr",
+    employeeId: "e-1002",
+    employeeName: "سارة فهد العتيبي",
+    type: "SICK",
+    startDate: "2026-06-22",
+    endDate: "2026-06-23",
+    days: 2,
+    reason: "إجازة مرضية",
+    status: "APPROVED",
+    createdAt: "2026-06-21",
+  },
+  {
+    id: "lv-3",
+    companyId: "c-noor",
+    employeeId: "e-2002",
+    employeeName: "نوف عبدالعزيز الدوسري",
+    type: "ANNUAL",
+    startDate: "2026-08-01",
+    endDate: "2026-08-10",
+    days: 10,
+    reason: "سفر",
+    status: "PENDING",
+    createdAt: today,
+  },
+];
+
+export const SEED_ATTENDANCE: AttendanceRecord[] = [
+  { id: "at-1", companyId: "c-alfajr", employeeId: "e-1001", employeeName: "عبدالله محمد القحطاني", date: today, checkIn: "07:58", checkOut: "17:05", status: "PRESENT", lateMinutes: 0 },
+  { id: "at-2", companyId: "c-alfajr", employeeId: "e-1002", employeeName: "سارة فهد العتيبي", date: today, checkIn: "08:32", checkOut: "17:00", status: "LATE", lateMinutes: 32 },
+  { id: "at-3", companyId: "c-alfajr", employeeId: "e-1003", employeeName: "خالد ناصر الشمري", date: today, status: "ABSENT", lateMinutes: 0 },
+  { id: "at-4", companyId: "c-noor", employeeId: "e-2001", employeeName: "ماجد سعيد الغامدي", date: today, checkIn: "08:05", checkOut: "16:40", status: "PRESENT", lateMinutes: 0 },
+];
 
 export const SEED_USERS: AppUser[] = [
   { id: "u-root", name: "أحمد العنزي", email: "admin@system.sa", role: "SUPER_ADMIN", createdAt: "2024-01-01" },

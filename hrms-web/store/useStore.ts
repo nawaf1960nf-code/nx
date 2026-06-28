@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type {
   AppUser,
+  AttendanceRecord,
   AuditAction,
   AuditEntry,
   AuditUndo,
@@ -11,9 +12,14 @@ import type {
   CompanyStatus,
   CurrentUser,
   Employee,
+  LeaveRequest,
+  LeaveStatus,
+  PayrollRun,
+  PayrollStatus,
   UserRole,
 } from "@/lib/types";
-import { SEED_COMPANIES, SEED_EMPLOYEES, SEED_USERS } from "@/lib/seed";
+import { SEED_ATTENDANCE, SEED_COMPANIES, SEED_EMPLOYEES, SEED_LEAVES, SEED_USERS } from "@/lib/seed";
+import { computePayrollLine, lateMinutesFor, MONTH_NAMES } from "@/lib/payroll";
 
 function genId(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
@@ -26,6 +32,9 @@ interface StoreState {
   employees: Employee[];
   users: AppUser[];
   auditLog: AuditEntry[];
+  leaveRequests: LeaveRequest[];
+  attendance: AttendanceRecord[];
+  payrollRuns: PayrollRun[];
 
   // المصادقة
   login: (user: { name: string; role: UserRole; companyId?: string }) => void;
@@ -44,6 +53,17 @@ interface StoreState {
   updateEmployee: (id: string, patch: Partial<Employee>) => void;
   deleteEmployee: (id: string) => void;
   importEmployees: (companyId: string, rows: Omit<Employee, "id" | "companyId" | "events">[]) => number;
+
+  // الإجازات
+  requestLeave: (data: Omit<LeaveRequest, "id" | "status" | "createdAt">) => void;
+  setLeaveStatus: (id: string, status: Extract<LeaveStatus, "APPROVED" | "REJECTED">) => void;
+
+  // الحضور
+  markAttendance: (companyId: string, employeeId: string, employeeName: string) => void;
+
+  // الرواتب
+  runPayroll: (companyId: string, month: number, year: number) => string | null;
+  setPayrollStatus: (runId: string, status: PayrollStatus) => void;
 
   // التدقيق والتراجع
   revertAudit: (entryId: string) => void;
@@ -75,6 +95,9 @@ export const useStore = create<StoreState>()(
         employees: SEED_EMPLOYEES,
         users: SEED_USERS,
         auditLog: [],
+        leaveRequests: SEED_LEAVES,
+        attendance: SEED_ATTENDANCE,
+        payrollRuns: [],
 
         login: (user) =>
           set({
@@ -176,6 +199,81 @@ export const useStore = create<StoreState>()(
           return created.length;
         },
 
+        requestLeave: (data) => {
+          const req: LeaveRequest = {
+            ...data,
+            id: genId("lv"),
+            status: "PENDING",
+            createdAt: new Date().toISOString().slice(0, 10),
+          };
+          set((s) => ({ leaveRequests: [req, ...s.leaveRequests] }));
+          audit("REQUEST_LEAVE", `طلب إجازة لـ«${req.employeeName}» (${req.days} يوم)`, req.companyId);
+        },
+
+        setLeaveStatus: (id, status) => {
+          const req = get().leaveRequests.find((l) => l.id === id);
+          set((s) => ({ leaveRequests: s.leaveRequests.map((l) => (l.id === id ? { ...l, status } : l)) }));
+          if (req) {
+            const verb = status === "APPROVED" ? "اعتماد" : "رفض";
+            audit(status === "APPROVED" ? "APPROVE_LEAVE" : "REJECT_LEAVE", `${verb} إجازة «${req.employeeName}»`, req.companyId);
+          }
+        },
+
+        markAttendance: (companyId, employeeId, employeeName) => {
+          const date = new Date().toISOString().slice(0, 10);
+          const now = new Date().toTimeString().slice(0, 5);
+          const existing = get().attendance.find((a) => a.employeeId === employeeId && a.date === date);
+
+          if (!existing) {
+            const late = lateMinutesFor(now);
+            const record: AttendanceRecord = {
+              id: genId("at"),
+              companyId,
+              employeeId,
+              employeeName,
+              date,
+              checkIn: now,
+              status: late > 0 ? "LATE" : "PRESENT",
+              lateMinutes: late,
+            };
+            set((s) => ({ attendance: [record, ...s.attendance] }));
+            audit("RECORD_ATTENDANCE", `تسجيل حضور «${employeeName}» الساعة ${now}`, companyId);
+          } else if (!existing.checkOut) {
+            set((s) => ({
+              attendance: s.attendance.map((a) => (a.id === existing.id ? { ...a, checkOut: now } : a)),
+            }));
+            audit("RECORD_ATTENDANCE", `تسجيل انصراف «${employeeName}» الساعة ${now}`, companyId);
+          }
+        },
+
+        runPayroll: (companyId, month, year) => {
+          const exists = get().payrollRuns.find((r) => r.companyId === companyId && r.month === month && r.year === year);
+          if (exists) return null;
+          const list = get().employees.filter((e) => e.companyId === companyId && e.status !== "TERMINATED" && e.status !== "RESIGNED");
+          const lines = list.map(computePayrollLine);
+          const total = lines.reduce((sum, l) => sum + l.net, 0);
+          const run: PayrollRun = {
+            id: genId("pr"),
+            companyId,
+            month,
+            year,
+            status: "DRAFT",
+            lines,
+            total: Math.round((total + Number.EPSILON) * 100) / 100,
+            createdAt: new Date().toISOString().slice(0, 10),
+          };
+          set((s) => ({ payrollRuns: [run, ...s.payrollRuns] }));
+          audit("RUN_PAYROLL", `تشغيل رواتب ${MONTH_NAMES[month - 1]} ${year} (${lines.length} موظف)`, companyId);
+          return run.id;
+        },
+
+        setPayrollStatus: (runId, status) => {
+          const run = get().payrollRuns.find((r) => r.id === runId);
+          set((s) => ({ payrollRuns: s.payrollRuns.map((r) => (r.id === runId ? { ...r, status } : r)) }));
+          if (run && status === "PAID")
+            audit("PAY_PAYROLL", `اعتماد صرف رواتب ${MONTH_NAMES[run.month - 1]} ${run.year}`, run.companyId);
+        },
+
         revertAudit: (entryId) => {
           const entry = get().auditLog.find((a) => a.id === entryId);
           if (!entry || !entry.undo || entry.reverted) return;
@@ -213,6 +311,6 @@ export const useStore = create<StoreState>()(
         },
       };
     },
-    { name: "hrms-store", version: 2 },
+    { name: "hrms-store", version: 3 },
   ),
 );

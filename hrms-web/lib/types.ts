@@ -91,6 +91,12 @@ export type AuditAction =
   | "UPDATE_EMPLOYEE"
   | "DELETE_EMPLOYEE"
   | "IMPORT_EMPLOYEES"
+  | "REQUEST_LEAVE"
+  | "APPROVE_LEAVE"
+  | "REJECT_LEAVE"
+  | "RECORD_ATTENDANCE"
+  | "RUN_PAYROLL"
+  | "PAY_PAYROLL"
   | "REVERT";
 
 // حمولة التراجع: ما يلزم لعكس الإجراء.
@@ -112,4 +118,61 @@ export interface AuditEntry {
   summary: string;
   undo?: AuditUndo;
   reverted?: boolean;
+}
+
+// ── الإجازات ──
+export type LeaveType = "ANNUAL" | "SICK" | "UNPAID" | "EMERGENCY" | "MATERNITY";
+export type LeaveStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface LeaveRequest {
+  id: string;
+  companyId: string;
+  employeeId: string;
+  employeeName: string;
+  type: LeaveType;
+  startDate: string;
+  endDate: string;
+  days: number;
+  reason?: string;
+  status: LeaveStatus;
+  createdAt: string;
+}
+
+// ── الحضور ──
+export type AttendanceStatus = "PRESENT" | "LATE" | "ABSENT" | "ON_LEAVE";
+
+export interface AttendanceRecord {
+  id: string;
+  companyId: string;
+  employeeId: string;
+  employeeName: string;
+  date: string; // YYYY-MM-DD
+  checkIn?: string; // HH:mm
+  checkOut?: string; // HH:mm
+  status: AttendanceStatus;
+  lateMinutes: number;
+}
+
+// ── الرواتب ──
+export type PayrollStatus = "DRAFT" | "APPROVED" | "PAID";
+
+export interface PayrollLine {
+  employeeId: string;
+  employeeName: string;
+  baseSalary: number;
+  allowances: number;
+  gross: number;
+  gosi: number;
+  net: number;
+}
+
+export interface PayrollRun {
+  id: string;
+  companyId: string;
+  month: number; // 1-12
+  year: number;
+  status: PayrollStatus;
+  lines: PayrollLine[];
+  total: number;
+  createdAt: string;
 }

@@ -14,6 +14,12 @@ const ACTION_META: Record<AuditAction, { label: string; tone: "info" | "success"
   UPDATE_EMPLOYEE: { label: "تعديل موظف", tone: "info" },
   DELETE_EMPLOYEE: { label: "حذف موظف", tone: "danger" },
   IMPORT_EMPLOYEES: { label: "استيراد", tone: "success" },
+  REQUEST_LEAVE: { label: "طلب إجازة", tone: "info" },
+  APPROVE_LEAVE: { label: "اعتماد إجازة", tone: "success" },
+  REJECT_LEAVE: { label: "رفض إجازة", tone: "danger" },
+  RECORD_ATTENDANCE: { label: "حضور", tone: "info" },
+  RUN_PAYROLL: { label: "تشغيل رواتب", tone: "info" },
+  PAY_PAYROLL: { label: "صرف رواتب", tone: "success" },
   REVERT: { label: "تراجع", tone: "neutral" },
 };
 

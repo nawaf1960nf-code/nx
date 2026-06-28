@@ -3,7 +3,21 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Building2, LayoutDashboard, Users, Settings, LogOut, LayoutGrid, UploadCloud, History, ChevronLeft } from "lucide-react";
+import {
+  Building2,
+  LayoutDashboard,
+  Users,
+  Settings,
+  LogOut,
+  LayoutGrid,
+  UploadCloud,
+  History,
+  CalendarClock,
+  Plane,
+  Wallet,
+  BarChart3,
+  ChevronLeft,
+} from "lucide-react";
 import { useStore } from "@/store/useStore";
 import { ROLE_LABELS, roleHasPermission } from "@/lib/permissions";
 import { cn } from "@/lib/cn";
@@ -46,6 +60,12 @@ export function PanelShell({ children }: { children: ReactNode }) {
   if (activeCompany || !isSuperAdmin) {
     nav.push({ href: "/dashboard", label: "لوحة الشركة", icon: <LayoutDashboard size={18} /> });
     nav.push({ href: "/employees", label: "الموظفون", icon: <Users size={18} /> });
+    nav.push({ href: "/attendance", label: "الحضور والانصراف", icon: <CalendarClock size={18} /> });
+    nav.push({ href: "/leaves", label: "الإجازات", icon: <Plane size={18} /> });
+    if (roleHasPermission(currentUser.role, "FINANCIAL_VIEW")) {
+      nav.push({ href: "/payroll", label: "الرواتب", icon: <Wallet size={18} /> });
+    }
+    nav.push({ href: "/reports", label: "التقارير", icon: <BarChart3 size={18} /> });
     if (roleHasPermission(currentUser.role, "EMPLOYEE_EDIT")) {
       nav.push({ href: "/import", label: "استيراد بيانات", icon: <UploadCloud size={18} /> });
     }
