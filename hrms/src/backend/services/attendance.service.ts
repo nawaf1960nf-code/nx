@@ -3,7 +3,9 @@
  * والعمل الإضافي آلياً بناءً على وردية الموظف وسياسة الحضور.
  */
 
-import { Coordinates, checkGeofence, isValidCoordinates } from '../utils/geo';
+import { Coordinates, checkGeofence, distanceInMeters, isValidCoordinates } from '../utils/geo';
+import { prisma } from '../config/database';
+import { riyadhDayRange } from '../utils/datetime';
 
 export type AttendanceStatus =
   | 'PRESENT'
@@ -195,4 +197,188 @@ export function calculateOvertimePay(
   const overtimeHours = overtimeMinutes / 60;
   const pay = overtimeHours * hourlyWage * 1.5;
   return Math.round((pay + Number.EPSILON) * 100) / 100;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// تسجيل الحضور مع مقاومة تزييف الموقع (Anti-Spoofing)
+// ════════════════════════════════════════════════════════════════════
+
+export interface CheckInCoordinates {
+  lat: number;
+  lng: number;
+  accuracy?: number;
+}
+
+export type CheckInRejectionReason =
+  | 'MOCK_LOCATION'
+  | 'OUT_OF_RANGE'
+  | 'INVALID_LOCATION'
+  | 'NO_BRANCH';
+
+export interface CheckInResult {
+  success: boolean;
+  reason?: CheckInRejectionReason;
+  message: string;
+  status?: AttendanceStatus;
+  distanceMeters?: number;
+  recordId?: string;
+}
+
+const DEFAULT_GEOFENCE_RADIUS = 100;
+
+/** معرّفات مستخدمي الموارد البشرية النشطين لإرسال التنبيهات الأمنية. */
+async function getHrUserIds(): Promise<string[]> {
+  const users = await prisma.user.findMany({
+    where: { roleId: { in: ['HR_ADMIN', 'SUPER_ADMIN'] }, status: 'ACTIVE' },
+    select: { id: true },
+  });
+  return users.map((u) => u.id);
+}
+
+/**
+ * تسجيل دخول الموظف مع التحقق من صحّة الموقع ومقاومة التطبيقات الوهمية.
+ *
+ * يُرفض التسجيل في الحالات التالية:
+ *  - الموقع وهمي (isMocked) أو الدقة صفرية (مؤشّر قوي على Fake GPS).
+ *  - الموقع خارج النطاق الجغرافي المسموح للفرع (Geofence).
+ *
+ * عند رصد موقع وهمي يُسجَّل تنبيه أمني في AuditLog ويُشعَر به فريق الموارد
+ * البشرية.
+ */
+export async function checkIn(
+  employeeId: string,
+  coords: CheckInCoordinates,
+  isMocked: boolean,
+): Promise<CheckInResult> {
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: {
+      id: true,
+      userId: true,
+      displayName: true,
+      employeeNumber: true,
+      region: {
+        select: { id: true, name: true, latitude: true, longitude: true, geofenceRadius: true },
+      },
+      workShift: {
+        select: { startTime: true, endTime: true, gracePeriodMinutes: true },
+      },
+    },
+  });
+
+  if (!employee) {
+    return { success: false, reason: 'INVALID_LOCATION', message: 'الموظف غير موجود.' };
+  }
+
+  // 1) مقاومة الموقع الوهمي: الدقة الصفرية مؤشّر إضافي على التزييف.
+  const looksMocked = isMocked || coords.accuracy === 0;
+  if (looksMocked) {
+    await prisma.auditLog.create({
+      data: {
+        userId: employee.userId ?? undefined,
+        action: 'SECURITY_ALERT',
+        entity: 'ATTENDANCE',
+        entityId: employee.id,
+        newValue: {
+          message: 'محاولة تسجيل حضور بموقع وهمي',
+          employeeNumber: employee.employeeNumber,
+          coords: { lat: coords.lat, lng: coords.lng, accuracy: coords.accuracy ?? null },
+        },
+      },
+    });
+
+    const hrUserIds = await getHrUserIds();
+    if (hrUserIds.length > 0) {
+      await prisma.notification.createMany({
+        data: hrUserIds.map((userId) => ({
+          userId,
+          title: 'تنبيه أمني: موقع وهمي',
+          body: `محاولة تسجيل حضور بموقع وهمي من الموظف ${employee.displayName} (${employee.employeeNumber}).`,
+          type: 'SECURITY_ALERT',
+          data: { employeeId: employee.id },
+        })),
+      });
+    }
+
+    return {
+      success: false,
+      reason: 'MOCK_LOCATION',
+      message: 'تم رفض تسجيل الحضور: تم رصد موقع وهمي.',
+    };
+  }
+
+  // 2) التحقق من صحّة الإحداثيات وتوفّر فرع بإحداثيات.
+  if (!isValidCoordinates({ lat: coords.lat, lng: coords.lng })) {
+    return { success: false, reason: 'INVALID_LOCATION', message: 'إحداثيات الموقع غير صالحة.' };
+  }
+
+  const branch = employee.region;
+  if (!branch || branch.latitude == null || branch.longitude == null) {
+    return {
+      success: false,
+      reason: 'NO_BRANCH',
+      message: 'لم يُضبط نطاق جغرافي لفرع الموظف.',
+    };
+  }
+
+  // 3) قياس المسافة عبر معادلة Haversine ومقارنتها بنطاق الفرع.
+  const distance = distanceInMeters(
+    { lat: coords.lat, lng: coords.lng },
+    { lat: branch.latitude, lng: branch.longitude },
+  );
+  const radius = branch.geofenceRadius ?? DEFAULT_GEOFENCE_RADIUS;
+
+  if (distance > radius) {
+    return {
+      success: false,
+      reason: 'OUT_OF_RANGE',
+      message: 'أنت خارج نطاق العمل المسموح به.',
+      distanceMeters: Math.round(distance),
+    };
+  }
+
+  // 4) تسجيل الحضور وحساب حالة التأخير إن توفّرت الوردية.
+  const now = new Date();
+  const { start } = riyadhDayRange(now);
+
+  let status: AttendanceStatus = 'PRESENT';
+  let lateMinutes = 0;
+  if (employee.workShift) {
+    const computed = computeAttendance(now, null, {
+      startTime: employee.workShift.startTime,
+      endTime: employee.workShift.endTime,
+      gracePeriodMinutes: employee.workShift.gracePeriodMinutes,
+    });
+    status = computed.status;
+    lateMinutes = computed.lateMinutes;
+  }
+
+  const record = await prisma.attendanceRecord.upsert({
+    where: { employeeId_date: { employeeId: employee.id, date: start } },
+    create: {
+      employeeId: employee.id,
+      date: start,
+      checkIn: now,
+      checkInMethod: 'GPS',
+      checkInLocation: { lat: coords.lat, lng: coords.lng, accuracy: coords.accuracy ?? null },
+      status,
+      lateMinutes,
+    },
+    update: {
+      checkIn: now,
+      checkInMethod: 'GPS',
+      checkInLocation: { lat: coords.lat, lng: coords.lng, accuracy: coords.accuracy ?? null },
+      status,
+      lateMinutes,
+    },
+    select: { id: true },
+  });
+
+  return {
+    success: true,
+    message: 'تم تسجيل الحضور بنجاح.',
+    status,
+    distanceMeters: Math.round(distance),
+    recordId: record.id,
+  };
 }
