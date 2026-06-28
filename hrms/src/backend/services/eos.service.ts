@@ -29,8 +29,9 @@
 
 export type EndOfServiceReason =
   // استحقاق كامل (المادة 84)
-  | 'TERMINATION' // إنهاء من صاحب العمل
-  | 'END_OF_CONTRACT' // انتهاء العقد محدّد المدة
+  | 'TERMINATION' // إنهاء من صاحب العمل (أو إنهاء عقد غير محدّد المدة من جهته)
+  | 'END_OF_CONTRACT' // انتهاء أو عدم تجديد العقد محدّد المدة
+  | 'MUTUAL_AGREEMENT' // إنهاء/عدم تجديد العقد باتفاق الطرفين (المادة 74)
   | 'RETIREMENT' // التقاعد
   | 'DEATH' // الوفاة (تُصرف للورثة)
   | 'DISABILITY' // العجز أو المرض المُقعِد
@@ -56,7 +57,8 @@ interface ReasonRule {
 /** قاعدة الاستحقاق لكل سبب، مع المادة النظامية المستندة إليها. */
 const REASON_RULES: Record<EndOfServiceReason, ReasonRule> = {
   TERMINATION: { article: '84', basis: 'FULL', label: 'إنهاء من صاحب العمل' },
-  END_OF_CONTRACT: { article: '84', basis: 'FULL', label: 'انتهاء مدة العقد' },
+  END_OF_CONTRACT: { article: '84', basis: 'FULL', label: 'انتهاء أو عدم تجديد العقد محدّد المدة' },
+  MUTUAL_AGREEMENT: { article: '74', basis: 'FULL', label: 'إنهاء العقد باتفاق الطرفين (التراضي)' },
   RETIREMENT: { article: '84', basis: 'FULL', label: 'التقاعد' },
   DEATH: { article: '84', basis: 'FULL', label: 'الوفاة (تُصرف للورثة)' },
   DISABILITY: { article: '84', basis: 'FULL', label: 'العجز أو المرض المُقعِد' },

@@ -586,8 +586,9 @@ model LoanRequest {
 
 enum EndOfServiceReason {
   // استحقاق كامل (المادة 84)
-  TERMINATION // إنهاء من صاحب العمل
-  END_OF_CONTRACT // انتهاء العقد محدّد المدة
+  TERMINATION // إنهاء من صاحب العمل (أو إنهاء عقد غير محدّد المدة من جهته)
+  END_OF_CONTRACT // انتهاء أو عدم تجديد العقد محدّد المدة
+  MUTUAL_AGREEMENT // إنهاء/عدم تجديد العقد باتفاق الطرفين (المادة 74)
   RETIREMENT // التقاعد
   DEATH // الوفاة (تُصرف للورثة)
   DISABILITY // العجز أو المرض المُقعِد
