@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Users, UserCheck, Plane, Building } from "lucide-react";
+import { Users, UserCheck, Plane, FileClock, Megaphone } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import { useScopedCompanyId } from "@/lib/scope";
 import { StatCard, Card, Badge } from "@/components/ui";
 import { EmployeeTimeline } from "@/components/EmployeeTimeline";
+import { formatDate } from "@/lib/format";
 import type { EmployeeEvent } from "@/lib/types";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -20,6 +21,8 @@ export default function DashboardPage() {
   const companyId = useScopedCompanyId();
   const companies = useStore((s) => s.companies);
   const employees = useStore((s) => s.employees);
+  const requests = useStore((s) => s.requests);
+  const announcements = useStore((s) => s.announcements);
 
   if (!companyId) {
     return (
@@ -33,7 +36,8 @@ export default function DashboardPage() {
   const list = employees.filter((e) => e.companyId === companyId);
   const onProbation = list.filter((e) => e.status === "ON_PROBATION").length;
   const onLeave = list.filter((e) => e.status === "ON_LEAVE").length;
-  const departments = new Set(list.map((e) => e.department)).size;
+  const pendingRequests = requests.filter((r) => r.companyId === companyId && r.status === "PENDING").length;
+  const companyAnnouncements = announcements.filter((a) => a.companyId === companyId).slice(0, 3);
 
   // أحدث الأحداث عبر موظفي الشركة.
   const recent: EmployeeEvent[] = list
@@ -55,7 +59,7 @@ export default function DashboardPage() {
         <StatCard label="إجمالي الموظفين" value={list.length} icon={<Users size={20} />} />
         <StatCard label="تحت التجربة" value={onProbation} icon={<UserCheck size={20} />} />
         <StatCard label="في إجازة" value={onLeave} icon={<Plane size={20} />} />
-        <StatCard label="الأقسام" value={departments} icon={<Building size={20} />} />
+        <StatCard label="طلبات معلّقة" value={pendingRequests} icon={<FileClock size={20} />} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -95,6 +99,32 @@ export default function DashboardPage() {
           </div>
         </Card>
       </div>
+
+      <Card>
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <h2 className="flex items-center gap-2 text-base font-semibold text-slate-800">
+            <Megaphone size={18} className="text-ink" /> آخر الإعلانات
+          </h2>
+          <Link href="/announcements" className="text-sm text-ink hover:underline">
+            عرض الكل
+          </Link>
+        </div>
+        {companyAnnouncements.length === 0 ? (
+          <p className="p-6 text-center text-sm text-slate-400">لا توجد إعلانات.</p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {companyAnnouncements.map((a) => (
+              <li key={a.id} className="px-5 py-3.5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-slate-800">{a.title}</p>
+                  <span className="shrink-0 text-xs text-slate-400">{formatDate(a.createdAt)}</span>
+                </div>
+                <p className="mt-0.5 line-clamp-1 text-sm text-slate-500">{a.content}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
     </div>
   );
 }
