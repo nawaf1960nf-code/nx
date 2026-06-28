@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, ShieldCheck, Users, Briefcase } from "lucide-react";
+import { Building2, ShieldCheck, Users, Briefcase, LogIn } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import type { UserRole } from "@/lib/types";
 
@@ -51,10 +52,25 @@ const PROFILES: Profile[] = [
 export default function LoginPage() {
   const router = useRouter();
   const login = useStore((s) => s.login);
+  const loginByEmail = useStore((s) => s.loginByEmail);
+
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState(false);
 
   function enter(p: Profile) {
     login({ name: p.name, role: p.role, companyId: p.companyId });
     router.push(p.to);
+  }
+
+  function enterByEmail() {
+    if (!email.trim()) return;
+    const ok = loginByEmail(email);
+    if (!ok) {
+      setError(true);
+      return;
+    }
+    const user = useStore.getState().currentUser;
+    router.push(user?.role === "SUPER_ADMIN" ? "/overview" : "/dashboard");
   }
 
   return (
@@ -82,6 +98,36 @@ export default function LoginPage() {
               </span>
             </button>
           ))}
+        </div>
+
+        <div className="my-5 flex items-center gap-3 text-xs text-slate-400">
+          <span className="h-px flex-1 bg-slate-200" />
+          أو الدخول بالبريد الإلكتروني
+          <span className="h-px flex-1 bg-slate-200" />
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-surface p-4 shadow-sm">
+          <div className="flex gap-2">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(false);
+              }}
+              onKeyDown={(e) => e.key === "Enter" && enterByEmail()}
+              placeholder="admin@company.sa"
+              className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-ink focus:ring-2 focus:ring-ink/20"
+            />
+            <button
+              onClick={enterByEmail}
+              className="inline-flex items-center gap-1.5 rounded-md bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-ink-700"
+            >
+              <LogIn size={16} /> دخول
+            </button>
+          </div>
+          {error && <p className="mt-2 text-xs text-danger">لا يوجد حساب بهذا البريد. جرّب: sara@alfajr.sa</p>}
+          <p className="mt-2 text-xs text-slate-400">حسابات للتجربة: admin@system.sa · sara@alfajr.sa · majed@noor.sa</p>
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-400">

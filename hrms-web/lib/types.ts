@@ -70,3 +70,46 @@ export interface CurrentUser {
   role: UserRole;
   companyId?: string; // غير محدّد لمدير النظام
 }
+
+// ── المستخدمون (لتسجيل الدخول بالإيميل) ──
+export interface AppUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  companyId?: string;
+  createdAt: string;
+}
+
+// ── سجل النشاط/التدقيق ──
+export type AuditAction =
+  | "ADD_COMPANY"
+  | "UPDATE_COMPANY"
+  | "SET_COMPANY_STATUS"
+  | "INVITE_ADMIN"
+  | "ADD_EMPLOYEE"
+  | "UPDATE_EMPLOYEE"
+  | "DELETE_EMPLOYEE"
+  | "IMPORT_EMPLOYEES"
+  | "REVERT";
+
+// حمولة التراجع: ما يلزم لعكس الإجراء.
+export type AuditUndo =
+  | { type: "REMOVE_COMPANY"; companyId: string }
+  | { type: "RESTORE_COMPANY"; company: Company }
+  | { type: "REMOVE_EMPLOYEE"; employeeId: string }
+  | { type: "RESTORE_EMPLOYEE"; employee: Employee }
+  | { type: "REMOVE_EMPLOYEES"; employeeIds: string[] }
+  | { type: "REMOVE_USER"; userId: string };
+
+export interface AuditEntry {
+  id: string;
+  at: string; // ISO
+  actorName: string;
+  actorRole: UserRole;
+  companyId?: string;
+  action: AuditAction;
+  summary: string;
+  undo?: AuditUndo;
+  reverted?: boolean;
+}

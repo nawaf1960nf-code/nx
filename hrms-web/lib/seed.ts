@@ -1,4 +1,10 @@
-import type { Company, Employee } from "./types";
+import type { AppUser, Company, Employee } from "./types";
+
+export const SEED_USERS: AppUser[] = [
+  { id: "u-root", name: "أحمد العنزي", email: "admin@system.sa", role: "SUPER_ADMIN", createdAt: "2024-01-01" },
+  { id: "u-sara", name: "سارة العتيبي", email: "sara@alfajr.sa", role: "HR_ADMIN", companyId: "c-alfajr", createdAt: "2024-02-12" },
+  { id: "u-majed", name: "ماجد الغامدي", email: "majed@noor.sa", role: "HR_ADMIN", companyId: "c-noor", createdAt: "2024-06-02" },
+];
 
 // بيانات أولية تجريبية — تُحمَّل عند أول تشغيل ويمكن التحكم بها وتُحفظ محلياً.
 

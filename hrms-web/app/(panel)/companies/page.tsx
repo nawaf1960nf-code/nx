@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Power, LogIn } from "lucide-react";
+import { Plus, Power, LogIn, UserPlus, CheckCircle2 } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import { Card, Badge, Button, Modal, Field, Input, Select } from "@/components/ui";
 import type { CompanyPlan } from "@/lib/types";
@@ -21,6 +21,10 @@ export default function CompaniesPage() {
   const addCompany = useStore((s) => s.addCompany);
   const setCompanyStatus = useStore((s) => s.setCompanyStatus);
   const setActiveCompany = useStore((s) => s.setActiveCompany);
+  const inviteCompanyAdmin = useStore((s) => s.inviteCompanyAdmin);
+
+  const [invite, setInvite] = useState<{ companyId: string; name: string; email: string } | null>(null);
+  const [invited, setInvited] = useState<string | null>(null);
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -93,6 +97,16 @@ export default function CompaniesPage() {
                           <LogIn size={14} /> دخول
                         </Button>
                         <Button
+                          variant="secondary"
+                          className="px-2.5 py-1.5 text-xs"
+                          onClick={() => {
+                            setInvited(null);
+                            setInvite({ companyId: c.id, name: "", email: "" });
+                          }}
+                        >
+                          <UserPlus size={14} /> مسؤول
+                        </Button>
+                        <Button
                           variant={c.status === "SUSPENDED" ? "secondary" : "danger"}
                           className="px-2.5 py-1.5 text-xs"
                           onClick={() => setCompanyStatus(c.id, c.status === "SUSPENDED" ? "ACTIVE" : "SUSPENDED")}
@@ -148,6 +162,55 @@ export default function CompaniesPage() {
           </Button>
           <Button onClick={submit}>حفظ الشركة</Button>
         </div>
+      </Modal>
+
+      <Modal open={invite !== null} onClose={() => setInvite(null)} title="دعوة مسؤول الشركة">
+        {invited ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 rounded-md bg-success-50 px-4 py-3 text-sm text-success">
+              <CheckCircle2 size={18} /> تم إنشاء حساب المسؤول.
+            </div>
+            <p className="text-sm text-slate-600">
+              سلّم هذا الإيميل لمسؤول الشركة ليدخل عبر صفحة تسجيل الدخول ويدير بيانات شركته:
+            </p>
+            <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-semibold text-ink">
+              {invited}
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={() => setInvite(null)}>تم</Button>
+            </div>
+          </div>
+        ) : (
+          invite && (
+            <div className="space-y-4">
+              <Field label="اسم المسؤول">
+                <Input value={invite.name} onChange={(e) => setInvite({ ...invite, name: e.target.value })} />
+              </Field>
+              <Field label="البريد الإلكتروني">
+                <Input
+                  type="email"
+                  value={invite.email}
+                  onChange={(e) => setInvite({ ...invite, email: e.target.value })}
+                  placeholder="admin@company.sa"
+                />
+              </Field>
+              <div className="flex justify-end gap-2">
+                <Button variant="secondary" onClick={() => setInvite(null)}>
+                  إلغاء
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (!invite.name.trim() || !invite.email.trim()) return;
+                    inviteCompanyAdmin(invite.companyId, { name: invite.name, email: invite.email });
+                    setInvited(invite.email);
+                  }}
+                >
+                  إنشاء الحساب
+                </Button>
+              </div>
+            </div>
+          )
+        )}
       </Modal>
     </div>
   );

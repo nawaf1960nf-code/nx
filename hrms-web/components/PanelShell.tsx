@@ -3,9 +3,9 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Building2, LayoutDashboard, Users, Settings, LogOut, LayoutGrid, ChevronLeft } from "lucide-react";
+import { Building2, LayoutDashboard, Users, Settings, LogOut, LayoutGrid, UploadCloud, History, ChevronLeft } from "lucide-react";
 import { useStore } from "@/store/useStore";
-import { ROLE_LABELS } from "@/lib/permissions";
+import { ROLE_LABELS, roleHasPermission } from "@/lib/permissions";
 import { cn } from "@/lib/cn";
 
 interface NavItem {
@@ -46,7 +46,14 @@ export function PanelShell({ children }: { children: ReactNode }) {
   if (activeCompany || !isSuperAdmin) {
     nav.push({ href: "/dashboard", label: "لوحة الشركة", icon: <LayoutDashboard size={18} /> });
     nav.push({ href: "/employees", label: "الموظفون", icon: <Users size={18} /> });
+    if (roleHasPermission(currentUser.role, "EMPLOYEE_EDIT")) {
+      nav.push({ href: "/import", label: "استيراد بيانات", icon: <UploadCloud size={18} /> });
+    }
     nav.push({ href: "/settings", label: "الإعدادات", icon: <Settings size={18} /> });
+  }
+  // سجل النشاط لمدير النظام ومسؤولي الموارد البشرية.
+  if (isSuperAdmin || roleHasPermission(currentUser.role, "SETTINGS_MANAGE")) {
+    nav.push({ href: "/activity", label: "سجل النشاط", icon: <History size={18} /> });
   }
 
   return (
