@@ -11,30 +11,36 @@ import { EmployeeTimeline } from "@/components/EmployeeTimeline";
 import { EosCalculator } from "@/components/EosCalculator";
 import { formatSAR, formatDate, serviceLength } from "@/lib/format";
 import { sumWage } from "@/lib/eos";
-import type { Employee } from "@/lib/types";
+import { Star } from "lucide-react";
+import type { Employee, Loan, PerformanceReview } from "@/lib/types";
 
 export default function EmployeeDetailPage() {
   const params = useParams<{ id: string }>();
   const employees = useStore((s) => s.employees);
   const role = useStore((s) => s.currentUser?.role);
+  const reviews = useStore((s) => s.reviews);
+  const loans = useStore((s) => s.loans);
   const employee = employees.find((e) => e.id === params.id);
 
   const canSeeFinancial = roleHasPermission(role, "FINANCIAL_VIEW");
 
   const tabs = useMemo(() => {
     if (!employee) return [];
+    const empReviews = reviews.filter((r) => r.employeeId === employee.id);
+    const empLoans = loans.filter((l) => l.employeeId === employee.id);
     const list: { key: string; label: string; render: () => ReactNode }[] = [
       { key: "personal", label: "المعلومات الشخصية", render: () => <PersonalInfo e={employee} /> },
       { key: "job", label: "المعلومات الوظيفية", render: () => <JobInfo e={employee} /> },
+      { key: "performance", label: "الأداء", render: () => <PerformanceInfo reviews={empReviews} /> },
     ];
     // التبويبات المالية لا تُبنى في الـ DOM إلا لمن يملك الصلاحية.
     if (canSeeFinancial) {
-      list.push({ key: "financial", label: "المعلومات المالية", render: () => <FinancialInfo e={employee} /> });
+      list.push({ key: "financial", label: "المعلومات المالية", render: () => <FinancialInfo e={employee} loans={empLoans} /> });
       list.push({ key: "eos", label: "نهاية الخدمة", render: () => <EosCalculator employee={employee} /> });
     }
     list.push({ key: "timeline", label: "السجل الزمني", render: () => <EmployeeTimeline events={employee.events} /> });
     return list;
-  }, [employee, canSeeFinancial]);
+  }, [employee, canSeeFinancial, reviews, loans]);
 
   const [active, setActive] = useState("personal");
 
@@ -136,13 +142,14 @@ function JobInfo({ e }: { e: Employee }) {
   );
 }
 
-function FinancialInfo({ e }: { e: Employee }) {
+function FinancialInfo({ e, loans }: { e: Employee; loans: Loan[] }) {
   const total = sumWage({
     baseSalary: e.baseSalary,
     housingAllowance: e.housingAllowance,
     transportAllowance: e.transportAllowance,
     otherAllowances: e.otherAllowances,
   });
+  const activeLoans = loans.filter((l) => l.status === "ACTIVE");
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -157,6 +164,53 @@ function FinancialInfo({ e }: { e: Employee }) {
         <span className="text-slate-600">إجمالي الأجر الشهري: </span>
         <span className="font-bold text-ink">{formatSAR(total)}</span>
       </div>
+      {activeLoans.length > 0 && (
+        <div>
+          <p className="mb-2 text-sm font-semibold text-slate-700">السلف الجارية</p>
+          <div className="space-y-2">
+            {activeLoans.map((l) => (
+              <div key={l.id} className="flex items-center justify-between rounded-md border border-slate-200 px-4 py-2.5 text-sm">
+                <span className="text-slate-600">
+                  سلفة {formatSAR(l.amount)} — قسط {formatSAR(l.installmentAmount)}
+                </span>
+                <span className="font-medium text-slate-800">
+                  المتبقّي {formatSAR(l.remaining)} ({l.paidInstallments}/{l.installments})
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PerformanceInfo({ reviews }: { reviews: PerformanceReview[] }) {
+  if (reviews.length === 0) {
+    return <p className="py-6 text-center text-sm text-slate-400">لا توجد تقييمات لهذا الموظف بعد.</p>;
+  }
+  return (
+    <div className="space-y-4">
+      {reviews.map((r) => (
+        <div key={r.id} className="rounded-lg border border-slate-200 p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-slate-800">{r.cycle}</p>
+            <span className="inline-flex items-center gap-1 text-sm font-bold text-slate-800">
+              <Star size={15} className="fill-warning text-warning" />
+              {r.finalRating} / 5
+            </span>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {r.criteria.map((c) => (
+              <div key={c.name} className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-1.5 text-xs">
+                <span className="text-slate-600">{c.name}</span>
+                <span className="font-semibold text-ink">{c.score}/5</span>
+              </div>
+            ))}
+          </div>
+          {r.comments && <p className="mt-2 text-sm text-slate-600">{r.comments}</p>}
+        </div>
+      ))}
     </div>
   );
 }
