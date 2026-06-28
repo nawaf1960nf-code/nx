@@ -27,6 +27,10 @@ const ACTION_META: Record<AuditAction, { label: string; tone: "info" | "success"
   ADD_DEDUCTION: { label: "خصم", tone: "danger" },
   ADD_REVIEW: { label: "تقييم", tone: "success" },
   ADD_DOCUMENT: { label: "مستند", tone: "info" },
+  CREATE_TICKET: { label: "تذكرة دعم", tone: "info" },
+  UPDATE_TICKET: { label: "تحديث تذكرة", tone: "info" },
+  ADD_INSURANCE: { label: "تأمين طبي", tone: "info" },
+  LINK_CHI: { label: "ربط الضمان الصحي", tone: "success" },
   REVERT: { label: "تراجع", tone: "neutral" },
 };
 

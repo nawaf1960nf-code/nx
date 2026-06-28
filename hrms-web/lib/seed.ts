@@ -8,10 +8,24 @@ import type {
   Deduction,
   Employee,
   EmployeeDocument,
+  InsurancePolicy,
   LeaveRequest,
   Loan,
   PerformanceReview,
+  SupportTicket,
 } from "./types";
+
+export const SEED_TICKETS: SupportTicket[] = [
+  { id: "tk-1", companyId: "c-alfajr", number: "TK-1001", requesterName: "خالد ناصر الشمري", subject: "لا يعمل جهاز الحاسب", description: "الجهاز لا يقلع منذ الصباح.", category: "IT", priority: "HIGH", status: "OPEN", createdAt: "2026-06-28" },
+  { id: "tk-2", companyId: "c-alfajr", number: "TK-1002", requesterName: "سارة فهد العتيبي", subject: "استفسار عن رصيد الإجازات", category: "HR", priority: "LOW", status: "IN_PROGRESS", assignee: "إدارة الموارد البشرية", createdAt: "2026-06-28" },
+  { id: "tk-3", companyId: "c-noor", number: "TK-2001", requesterName: "نوف عبدالعزيز الدوسري", subject: "تأخر صرف البدل", category: "FINANCE", priority: "MEDIUM", status: "RESOLVED", assignee: "المالية", createdAt: "2026-06-22" },
+];
+
+export const SEED_INSURANCE: InsurancePolicy[] = [
+  { id: "in-1", companyId: "c-alfajr", employeeId: "e-1001", employeeName: "عبدالله محمد القحطاني", provider: "بوبا العربية", policyNumber: "BUPA-77410", memberId: "M-100231", className: "A_PLUS", dependents: 3, startDate: "2026-01-01", endDate: "2026-12-31", status: "ACTIVE", chiLinked: true },
+  { id: "in-2", companyId: "c-alfajr", employeeId: "e-1002", employeeName: "سارة فهد العتيبي", provider: "التعاونية للتأمين", policyNumber: "TAW-55218", memberId: "M-100232", className: "A", dependents: 1, startDate: "2026-01-01", endDate: "2026-12-31", status: "ACTIVE", chiLinked: false },
+  { id: "in-3", companyId: "c-noor", employeeId: "e-2001", employeeName: "ماجد سعيد الغامدي", provider: "ميدغلف", policyNumber: "MED-33107", className: "B", dependents: 4, startDate: "2025-09-01", endDate: "2026-08-31", status: "ACTIVE", chiLinked: false },
+];
 
 function isoInDays(days: number): string {
   return new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);

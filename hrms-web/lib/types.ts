@@ -127,6 +127,10 @@ export type AuditAction =
   | "ADD_DEDUCTION"
   | "ADD_REVIEW"
   | "ADD_DOCUMENT"
+  | "CREATE_TICKET"
+  | "UPDATE_TICKET"
+  | "ADD_INSURANCE"
+  | "LINK_CHI"
   | "REVERT";
 
 // حمولة التراجع: ما يلزم لعكس الإجراء.
@@ -228,6 +232,45 @@ export interface Deduction {
   month: number;
   year: number;
   createdAt: string;
+}
+
+// ── تذاكر الدعم ──
+export type TicketCategory = "IT" | "HR" | "FINANCE" | "FACILITIES" | "OTHER";
+export type TicketPriority = "LOW" | "MEDIUM" | "HIGH";
+export type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+
+export interface SupportTicket {
+  id: string;
+  companyId: string;
+  number: string;
+  requesterName: string;
+  subject: string;
+  description?: string;
+  category: TicketCategory;
+  priority: TicketPriority;
+  status: TicketStatus;
+  assignee?: string;
+  createdAt: string;
+}
+
+// ── التأمين الطبي ──
+export type InsuranceClass = "VIP" | "A_PLUS" | "A" | "B" | "C";
+export type InsuranceStatus = "ACTIVE" | "EXPIRED" | "PENDING";
+
+export interface InsurancePolicy {
+  id: string;
+  companyId: string;
+  employeeId: string;
+  employeeName: string;
+  provider: string;
+  policyNumber: string;
+  memberId?: string;
+  className: InsuranceClass;
+  dependents: number;
+  startDate: string;
+  endDate: string;
+  status: InsuranceStatus;
+  chiLinked: boolean; // مرتبط بمنصة الضمان الصحي
 }
 
 // ── مستندات الموظفين ──

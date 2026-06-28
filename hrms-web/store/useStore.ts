@@ -17,6 +17,7 @@ import type {
   Deduction,
   Employee,
   EmployeeDocument,
+  InsurancePolicy,
   LeaveRequest,
   LeaveStatus,
   Loan,
@@ -26,6 +27,8 @@ import type {
   PerformanceReview,
   ReviewCriterion,
   RequestStatus,
+  SupportTicket,
+  TicketStatus,
   UserRole,
 } from "@/lib/types";
 import {
@@ -35,11 +38,13 @@ import {
   SEED_DEDUCTIONS,
   SEED_DOCUMENTS,
   SEED_EMPLOYEES,
+  SEED_INSURANCE,
   SEED_LEAVES,
   SEED_LOANS,
   SEED_NOTIFICATIONS,
   SEED_REQUESTS,
   SEED_REVIEWS,
+  SEED_TICKETS,
   SEED_USERS,
 } from "@/lib/seed";
 import { computePayrollLine, lateMinutesFor, MONTH_NAMES } from "@/lib/payroll";
@@ -65,6 +70,8 @@ interface StoreState {
   deductions: Deduction[];
   reviews: PerformanceReview[];
   documents: EmployeeDocument[];
+  tickets: SupportTicket[];
+  insurance: InsurancePolicy[];
 
   // المصادقة
   login: (user: { name: string; role: UserRole; companyId?: string }) => void;
@@ -115,6 +122,14 @@ interface StoreState {
 
   // المستندات
   addDocument: (data: Omit<EmployeeDocument, "id" | "createdAt">) => void;
+
+  // تذاكر الدعم
+  createTicket: (data: Omit<SupportTicket, "id" | "number" | "status" | "createdAt">) => void;
+  setTicketStatus: (id: string, status: TicketStatus) => void;
+
+  // التأمين الطبي
+  addInsurance: (data: Omit<InsurancePolicy, "id" | "status" | "chiLinked">) => void;
+  toggleChiLink: (id: string) => void;
 
   // التدقيق والتراجع
   revertAudit: (entryId: string) => void;
@@ -179,6 +194,8 @@ export const useStore = create<StoreState>()(
         deductions: SEED_DEDUCTIONS,
         reviews: SEED_REVIEWS,
         documents: SEED_DOCUMENTS,
+        tickets: SEED_TICKETS,
+        insurance: SEED_INSURANCE,
 
         login: (user) =>
           set({
@@ -491,6 +508,38 @@ export const useStore = create<StoreState>()(
           audit("ADD_DOCUMENT", `إضافة مستند «${data.type}» لـ«${data.employeeName}»`, data.companyId);
         },
 
+        createTicket: (data) => {
+          const seq = get().tickets.filter((t) => t.companyId === data.companyId).length + 1001;
+          const ticket: SupportTicket = {
+            ...data,
+            id: genId("tk"),
+            number: `TK-${seq}`,
+            status: "OPEN",
+            createdAt: new Date().toISOString().slice(0, 10),
+          };
+          set((s) => ({ tickets: [ticket, ...s.tickets] }));
+          notify(data.companyId, "تذكرة دعم جديدة", `${ticket.number}: ${data.subject}`, "INFO");
+          audit("CREATE_TICKET", `تذكرة دعم ${ticket.number}: ${data.subject}`, data.companyId);
+        },
+
+        setTicketStatus: (id, status) => {
+          const t = get().tickets.find((x) => x.id === id);
+          set((s) => ({ tickets: s.tickets.map((x) => (x.id === id ? { ...x, status } : x)) }));
+          if (t) audit("UPDATE_TICKET", `تحديث حالة التذكرة ${t.number}`, t.companyId);
+        },
+
+        addInsurance: (data) => {
+          const policy: InsurancePolicy = { ...data, id: genId("in"), status: "ACTIVE", chiLinked: false };
+          set((s) => ({ insurance: [policy, ...s.insurance] }));
+          audit("ADD_INSURANCE", `وثيقة تأمين «${data.provider}» لـ«${data.employeeName}»`, data.companyId);
+        },
+
+        toggleChiLink: (id) => {
+          const p = get().insurance.find((x) => x.id === id);
+          set((s) => ({ insurance: s.insurance.map((x) => (x.id === id ? { ...x, chiLinked: !x.chiLinked } : x)) }));
+          if (p && !p.chiLinked) audit("LINK_CHI", `ربط وثيقة ${p.employeeName} بالضمان الصحي`, p.companyId);
+        },
+
         revertAudit: (entryId) => {
           const entry = get().auditLog.find((a) => a.id === entryId);
           if (!entry || !entry.undo || entry.reverted) return;
@@ -528,6 +577,6 @@ export const useStore = create<StoreState>()(
         },
       };
     },
-    { name: "hrms-store", version: 6 },
+    { name: "hrms-store", version: 7 },
   ),
 );
