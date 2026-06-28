@@ -21,6 +21,7 @@ import {
   Bell,
   HandCoins,
   Star,
+  FolderArchive,
   ChevronLeft,
 } from "lucide-react";
 import { useStore } from "@/store/useStore";
@@ -78,6 +79,7 @@ export function PanelShell({ children }: { children: ReactNode }) {
     nav.push({ href: "/attendance", label: "الحضور والانصراف", icon: <CalendarClock size={18} /> });
     nav.push({ href: "/leaves", label: "الإجازات", icon: <Plane size={18} /> });
     nav.push({ href: "/requests", label: "الطلبات", icon: <FileText size={18} /> });
+    nav.push({ href: "/documents", label: "المستندات", icon: <FolderArchive size={18} /> });
     nav.push({ href: "/announcements", label: "الإعلانات", icon: <Megaphone size={18} /> });
     nav.push({ href: "/performance", label: "تقييم الأداء", icon: <Star size={18} /> });
     if (roleHasPermission(currentUser.role, "FINANCIAL_VIEW")) {

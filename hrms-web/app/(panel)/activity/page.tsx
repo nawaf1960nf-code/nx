@@ -26,6 +26,7 @@ const ACTION_META: Record<AuditAction, { label: string; tone: "info" | "success"
   GRANT_LOAN: { label: "سلفة", tone: "info" },
   ADD_DEDUCTION: { label: "خصم", tone: "danger" },
   ADD_REVIEW: { label: "تقييم", tone: "success" },
+  ADD_DOCUMENT: { label: "مستند", tone: "info" },
   REVERT: { label: "تراجع", tone: "neutral" },
 };
 

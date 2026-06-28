@@ -7,10 +7,22 @@ import type {
   CompanyRequest,
   Deduction,
   Employee,
+  EmployeeDocument,
   LeaveRequest,
   Loan,
   PerformanceReview,
 } from "./types";
+
+function isoInDays(days: number): string {
+  return new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+}
+
+export const SEED_DOCUMENTS: EmployeeDocument[] = [
+  { id: "doc-1", companyId: "c-alfajr", employeeId: "e-1001", employeeName: "عبدالله محمد القحطاني", type: "الهوية الوطنية", number: "1045xxxxxx", expiryDate: isoInDays(400), createdAt: "2024-01-01" },
+  { id: "doc-2", companyId: "c-alfajr", employeeId: "e-1003", employeeName: "خالد ناصر الشمري", type: "عقد العمل", number: "C-2023-77", expiryDate: isoInDays(18), createdAt: "2023-01-10" },
+  { id: "doc-3", companyId: "c-rawabi", employeeId: "e-3001", employeeName: "Rahul Sharma", type: "الإقامة", number: "2345xxxxxx", expiryDate: isoInDays(-5), createdAt: "2024-04-15" },
+  { id: "doc-4", companyId: "c-alfajr", employeeId: "e-1002", employeeName: "سارة فهد العتيبي", type: "شهادة جامعية", number: "—", createdAt: "2021-09-15" },
+];
 
 const today = new Date().toISOString().slice(0, 10);
 

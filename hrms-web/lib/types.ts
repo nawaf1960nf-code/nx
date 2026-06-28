@@ -103,6 +103,7 @@ export type AuditAction =
   | "GRANT_LOAN"
   | "ADD_DEDUCTION"
   | "ADD_REVIEW"
+  | "ADD_DOCUMENT"
   | "REVERT";
 
 // حمولة التراجع: ما يلزم لعكس الإجراء.
@@ -203,6 +204,19 @@ export interface Deduction {
   type: DeductionType;
   month: number;
   year: number;
+  createdAt: string;
+}
+
+// ── مستندات الموظفين ──
+export interface EmployeeDocument {
+  id: string;
+  companyId: string;
+  employeeId: string;
+  employeeName: string;
+  type: string; // الهوية الوطنية / الإقامة / العقد / الشهادة ...
+  number?: string;
+  issueDate?: string;
+  expiryDate?: string;
   createdAt: string;
 }
 

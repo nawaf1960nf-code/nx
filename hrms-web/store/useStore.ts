@@ -16,6 +16,7 @@ import type {
   CurrentUser,
   Deduction,
   Employee,
+  EmployeeDocument,
   LeaveRequest,
   LeaveStatus,
   Loan,
@@ -32,6 +33,7 @@ import {
   SEED_ATTENDANCE,
   SEED_COMPANIES,
   SEED_DEDUCTIONS,
+  SEED_DOCUMENTS,
   SEED_EMPLOYEES,
   SEED_LEAVES,
   SEED_LOANS,
@@ -62,6 +64,7 @@ interface StoreState {
   loans: Loan[];
   deductions: Deduction[];
   reviews: PerformanceReview[];
+  documents: EmployeeDocument[];
 
   // المصادقة
   login: (user: { name: string; role: UserRole; companyId?: string }) => void;
@@ -109,6 +112,9 @@ interface StoreState {
 
   // تقييم الأداء
   addReview: (data: { companyId: string; employeeId: string; employeeName: string; cycle: string; criteria: ReviewCriterion[]; comments?: string }) => void;
+
+  // المستندات
+  addDocument: (data: Omit<EmployeeDocument, "id" | "createdAt">) => void;
 
   // التدقيق والتراجع
   revertAudit: (entryId: string) => void;
@@ -172,6 +178,7 @@ export const useStore = create<StoreState>()(
         loans: SEED_LOANS,
         deductions: SEED_DEDUCTIONS,
         reviews: SEED_REVIEWS,
+        documents: SEED_DOCUMENTS,
 
         login: (user) =>
           set({
@@ -478,6 +485,12 @@ export const useStore = create<StoreState>()(
           audit("ADD_REVIEW", `تقييم «${data.employeeName}» (${finalRating}/5)`, data.companyId);
         },
 
+        addDocument: (data) => {
+          const doc: EmployeeDocument = { ...data, id: genId("doc"), createdAt: new Date().toISOString().slice(0, 10) };
+          set((s) => ({ documents: [doc, ...s.documents] }));
+          audit("ADD_DOCUMENT", `إضافة مستند «${data.type}» لـ«${data.employeeName}»`, data.companyId);
+        },
+
         revertAudit: (entryId) => {
           const entry = get().auditLog.find((a) => a.id === entryId);
           if (!entry || !entry.undo || entry.reverted) return;
@@ -515,6 +528,6 @@ export const useStore = create<StoreState>()(
         },
       };
     },
-    { name: "hrms-store", version: 5 },
+    { name: "hrms-store", version: 6 },
   ),
 );
