@@ -67,7 +67,16 @@ function buildRow(raw: Record<string, unknown>, cols: Partial<Record<keyof Emplo
   if (!displayName) errors.push("الاسم مفقود");
   if (hireRaw && !toISODate(hireRaw)) errors.push("تاريخ التعيين غير صالح");
 
+  // اشتقاق أجزاء الاسم من الاسم الكامل.
+  const parts = displayName.split(/\s+/).filter(Boolean);
+  const firstName = parts[0] ?? displayName;
+  const lastName = parts.length > 1 ? parts[parts.length - 1] : "";
+  const secondName = parts.length > 2 ? parts[1] : undefined;
+
   const data: EmployeeInput = {
+    firstName,
+    secondName,
+    lastName,
     displayName,
     employeeNumber: String(get("employeeNumber") ?? "").trim() || String(1000 + index),
     department: String(get("department") ?? "").trim() || "غير محدّد",

@@ -25,10 +25,18 @@ export default function EmployeesPage() {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
-    displayName: "",
+    firstName: "",
+    secondName: "",
+    lastName: "",
     employeeNumber: "",
+    idNumber: "",
+    gender: "MALE" as "MALE" | "FEMALE",
+    dateOfBirth: "",
+    mobile: "",
+    email: "",
     department: "",
     position: "",
+    workLocation: "",
     nationality: "سعودي",
     baseSalary: 8000,
     hireDate: new Date().toISOString().slice(0, 10),
@@ -43,15 +51,24 @@ export default function EmployeesPage() {
     .filter((e) => e.displayName.includes(query) || e.employeeNumber.includes(query) || e.department.includes(query));
 
   function submit() {
-    if (!form.displayName.trim() || !companyId) return;
+    if (!form.firstName.trim() || !form.lastName.trim() || !companyId) return;
+    const displayName = [form.firstName, form.secondName, form.lastName].filter(Boolean).join(" ");
     addEmployee({
       companyId,
       employeeNumber: form.employeeNumber || String(Math.floor(1000 + Math.random() * 9000)),
-      displayName: form.displayName,
+      firstName: form.firstName,
+      secondName: form.secondName || undefined,
+      lastName: form.lastName,
+      displayName,
+      gender: form.gender,
+      dateOfBirth: form.dateOfBirth || undefined,
+      mobile: form.mobile || undefined,
+      email: form.email || undefined,
       department: form.department || "غير محدّد",
       position: form.position || "غير محدّد",
+      workLocation: form.workLocation || undefined,
       nationality: form.nationality,
-      idNumber: "—",
+      idNumber: form.idNumber || "—",
       hireDate: form.hireDate,
       status: "ON_PROBATION",
       employmentType: "FULL_TIME",
@@ -63,7 +80,7 @@ export default function EmployeesPage() {
       ibanNumber: "—",
     });
     setOpen(false);
-    setForm({ ...form, displayName: "", employeeNumber: "", department: "", position: "" });
+    setForm({ ...form, firstName: "", secondName: "", lastName: "", employeeNumber: "", idNumber: "", mobile: "", email: "", department: "", position: "", workLocation: "", dateOfBirth: "" });
   }
 
   return (
@@ -138,18 +155,45 @@ export default function EmployeesPage() {
       </Card>
 
       <Modal open={open} onClose={() => setOpen(false)} title="إضافة موظف جديد">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="الاسم الكامل">
-            <Input value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="الاسم الأول">
+            <Input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+          </Field>
+          <Field label="الاسم الثاني">
+            <Input value={form.secondName} onChange={(e) => setForm({ ...form, secondName: e.target.value })} />
+          </Field>
+          <Field label="الاسم الأخير">
+            <Input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+          </Field>
+          <Field label="رقم الهوية / الإقامة">
+            <Input value={form.idNumber} onChange={(e) => setForm({ ...form, idNumber: e.target.value })} />
+          </Field>
+          <Field label="الجنس">
+            <Select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value as "MALE" | "FEMALE" })}>
+              <option value="MALE">ذكر</option>
+              <option value="FEMALE">أنثى</option>
+            </Select>
+          </Field>
+          <Field label="تاريخ الميلاد">
+            <Input type="date" value={form.dateOfBirth} onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })} />
+          </Field>
+          <Field label="رقم الجوال">
+            <Input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} placeholder="05xxxxxxxx" />
+          </Field>
+          <Field label="البريد الإلكتروني">
+            <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </Field>
           <Field label="الرقم الوظيفي">
-            <Input value={form.employeeNumber} onChange={(e) => setForm({ ...form, employeeNumber: e.target.value })} placeholder="تلقائي إن تُرك فارغاً" />
+            <Input value={form.employeeNumber} onChange={(e) => setForm({ ...form, employeeNumber: e.target.value })} placeholder="تلقائي" />
           </Field>
           <Field label="القسم">
             <Input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
           </Field>
           <Field label="المسمى الوظيفي">
             <Input value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} />
+          </Field>
+          <Field label="مقر العمل">
+            <Input value={form.workLocation} onChange={(e) => setForm({ ...form, workLocation: e.target.value })} />
           </Field>
           <Field label="الجنسية">
             <Select value={form.nationality} onChange={(e) => setForm({ ...form, nationality: e.target.value })}>

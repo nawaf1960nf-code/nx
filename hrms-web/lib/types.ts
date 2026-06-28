@@ -41,19 +41,41 @@ export interface EmployeeEvent {
   date: string; // ISO
 }
 
+export type Gender = "MALE" | "FEMALE";
+
 export interface Employee {
   id: string;
   companyId: string;
   employeeNumber: string;
-  displayName: string;
+
+  // الاسم بالعربية (الأول والثاني والأخير هم الأساس)
+  firstName: string;
+  secondName?: string;
+  thirdName?: string;
+  lastName: string;
+  // الاسم بالإنجليزية
+  firstNameEn?: string;
+  secondNameEn?: string;
+  lastNameEn?: string;
+  displayName: string; // الاسم المعروض (مشتق) — يُستخدم في القوائم
   nameInEnglish?: string;
-  department: string;
-  position: string;
+
+  // بيانات شخصية
+  gender?: Gender;
+  dateOfBirth?: string;
   nationality: string;
   idNumber: string;
-  hireDate: string; // ISO
+  mobile?: string;
+  email?: string;
+
+  // بيانات العمل
+  department: string;
+  position: string;
+  workLocation?: string;
+  hireDate: string;
   status: EmployeeStatus;
   employmentType: EmploymentType;
+
   // مالية (تظهر حسب الصلاحية)
   baseSalary: number;
   housingAllowance: number;
@@ -61,6 +83,7 @@ export interface Employee {
   otherAllowances: number;
   bankName: string;
   ibanNumber: string;
+
   events: EmployeeEvent[];
 }
 
