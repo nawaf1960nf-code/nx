@@ -4,6 +4,7 @@ import type {
   AppUser,
   AttendanceRecord,
   Company,
+  CompanyAsset,
   CompanyRequest,
   Deduction,
   Employee,
@@ -11,9 +12,32 @@ import type {
   InsurancePolicy,
   LeaveRequest,
   Loan,
+  OnboardingTask,
   PerformanceReview,
   SupportTicket,
+  TrainingRecord,
 } from "./types";
+
+export const SEED_ASSETS: CompanyAsset[] = [
+  { id: "as-1", companyId: "c-alfajr", employeeId: "e-1001", employeeName: "عبدالله محمد القحطاني", name: "لابتوب MacBook Pro 16", category: "LAPTOP", serialNumber: "C02XJ1234", assignedAt: "2024-02-01", status: "ASSIGNED" },
+  { id: "as-2", companyId: "c-alfajr", employeeId: "e-1001", employeeName: "عبدالله محمد القحطاني", name: "جوال iPhone 15", category: "PHONE", serialNumber: "F2LXK9988", assignedAt: "2024-02-01", status: "ASSIGNED" },
+  { id: "as-3", companyId: "c-alfajr", employeeId: "e-1002", employeeName: "سارة فهد العتيبي", name: "بطاقة دخول المبنى", category: "ACCESS_CARD", serialNumber: "AC-2042", assignedAt: "2024-03-10", status: "ASSIGNED" },
+  { id: "as-4", companyId: "c-noor", employeeId: "e-2001", employeeName: "ماجد سعيد الغامدي", name: "سيارة تويوتا كامري 2024", category: "VEHICLE", serialNumber: "ABC-1234", assignedAt: "2024-01-15", status: "ASSIGNED" },
+];
+
+export const SEED_ONBOARDING: OnboardingTask[] = [
+  { id: "ob-1", companyId: "c-alfajr", employeeId: "e-1003", employeeName: "خالد ناصر الشمري", title: "توقيع عقد العمل", isCompleted: true },
+  { id: "ob-2", companyId: "c-alfajr", employeeId: "e-1003", employeeName: "خالد ناصر الشمري", title: "تسليم العُهد (لابتوب وبطاقة دخول)", isCompleted: true },
+  { id: "ob-3", companyId: "c-alfajr", employeeId: "e-1003", employeeName: "خالد ناصر الشمري", title: "فتح حساب بنكي وإضافة الآيبان", isCompleted: false },
+  { id: "ob-4", companyId: "c-alfajr", employeeId: "e-1003", employeeName: "خالد ناصر الشمري", title: "التسجيل في التأمين الطبي", isCompleted: false },
+  { id: "ob-5", companyId: "c-alfajr", employeeId: "e-1003", employeeName: "خالد ناصر الشمري", title: "جلسة تعريفية بسياسات الشركة", isCompleted: false },
+];
+
+export const SEED_TRAINING: TrainingRecord[] = [
+  { id: "tr-1", companyId: "c-alfajr", employeeId: "e-1001", employeeName: "عبدالله محمد القحطاني", title: "إدارة المشاريع الاحترافية (PMP)", provider: "معهد إدارة المشاريع", hours: 35, status: "COMPLETED", startDate: "2025-03-01", completedAt: "2025-05-20" },
+  { id: "tr-2", companyId: "c-alfajr", employeeId: "e-1002", employeeName: "سارة فهد العتيبي", title: "أساسيات قانون العمل السعودي", provider: "أكاديمية الموارد البشرية", hours: 12, status: "IN_PROGRESS", startDate: "2026-06-01" },
+  { id: "tr-3", companyId: "c-noor", employeeId: "e-2002", employeeName: "نوف عبدالعزيز الدوسري", title: "التسويق الرقمي المتقدم", provider: "Google", hours: 20, status: "ENROLLED" },
+];
 
 export const SEED_TICKETS: SupportTicket[] = [
   { id: "tk-1", companyId: "c-alfajr", number: "TK-1001", requesterName: "خالد ناصر الشمري", subject: "لا يعمل جهاز الحاسب", description: "الجهاز لا يقلع منذ الصباح.", category: "IT", priority: "HIGH", status: "OPEN", createdAt: "2026-06-28" },

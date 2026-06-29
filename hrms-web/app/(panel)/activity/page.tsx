@@ -31,6 +31,9 @@ const ACTION_META: Record<AuditAction, { label: string; tone: "info" | "success"
   UPDATE_TICKET: { label: "تحديث تذكرة", tone: "info" },
   ADD_INSURANCE: { label: "تأمين طبي", tone: "info" },
   LINK_CHI: { label: "ربط الضمان الصحي", tone: "success" },
+  ASSIGN_ASSET: { label: "عهدة", tone: "info" },
+  ADD_ONBOARDING: { label: "تهيئة", tone: "info" },
+  ADD_TRAINING: { label: "تدريب", tone: "info" },
   REVERT: { label: "تراجع", tone: "neutral" },
 };
 

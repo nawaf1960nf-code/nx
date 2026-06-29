@@ -131,6 +131,9 @@ export type AuditAction =
   | "UPDATE_TICKET"
   | "ADD_INSURANCE"
   | "LINK_CHI"
+  | "ASSIGN_ASSET"
+  | "ADD_ONBOARDING"
+  | "ADD_TRAINING"
   | "REVERT";
 
 // حمولة التراجع: ما يلزم لعكس الإجراء.
@@ -271,6 +274,49 @@ export interface InsurancePolicy {
   endDate: string;
   status: InsuranceStatus;
   chiLinked: boolean; // مرتبط بمنصة الضمان الصحي
+}
+
+// ── الأصول والعُهد ──
+export type AssetCategory = "LAPTOP" | "PHONE" | "VEHICLE" | "SIM" | "ACCESS_CARD" | "OTHER";
+export type AssetStatus = "ASSIGNED" | "RETURNED" | "LOST" | "MAINTENANCE";
+
+export interface CompanyAsset {
+  id: string;
+  companyId: string;
+  employeeId?: string;
+  employeeName?: string;
+  name: string;
+  category: AssetCategory;
+  serialNumber?: string;
+  assignedAt?: string;
+  returnedAt?: string;
+  status: AssetStatus;
+}
+
+// ── تهيئة الموظفين الجدد ──
+export interface OnboardingTask {
+  id: string;
+  companyId: string;
+  employeeId: string;
+  employeeName: string;
+  title: string;
+  isCompleted: boolean;
+  dueDate?: string;
+}
+
+// ── التدريب والتطوير ──
+export type TrainingStatus = "ENROLLED" | "IN_PROGRESS" | "COMPLETED";
+export interface TrainingRecord {
+  id: string;
+  companyId: string;
+  employeeId: string;
+  employeeName: string;
+  title: string;
+  provider?: string;
+  hours?: number;
+  status: TrainingStatus;
+  startDate?: string;
+  completedAt?: string;
 }
 
 // ── مستندات الموظفين ──

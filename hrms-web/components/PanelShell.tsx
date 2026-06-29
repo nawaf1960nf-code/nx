@@ -25,6 +25,9 @@ import {
   Network,
   LifeBuoy,
   HeartPulse,
+  Package,
+  ClipboardList,
+  GraduationCap,
   ChevronLeft,
 } from "lucide-react";
 import { useStore } from "@/store/useStore";
@@ -80,12 +83,15 @@ export function PanelShell({ children }: { children: ReactNode }) {
     nav.push({ href: "/dashboard", label: "لوحة الشركة", icon: <LayoutDashboard size={18} /> });
     nav.push({ href: "/employees", label: "الموظفون", icon: <Users size={18} /> });
     nav.push({ href: "/org", label: "الهيكل التنظيمي", icon: <Network size={18} /> });
+    nav.push({ href: "/onboarding", label: "تهيئة الموظفين", icon: <ClipboardList size={18} /> });
     nav.push({ href: "/attendance", label: "الحضور والانصراف", icon: <CalendarClock size={18} /> });
     nav.push({ href: "/leaves", label: "الإجازات", icon: <Plane size={18} /> });
     nav.push({ href: "/requests", label: "الطلبات", icon: <FileText size={18} /> });
     nav.push({ href: "/documents", label: "المستندات", icon: <FolderArchive size={18} /> });
+    nav.push({ href: "/assets", label: "الأصول والعُهد", icon: <Package size={18} /> });
     nav.push({ href: "/announcements", label: "الإعلانات", icon: <Megaphone size={18} /> });
     nav.push({ href: "/performance", label: "تقييم الأداء", icon: <Star size={18} /> });
+    nav.push({ href: "/training", label: "التدريب والتطوير", icon: <GraduationCap size={18} /> });
     nav.push({ href: "/insurance", label: "التأمين الطبي", icon: <HeartPulse size={18} /> });
     nav.push({ href: "/support", label: "الدعم الفني", icon: <LifeBuoy size={18} /> });
     if (roleHasPermission(currentUser.role, "FINANCIAL_VIEW")) {

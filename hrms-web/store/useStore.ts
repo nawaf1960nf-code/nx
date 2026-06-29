@@ -11,6 +11,7 @@ import type {
   AuditEntry,
   AuditUndo,
   Company,
+  CompanyAsset,
   CompanyRequest,
   CompanyStatus,
   CurrentUser,
@@ -22,6 +23,7 @@ import type {
   LeaveStatus,
   Loan,
   NotificationType,
+  OnboardingTask,
   PayrollRun,
   PayrollStatus,
   PerformanceReview,
@@ -29,6 +31,7 @@ import type {
   RequestStatus,
   SupportTicket,
   TicketStatus,
+  TrainingRecord,
   UserRole,
 } from "@/lib/types";
 import {
@@ -36,15 +39,18 @@ import {
   SEED_ATTENDANCE,
   SEED_COMPANIES,
   SEED_DEDUCTIONS,
+  SEED_ASSETS,
   SEED_DOCUMENTS,
   SEED_EMPLOYEES,
   SEED_INSURANCE,
   SEED_LEAVES,
   SEED_LOANS,
   SEED_NOTIFICATIONS,
+  SEED_ONBOARDING,
   SEED_REQUESTS,
   SEED_REVIEWS,
   SEED_TICKETS,
+  SEED_TRAINING,
   SEED_USERS,
 } from "@/lib/seed";
 import { computePayrollLine, lateMinutesFor, MONTH_NAMES } from "@/lib/payroll";
@@ -72,6 +78,9 @@ interface StoreState {
   documents: EmployeeDocument[];
   tickets: SupportTicket[];
   insurance: InsurancePolicy[];
+  assets: CompanyAsset[];
+  onboarding: OnboardingTask[];
+  training: TrainingRecord[];
 
   // المصادقة
   login: (user: { name: string; role: UserRole; companyId?: string }) => void;
@@ -130,6 +139,18 @@ interface StoreState {
   // التأمين الطبي
   addInsurance: (data: Omit<InsurancePolicy, "id" | "status" | "chiLinked">) => void;
   toggleChiLink: (id: string) => void;
+
+  // الأصول
+  assignAsset: (data: Omit<CompanyAsset, "id" | "status">) => void;
+  returnAsset: (id: string) => void;
+
+  // التهيئة
+  addOnboardingTask: (data: { companyId: string; employeeId: string; employeeName: string; title: string }) => void;
+  toggleOnboardingTask: (id: string) => void;
+
+  // التدريب
+  addTraining: (data: Omit<TrainingRecord, "id" | "status" | "completedAt">) => void;
+  setTrainingStatus: (id: string, status: TrainingRecord["status"]) => void;
 
   // التدقيق والتراجع
   revertAudit: (entryId: string) => void;
@@ -196,6 +217,9 @@ export const useStore = create<StoreState>()(
         documents: SEED_DOCUMENTS,
         tickets: SEED_TICKETS,
         insurance: SEED_INSURANCE,
+        assets: SEED_ASSETS,
+        onboarding: SEED_ONBOARDING,
+        training: SEED_TRAINING,
 
         login: (user) =>
           set({
@@ -540,6 +564,48 @@ export const useStore = create<StoreState>()(
           if (p && !p.chiLinked) audit("LINK_CHI", `ربط وثيقة ${p.employeeName} بالضمان الصحي`, p.companyId);
         },
 
+        assignAsset: (data) => {
+          const asset: CompanyAsset = { ...data, id: genId("as"), status: "ASSIGNED" };
+          set((s) => ({ assets: [asset, ...s.assets] }));
+          audit("ASSIGN_ASSET", `تسليم «${data.name}»${data.employeeName ? ` لـ${data.employeeName}` : ""}`, data.companyId);
+        },
+
+        returnAsset: (id) => {
+          const a = get().assets.find((x) => x.id === id);
+          set((s) => ({
+            assets: s.assets.map((x) =>
+              x.id === id ? { ...x, status: "RETURNED", returnedAt: new Date().toISOString().slice(0, 10) } : x,
+            ),
+          }));
+          if (a) audit("ASSIGN_ASSET", `استرجاع «${a.name}»`, a.companyId);
+        },
+
+        addOnboardingTask: (data) => {
+          const task: OnboardingTask = { ...data, id: genId("ob"), isCompleted: false };
+          set((s) => ({ onboarding: [...s.onboarding, task] }));
+          audit("ADD_ONBOARDING", `مهمة تهيئة «${data.title}» لـ${data.employeeName}`, data.companyId);
+        },
+
+        toggleOnboardingTask: (id) =>
+          set((s) => ({
+            onboarding: s.onboarding.map((t) => (t.id === id ? { ...t, isCompleted: !t.isCompleted } : t)),
+          })),
+
+        addTraining: (data) => {
+          const record: TrainingRecord = { ...data, id: genId("tr"), status: "ENROLLED" };
+          set((s) => ({ training: [record, ...s.training] }));
+          audit("ADD_TRAINING", `تسجيل «${data.employeeName}» في «${data.title}»`, data.companyId);
+        },
+
+        setTrainingStatus: (id, status) =>
+          set((s) => ({
+            training: s.training.map((t) =>
+              t.id === id
+                ? { ...t, status, completedAt: status === "COMPLETED" ? new Date().toISOString().slice(0, 10) : t.completedAt }
+                : t,
+            ),
+          })),
+
         revertAudit: (entryId) => {
           const entry = get().auditLog.find((a) => a.id === entryId);
           if (!entry || !entry.undo || entry.reverted) return;
@@ -577,6 +643,6 @@ export const useStore = create<StoreState>()(
         },
       };
     },
-    { name: "hrms-store", version: 7 },
+    { name: "hrms-store", version: 8 },
   ),
 );

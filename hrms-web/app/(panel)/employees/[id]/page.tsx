@@ -3,7 +3,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowRight, User, Briefcase, Wallet, Landmark, FolderArchive, Star, Calculator, History } from "lucide-react";
+import { ArrowRight, User, Briefcase, Wallet, Landmark, FolderArchive, Star, Calculator, History, Package } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import { roleHasPermission } from "@/lib/permissions";
 import { Card, Badge } from "@/components/ui";
@@ -12,7 +12,7 @@ import { EosCalculator } from "@/components/EosCalculator";
 import { formatSAR, formatDate, serviceLength } from "@/lib/format";
 import { sumWage } from "@/lib/eos";
 import { computePayrollLine } from "@/lib/payroll";
-import type { Employee, EmployeeDocument, Loan, PerformanceReview } from "@/lib/types";
+import type { CompanyAsset, Employee, EmployeeDocument, Loan, PerformanceReview, TrainingRecord } from "@/lib/types";
 
 const STATUS_LABELS: Record<string, string> = {
   ACTIVE: "نشط",
@@ -49,6 +49,8 @@ export default function EmployeeDetailPage() {
   const reviews = useStore((s) => s.reviews);
   const loans = useStore((s) => s.loans);
   const documents = useStore((s) => s.documents);
+  const assets = useStore((s) => s.assets);
+  const training = useStore((s) => s.training);
   const employee = employees.find((e) => e.id === params.id);
 
   const canFinancial = roleHasPermission(role, "FINANCIAL_VIEW");
@@ -69,13 +71,14 @@ export default function EmployeeDetailPage() {
       list.push({ key: "bank", label: "البيانات البنكية", icon: <Landmark size={17} />, render: () => <BankInfo e={employee} /> });
     }
     list.push({ key: "documents", label: "المستندات", icon: <FolderArchive size={17} />, render: () => <DocsInfo docs={empDocs} /> });
+    list.push({ key: "assets", label: "العُهد والتدريب", icon: <Package size={17} />, render: () => <AssetsTrainingInfo assets={assets.filter((a) => a.employeeId === employee.id)} training={training.filter((t) => t.employeeId === employee.id)} /> });
     list.push({ key: "performance", label: "الأداء", icon: <Star size={17} />, render: () => <PerformanceInfo reviews={empReviews} /> });
     if (canFinancial) {
       list.push({ key: "eos", label: "نهاية الخدمة", icon: <Calculator size={17} />, render: () => <EosCalculator employee={employee} /> });
     }
     list.push({ key: "timeline", label: "السجل الزمني", icon: <History size={17} />, render: () => <EmployeeTimeline events={employee.events} /> });
     return list;
-  }, [employee, canFinancial, reviews, loans, documents, companies]);
+  }, [employee, canFinancial, reviews, loans, documents, assets, training, companies]);
 
   const [active, setActive] = useState("personal");
 
@@ -279,6 +282,45 @@ function DocsInfo({ docs }: { docs: EmployeeDocument[] }) {
         })}
       </div>
     </Section>
+  );
+}
+
+function AssetsTrainingInfo({ assets, training }: { assets: CompanyAsset[]; training: TrainingRecord[] }) {
+  const trStatus: Record<string, string> = { ENROLLED: "مُسجَّل", IN_PROGRESS: "قيد التنفيذ", COMPLETED: "مكتمل" };
+  return (
+    <div className="space-y-6">
+      <Section title="العُهد المُسلَّمة">
+        {assets.length === 0 ? (
+          <p className="text-sm text-slate-400">لا توجد عُهد مُسلَّمة.</p>
+        ) : (
+          <div className="space-y-2">
+            {assets.map((a) => (
+              <div key={a.id} className="flex items-center justify-between rounded-md border border-slate-200 px-4 py-2.5 text-sm">
+                <span className="text-slate-700">{a.name}</span>
+                <Badge tone={a.status === "ASSIGNED" ? "success" : "neutral"}>{a.status === "ASSIGNED" ? "بالعهدة" : "مُسترجَع"}</Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+      <Section title="البرامج التدريبية">
+        {training.length === 0 ? (
+          <p className="text-sm text-slate-400">لا توجد برامج تدريبية.</p>
+        ) : (
+          <div className="space-y-2">
+            {training.map((t) => (
+              <div key={t.id} className="flex items-center justify-between rounded-md border border-slate-200 px-4 py-2.5 text-sm">
+                <div>
+                  <p className="font-medium text-slate-800">{t.title}</p>
+                  <p className="text-xs text-slate-400">{t.provider ?? ""}{t.hours ? ` — ${t.hours} ساعة` : ""}</p>
+                </div>
+                <Badge tone={t.status === "COMPLETED" ? "success" : "warning"}>{trStatus[t.status]}</Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+    </div>
   );
 }
 
