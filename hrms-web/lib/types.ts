@@ -364,8 +364,9 @@ export interface PayrollRun {
 }
 
 // ── الطلبات (منظومة موحّدة) ──
-export type RequestKind = "LEAVE" | "PERMISSION" | "LOAN" | "REMOTE" | "DOCUMENT" | "OTHER";
+export type RequestKind = "LEAVE" | "PERMISSION" | "LOAN" | "REMOTE" | "DOCUMENT" | "TRANSFER" | "OTHER";
 export type RequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type TransferType = "DEPARTMENT" | "COMPANY";
 
 export interface CompanyRequest {
   id: string;
@@ -383,6 +384,12 @@ export interface CompanyRequest {
   amount?: number; // السلفة
   installments?: number; // أقساط السلفة
   docType?: string; // نوع المستند المطلوب
+  // النقل
+  transferType?: TransferType;
+  fromName?: string; // الإدارة أو الشركة الحالية
+  targetDepartment?: string; // عند النقل بين الإدارات
+  targetCompanyId?: string; // عند النقل بين الشركات
+  targetCompanyName?: string;
   reason?: string;
   status: RequestStatus;
   createdAt: string;

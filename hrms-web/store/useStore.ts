@@ -162,6 +162,7 @@ const REQUEST_KIND_LABELS: Record<CompanyRequest["kind"], string> = {
   LOAN: "سلفة",
   REMOTE: "عمل عن بُعد",
   DOCUMENT: "مستند",
+  TRANSFER: "نقل",
   OTHER: "طلب",
 };
 
@@ -442,6 +443,28 @@ export const useStore = create<StoreState>()(
           if (req) {
             const label = REQUEST_KIND_LABELS[req.kind];
             const verb = status === "APPROVED" ? "اعتماد" : "رفض";
+
+            // تطبيق النقل فعلياً عند اعتماد طلب نقل.
+            if (status === "APPROVED" && req.kind === "TRANSFER") {
+              if (req.transferType === "DEPARTMENT" && req.targetDepartment) {
+                set((s) => ({
+                  employees: s.employees.map((e) =>
+                    e.id === req.employeeId ? { ...e, department: req.targetDepartment! } : e,
+                  ),
+                }));
+              } else if (req.transferType === "COMPANY" && req.targetCompanyId) {
+                set((s) => ({
+                  employees: s.employees.map((e) =>
+                    e.id === req.employeeId
+                      ? { ...e, companyId: req.targetCompanyId!, workLocation: req.targetCompanyName }
+                      : e,
+                  ),
+                }));
+                // إشعار الشركة المستقبِلة بانضمام الموظف.
+                notify(req.targetCompanyId, "انضمام موظف", `تم نقل ${req.employeeName} إلى الشركة.`, "INFO");
+              }
+            }
+
             notify(req.companyId, `${verb} طلب`, `تم ${verb} طلب ${label} الخاص بـ${req.employeeName}.`, "APPROVAL");
             audit("DECIDE_REQUEST", `${verb} طلب ${label} «${req.employeeName}»`, req.companyId);
           }
@@ -643,6 +666,6 @@ export const useStore = create<StoreState>()(
         },
       };
     },
-    { name: "hrms-store", version: 8 },
+    { name: "hrms-store", version: 9 },
   ),
 );

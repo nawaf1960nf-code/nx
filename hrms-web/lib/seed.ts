@@ -153,6 +153,19 @@ export const SEED_REQUESTS: CompanyRequest[] = [
     status: "PENDING",
     createdAt: today,
   },
+  {
+    id: "rq-5",
+    companyId: "c-alfajr",
+    employeeId: "e-1003",
+    employeeName: "خالد ناصر الشمري",
+    kind: "TRANSFER",
+    transferType: "DEPARTMENT",
+    fromName: "المالية",
+    targetDepartment: "الموارد البشرية",
+    reason: "رغبة الموظف وحاجة الإدارة",
+    status: "PENDING",
+    createdAt: today,
+  },
 ];
 
 export const SEED_ANNOUNCEMENTS: Announcement[] = [

@@ -7,7 +7,8 @@ import { useScopedCompanyId } from "@/lib/scope";
 import { roleHasPermission } from "@/lib/permissions";
 import { Card, Badge, Button, Modal, Field, Input, Select, StatCard } from "@/components/ui";
 import { formatDate, formatSAR } from "@/lib/format";
-import type { RequestKind, RequestStatus, CompanyRequest, LeaveType } from "@/lib/types";
+import { ArrowLeftRight } from "lucide-react";
+import type { RequestKind, RequestStatus, CompanyRequest, LeaveType, TransferType } from "@/lib/types";
 
 const KIND_META: Record<RequestKind, { label: string; icon: typeof CalendarDays }> = {
   LEAVE: { label: "إجازة", icon: CalendarDays },
@@ -15,6 +16,7 @@ const KIND_META: Record<RequestKind, { label: string; icon: typeof CalendarDays 
   LOAN: { label: "سلفة", icon: Wallet },
   REMOTE: { label: "عمل عن بُعد", icon: Laptop },
   DOCUMENT: { label: "طلب مستند", icon: FileText },
+  TRANSFER: { label: "نقل موظف", icon: ArrowLeftRight },
   OTHER: { label: "طلب آخر", icon: FileQuestion },
 };
 const LEAVE_LABELS: Record<LeaveType, string> = {
@@ -48,6 +50,10 @@ function detailsOf(r: CompanyRequest): string {
       return `${r.date ? formatDate(r.date) : ""}${r.reason ? " • " + r.reason : ""}`;
     case "DOCUMENT":
       return `${r.docType ?? ""}${r.reason ? " • " + r.reason : ""}`;
+    case "TRANSFER":
+      return r.transferType === "COMPANY"
+        ? `نقل بين الشركات: ${r.fromName ?? ""} ← ${r.targetCompanyName ?? ""}`
+        : `نقل بين الإدارات: ${r.fromName ?? ""} ← ${r.targetDepartment ?? ""}`;
     default:
       return r.reason ?? "—";
   }
@@ -63,6 +69,7 @@ export default function RequestsPage() {
 
   const [filter, setFilter] = useState<"ALL" | RequestStatus>("ALL");
   const [open, setOpen] = useState(false);
+  const companies = useStore((s) => s.companies);
   const [f, setF] = useState({
     employeeId: "",
     kind: "PERMISSION" as RequestKind,
@@ -74,6 +81,9 @@ export default function RequestsPage() {
     amount: 5000,
     installments: 6,
     docType: DOC_TYPES[0],
+    transferType: "DEPARTMENT" as TransferType,
+    targetDepartment: "",
+    targetCompanyId: "",
     reason: "",
   });
 
@@ -84,6 +94,8 @@ export default function RequestsPage() {
   }
 
   const companyEmployees = employees.filter((e) => e.companyId === companyId);
+  const departments = [...new Set(companyEmployees.map((e) => e.department))];
+  const otherCompanies = companies.filter((c) => c.id !== companyId);
   const all = requests.filter((r) => r.companyId === companyId);
   const list = filter === "ALL" ? all : all.filter((r) => r.status === filter);
   const pending = all.filter((r) => r.status === "PENDING").length;
@@ -98,6 +110,14 @@ export default function RequestsPage() {
     else if (f.kind === "LOAN") extra = { amount: f.amount, installments: f.installments };
     else if (f.kind === "REMOTE") extra = { date: f.date };
     else if (f.kind === "DOCUMENT") extra = { docType: f.docType };
+    else if (f.kind === "TRANSFER") {
+      if (f.transferType === "DEPARTMENT") {
+        extra = { transferType: "DEPARTMENT", fromName: emp.department, targetDepartment: f.targetDepartment || departments[0] };
+      } else {
+        const target = companies.find((c) => c.id === f.targetCompanyId);
+        extra = { transferType: "COMPANY", fromName: companies.find((c) => c.id === companyId)?.name, targetCompanyId: f.targetCompanyId, targetCompanyName: target?.name };
+      }
+    }
     submitRequest({ ...base, ...extra });
     setOpen(false);
     setF({ ...f, employeeId: "", reason: "", startDate: "", endDate: "", date: "" });
@@ -108,7 +128,7 @@ export default function RequestsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">الطلبات</h1>
-          <p className="mt-1 text-sm text-slate-500">إجازات، استئذان، سلف، عمل عن بُعد، ومستندات.</p>
+          <p className="mt-1 text-sm text-slate-500">إجازات، استئذان، سلف، عمل عن بُعد، نقل الموظفين، ومستندات.</p>
         </div>
         <Button onClick={() => setOpen(true)}>
           <Plus size={18} /> طلب جديد
@@ -272,6 +292,35 @@ export default function RequestsPage() {
                 ))}
               </Select>
             </Field>
+          )}
+          {f.kind === "TRANSFER" && (
+            <>
+              <Field label="نوع النقل">
+                <Select value={f.transferType} onChange={(e) => setF({ ...f, transferType: e.target.value as TransferType })}>
+                  <option value="DEPARTMENT">نقل بين الإدارات (داخل الشركة)</option>
+                  <option value="COMPANY">نقل بين الشركات</option>
+                </Select>
+              </Field>
+              {f.transferType === "DEPARTMENT" ? (
+                <Field label="الإدارة المنقول إليها">
+                  <Select value={f.targetDepartment} onChange={(e) => setF({ ...f, targetDepartment: e.target.value })}>
+                    <option value="">— اختر —</option>
+                    {departments.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </Select>
+                </Field>
+              ) : (
+                <Field label="الشركة المنقول إليها">
+                  <Select value={f.targetCompanyId} onChange={(e) => setF({ ...f, targetCompanyId: e.target.value })}>
+                    <option value="">— اختر —</option>
+                    {otherCompanies.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </Select>
+                </Field>
+              )}
+            </>
           )}
 
           <div className="sm:col-span-2">
