@@ -39,6 +39,15 @@ export default function DashboardPage() {
   const pendingRequests = requests.filter((r) => r.companyId === companyId && r.status === "PENDING").length;
   const companyAnnouncements = announcements.filter((a) => a.companyId === companyId).slice(0, 3);
 
+  // تحليلات سريعة
+  const deptCounts = new Map<string, number>();
+  for (const e of list) deptCounts.set(e.department, (deptCounts.get(e.department) ?? 0) + 1);
+  const byDept = [...deptCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const males = list.filter((e) => e.gender === "MALE").length;
+  const females = list.filter((e) => e.gender === "FEMALE").length;
+  const saudis = list.filter((e) => e.nationality.includes("سعودي")).length;
+  const maxDept = Math.max(1, ...byDept.map(([, n]) => n));
+
   // أحدث الأحداث عبر موظفي الشركة.
   const recent: EmployeeEvent[] = list
     .flatMap((e) => e.events.map((ev) => ({ ...ev, id: `${e.id}-${ev.id}`, title: `${e.displayName} — ${ev.title}` })))
@@ -60,6 +69,51 @@ export default function DashboardPage() {
         <StatCard label="تحت التجربة" value={onProbation} icon={<UserCheck size={20} />} />
         <StatCard label="في إجازة" value={onLeave} icon={<Plane size={20} />} />
         <StatCard label="طلبات معلّقة" value={pendingRequests} icon={<FileClock size={20} />} />
+      </div>
+
+      {/* تحليلات سريعة */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="p-5 lg:col-span-2">
+          <h2 className="mb-4 text-base font-semibold text-slate-800">التوزيع حسب الإدارة</h2>
+          <div className="space-y-3">
+            {byDept.map(([dept, n]) => (
+              <div key={dept}>
+                <div className="mb-1 flex items-center justify-between text-sm">
+                  <span className="text-slate-600">{dept}</span>
+                  <span className="font-medium text-slate-800">{n}</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full rounded-full bg-ink" style={{ width: `${(n / maxDept) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+            {byDept.length === 0 && <p className="text-sm text-slate-400">لا توجد بيانات.</p>}
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <h2 className="mb-4 text-base font-semibold text-slate-800">نظرة عامة</h2>
+          <div className="space-y-4">
+            <div>
+              <div className="mb-1.5 flex justify-between text-sm">
+                <span className="text-slate-600">ذكور / إناث</span>
+                <span className="font-medium text-slate-800">{males} / {females}</span>
+              </div>
+              <div className="flex h-2 overflow-hidden rounded-full bg-slate-100">
+                <div className="h-full bg-ink" style={{ width: `${list.length ? (males / list.length) * 100 : 0}%` }} />
+                <div className="h-full bg-success" style={{ width: `${list.length ? (females / list.length) * 100 : 0}%` }} />
+              </div>
+            </div>
+            <div className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-2.5 text-sm">
+              <span className="text-slate-600">السعوديون</span>
+              <span className="font-semibold text-ink">{saudis} من {list.length}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-2.5 text-sm">
+              <span className="text-slate-600">نسبة التوطين</span>
+              <span className="font-semibold text-success">{list.length ? Math.round((saudis / list.length) * 100) : 0}%</span>
+            </div>
+          </div>
+        </Card>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
