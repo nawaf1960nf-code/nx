@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/*
+  نظام إدارة الموارد البشرية — نظام التصميم
+  ألوان مؤسسية: أزرق داكن أساسي، رمادي فاتح للخلفيات، أخضر للنجاح، أحمر للتنبيه.
+  لا تدرّجات لونية معقّدة ولا ألوان بنفسجية/وردية.
+*/
+
+@theme {
+  --color-ink: #1e3a5f;
+  --color-ink-700: #16304d;
+  --color-ink-600: #1e3a5f;
+  --color-ink-100: #dfe7f0;
+  --color-ink-50: #eef2f7;
+
+  --color-canvas: #f5f7fa;
+  --color-surface: #ffffff;
+
+  --color-success: #15803d;
+  --color-success-50: #e7f4ec;
+  --color-danger: #b91c1c;
+  --color-danger-50: #fbe9e9;
+  --color-warning: #b45309;
+  --color-warning-50: #fbf0e0;
+
+  --font-sans: var(--font-arabic), "Tajawal", "Segoe UI", system-ui, sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: #1f2937;
+  font-family: var(--font-sans);
+}
+
+/* شريط تمرير لطيف */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 6px;
+}
+
+/* عند الطباعة: تُطبع منطقة القسيمة فقط */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0;
+    padding: 24px;
+    background: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

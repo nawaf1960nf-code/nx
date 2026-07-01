@@ -1,0 +1,907 @@
+// ════════════════════════════════════════════════════════════════════
+// نظام إدارة الموارد البشرية — مخطط قاعدة البيانات
+// PostgreSQL + Prisma. الحذف المنطقي (Soft Delete) مُفعّل عبر Middleware
+// على الجداول التي تحتوي على الحقل deletedAt.
+// ════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════
+// المستخدمون والمصادقة
+// ═══════════════════════════════════════
+
+enum UserRole {
+  SUPER_ADMIN
+  HR_ADMIN
+  MANAGER
+  DEPARTMENT_HEAD
+  EMPLOYEE
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_ACTIVATION
+}
+
+model User {
+  id                  String     @id @default(cuid())
+  email               String     @unique
+  password            String
+  phone               String?
+  avatar              String?
+  roleId              UserRole   @default(EMPLOYEE)
+  status              UserStatus @default(PENDING_ACTIVATION)
+  lastLogin           DateTime?  @map("last_login")
+  passwordChangedAt   DateTime   @default(now()) @map("password_changed_at")
+  mustChangePassword  Boolean    @default(true) @map("must_change_password")
+  emailVerifiedAt     DateTime?  @map("email_verified_at")
+  failedLoginAttempts Int        @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime?  @map("locked_until")
+  refreshToken        String?    @map("refresh_token")
+
+  employee      Employee?
+  notifications Notification[]
+  auditLogs     AuditLog[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([email])
+  @@index([status])
+  @@map("users")
+}
+
+// ═══════════════════════════════════════
+// الموظفون والهيكل التنظيمي
+// ═══════════════════════════════════════
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+  CONSULTANT
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_PROBATION
+  ON_LEAVE
+  TERMINATED
+  RESIGNED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+}
+
+model Employee {
+  id             String  @id @default(cuid())
+  employeeNumber String  @unique @map("employee_number")
+  firstName      String  @map("first_name")
+  secondName     String? @map("second_name")
+  thirdName      String? @map("third_name")
+  lastName       String  @map("last_name")
+  displayName    String  @map("display_name")
+  nameInEnglish  String? @map("name_in_english")
+
+  dateOfBirth DateTime? @map("date_of_birth")
+  gender      Gender?
+  nationality String?
+  idNumber    String?   @unique @map("id_number")
+  idExpiryDate DateTime? @map("id_expiry_date")
+
+  maritalStatus   MaritalStatus? @map("marital_status")
+  dependentsCount Int            @default(0) @map("dependents_count")
+
+  hireDate         DateTime       @map("hire_date")
+  probationEndDate DateTime?      @map("probation_end_date")
+  contractEndDate  DateTime?      @map("contract_end_date")
+  employmentType   EmploymentType @default(FULL_TIME) @map("employment_type")
+  status           EmployeeStatus @default(ON_PROBATION)
+
+  departmentId String? @map("department_id")
+  positionId   String? @map("position_id")
+  reportingToId String? @map("reporting_to_id")
+  regionId     String? @map("region_id")
+
+  workLocation String? @map("work_location")
+  workShiftId  String? @map("work_shift_id")
+
+  baseSalary         Decimal @default(0) @db.Decimal(12, 2) @map("base_salary")
+  housingAllowance   Decimal @default(0) @db.Decimal(12, 2) @map("housing_allowance")
+  transportAllowance Decimal @default(0) @db.Decimal(12, 2) @map("transport_allowance")
+  foodAllowance      Decimal @default(0) @db.Decimal(12, 2) @map("food_allowance")
+  otherAllowances    Decimal @default(0) @db.Decimal(12, 2) @map("other_allowances")
+
+  bankName   String? @map("bank_name")
+  ibanNumber String? @map("iban_number")
+
+  emergencyContactName     String? @map("emergency_contact_name")
+  emergencyContactPhone    String? @map("emergency_contact_phone")
+  emergencyContactRelation String? @map("emergency_contact_relation")
+
+  customFields Json?   @map("custom_fields")
+  userId       String? @unique @map("user_id")
+
+  user          User?       @relation(fields: [userId], references: [id])
+  department    Department? @relation("DepartmentMembers", fields: [departmentId], references: [id])
+  position      Position?   @relation(fields: [positionId], references: [id])
+  reportingTo   Employee?   @relation("ReportsTo", fields: [reportingToId], references: [id])
+  directReports Employee[]  @relation("ReportsTo")
+  region        Branch?     @relation(fields: [regionId], references: [id])
+  workShift     WorkShift?  @relation(fields: [workShiftId], references: [id])
+
+  managedDepartment Department? @relation("DeptManager")
+
+  leaveBalances      LeaveBalance[]
+  leaveRequests      LeaveRequest[]
+  attendanceRecords  AttendanceRecord[]
+  payrollRecords     PayrollRecord[]
+  performanceReviews PerformanceReview[] @relation("EmployeeReviews")
+  reviewsGiven       PerformanceReview[] @relation("ReviewerReviews")
+  documents          Document[]
+  generalRequests    GeneralRequest[]
+  loanRequests       LoanRequest[]
+  endOfService       EndOfService?
+  assets             EmployeeAsset[]
+  onboardingTasks    OnboardingTask[]
+  payrollSlipViews   PayrollSlipView[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([departmentId])
+  @@index([positionId])
+  @@index([reportingToId])
+  @@index([regionId])
+  @@index([status])
+  @@index([employmentType])
+  @@index([employeeNumber])
+  @@map("employees")
+}
+
+model Department {
+  id          String  @id @default(cuid())
+  name        String
+  nameEn      String? @map("name_en")
+  code        String? @unique
+  parentId    String? @map("parent_id")
+  managerId   String? @unique @map("manager_id")
+  description String?
+  status      Boolean @default(true)
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  parent    Department?  @relation("DeptHierarchy", fields: [parentId], references: [id])
+  children  Department[] @relation("DeptHierarchy")
+  manager   Employee?    @relation("DeptManager", fields: [managerId], references: [id])
+  employees Employee[]   @relation("DepartmentMembers")
+  positions Position[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([parentId])
+  @@index([code])
+  @@map("departments")
+}
+
+model Position {
+  id           String   @id @default(cuid())
+  title        String
+  titleEn      String?  @map("title_en")
+  code         String?  @unique
+  departmentId String?  @map("department_id")
+  grade        Int?
+  minSalary    Decimal? @db.Decimal(12, 2) @map("min_salary")
+  maxSalary    Decimal? @db.Decimal(12, 2) @map("max_salary")
+  description  String?
+  requirements String?
+  status       Boolean  @default(true)
+
+  department Department? @relation(fields: [departmentId], references: [id])
+  employees  Employee[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([departmentId])
+  @@map("positions")
+}
+
+// الفروع/المناطق — تحمل إحداثيات الموقع للتحقق الجغرافي (Geofencing)
+model Branch {
+  id            String  @id @default(cuid())
+  name          String
+  nameEn        String? @map("name_en")
+  code          String? @unique
+  city          String?
+  address       String?
+  latitude      Float?
+  longitude     Float?
+  geofenceRadius Int    @default(150) @map("geofence_radius") // نصف القطر بالأمتار
+  status        Boolean @default(true)
+
+  employees Employee[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([code])
+  @@map("branches")
+}
+
+// ═══════════════════════════════════════
+// الورديات وسياسات الحضور
+// ═══════════════════════════════════════
+
+model AttendancePolicy {
+  id                      String  @id @default(cuid())
+  name                    String
+  gracePeriodMinutes      Int     @default(15) @map("grace_period_minutes")
+  earlyDepartureThreshold Int     @default(15) @map("early_departure_threshold")
+  overtimeRules           Json?   @map("overtime_rules")
+  weekendDays             Json    @default("[\"friday\",\"saturday\"]") @map("weekend_days")
+  status                  Boolean @default(true)
+
+  workShifts WorkShift[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("attendance_policies")
+}
+
+model WorkShift {
+  id                 String @id @default(cuid())
+  name               String
+  startTime          String @map("start_time") // "08:00"
+  endTime            String @map("end_time") // "17:00"
+  policyId           String @map("policy_id")
+  gracePeriodMinutes Int    @default(15) @map("grace_period_minutes")
+
+  policy            AttendancePolicy   @relation(fields: [policyId], references: [id])
+  employees         Employee[]
+  attendanceRecords AttendanceRecord[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([policyId])
+  @@map("work_shifts")
+}
+
+enum CheckInMethod {
+  GPS
+  QR
+  IP
+  MANUAL
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EARLY_DEPARTURE
+  HALF_DAY
+  ON_LEAVE
+}
+
+model AttendanceRecord {
+  id                    String           @id @default(cuid())
+  employeeId            String           @map("employee_id")
+  workShiftId           String?          @map("work_shift_id")
+  date                  DateTime         @map("date")
+  checkIn               DateTime?        @map("check_in")
+  checkOut              DateTime?        @map("check_out")
+  checkInMethod         CheckInMethod?   @map("check_in_method")
+  checkInLocation       Json?            @map("check_in_location")
+  checkOutLocation      Json?            @map("check_out_location")
+  status                AttendanceStatus @default(ABSENT)
+  lateMinutes           Int              @default(0) @map("late_minutes")
+  earlyDepartureMinutes Int              @default(0) @map("early_departure_minutes")
+  overtimeMinutes       Int              @default(0) @map("overtime_minutes")
+  notes                 String?
+  approvedBy            String?          @map("approved_by")
+
+  employee  Employee   @relation(fields: [employeeId], references: [id])
+  workShift WorkShift? @relation(fields: [workShiftId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([employeeId, date])
+  @@index([employeeId])
+  @@index([date])
+  @@index([status])
+  @@map("attendance_records")
+}
+
+// ═══════════════════════════════════════
+// الإجازات وسير العمل (Workflow)
+// ═══════════════════════════════════════
+
+enum LeaveAccrualType {
+  ANNUAL
+  MONTHLY
+  FRONT_LOADED
+}
+
+enum GenderRestriction {
+  ALL
+  MALE
+  FEMALE
+}
+
+model LeaveType {
+  id                  String            @id @default(cuid())
+  name                String
+  nameEn              String?           @map("name_en")
+  code                String?           @unique
+  isPaid              Boolean           @default(true) @map("is_paid")
+  isCarryForward      Boolean           @default(false) @map("is_carry_forward")
+  carryForwardMaxDays Int?              @map("carry_forward_max_days")
+  maxDaysPerYear      Int               @map("max_days_per_year")
+  minAdvanceDays      Int?              @map("min_advance_days")
+  requiresAttachment  Boolean           @default(false) @map("requires_attachment")
+  accrualType         LeaveAccrualType  @default(ANNUAL) @map("accrual_type")
+  genderRestriction   GenderRestriction @default(ALL) @map("gender_restriction")
+  status              Boolean           @default(true)
+
+  leaveBalances LeaveBalance[]
+  leaveRequests LeaveRequest[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("leave_types")
+}
+
+model LeaveBalance {
+  id                 String @id @default(cuid())
+  employeeId         String @map("employee_id")
+  leaveTypeId        String @map("leave_type_id")
+  year               Int
+  totalDays          Float  @map("total_days")
+  usedDays           Float  @default(0) @map("used_days")
+  pendingDays        Float  @default(0) @map("pending_days")
+  remainingDays      Float  @map("remaining_days")
+  carriedForwardDays Float  @default(0) @map("carried_forward_days")
+
+  employee  Employee  @relation(fields: [employeeId], references: [id])
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([employeeId, leaveTypeId, year])
+  @@index([employeeId])
+  @@index([year])
+  @@map("leave_balances")
+}
+
+// سير العمل الديناميكي للاعتمادات بدلاً من الاعتماد على JSON
+model WorkflowStep {
+  id           String   @id @default(cuid())
+  name         String
+  entity       String // "LEAVE", "LOAN", "REQUEST"
+  order        Int
+  approverRole UserRole @map("approver_role")
+  isHrStep     Boolean  @default(false) @map("is_hr_step")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([entity])
+  @@map("workflow_steps")
+}
+
+enum LeaveStatus {
+  DRAFT
+  PENDING_MANAGER
+  PENDING_HR
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model LeaveRequest {
+  id                String      @id @default(cuid())
+  employeeId        String      @map("employee_id")
+  leaveTypeId       String      @map("leave_type_id")
+  startDate         DateTime    @map("start_date")
+  endDate           DateTime    @map("end_date")
+  totalDays         Float       @map("total_days")
+  reason            String?
+  attachmentUrl     String?     @map("attachment_url")
+  status            LeaveStatus @default(DRAFT)
+  currentApproverId String?     @map("current_approver_id")
+  currentStepId     String?     @map("current_step_id")
+  managerComment    String?     @map("manager_comment")
+  hrComment         String?     @map("hr_comment")
+  submittedAt       DateTime?   @map("submitted_at")
+  approvedAt        DateTime?   @map("approved_at")
+  rejectedAt        DateTime?   @map("rejected_at")
+
+  employee  Employee  @relation(fields: [employeeId], references: [id])
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([startDate])
+  @@index([currentApproverId])
+  @@map("leave_requests")
+}
+
+// ═══════════════════════════════════════
+// الرواتب والسلف ونهاية الخدمة
+// ═══════════════════════════════════════
+
+enum PayrollPeriodStatus {
+  DRAFT
+  PROCESSING
+  PENDING_APPROVAL
+  APPROVED
+  PAID
+}
+
+model PayrollPeriod {
+  id          String              @id @default(cuid())
+  name        String
+  month       Int
+  year        Int
+  startDate   DateTime            @map("start_date")
+  endDate     DateTime            @map("end_date")
+  paymentDate DateTime            @map("payment_date")
+  status      PayrollPeriodStatus @default(DRAFT)
+
+  payrollRecords PayrollRecord[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([month, year])
+  @@index([status])
+  @@map("payroll_periods")
+}
+
+enum PayrollRecordStatus {
+  DRAFT
+  CALCULATED
+  APPROVED
+  PAID
+}
+
+model PayrollRecord {
+  id              String @id @default(cuid())
+  payrollPeriodId String @map("payroll_period_id")
+  employeeId      String @map("employee_id")
+
+  baseSalary         Decimal @default(0) @db.Decimal(12, 2) @map("base_salary")
+  housingAllowance   Decimal @default(0) @db.Decimal(12, 2) @map("housing_allowance")
+  transportAllowance Decimal @default(0) @db.Decimal(12, 2) @map("transport_allowance")
+  foodAllowance      Decimal @default(0) @db.Decimal(12, 2) @map("food_allowance")
+  otherAllowances    Decimal @default(0) @db.Decimal(12, 2) @map("other_allowances")
+  grossSalary        Decimal @default(0) @db.Decimal(12, 2) @map("gross_salary")
+
+  gosiDeduction    Decimal @default(0) @db.Decimal(12, 2) @map("gosi_deduction")
+  taxDeduction     Decimal @default(0) @db.Decimal(12, 2) @map("tax_deduction")
+  loanDeduction    Decimal @default(0) @db.Decimal(12, 2) @map("loan_deduction")
+  otherDeductions  Decimal @default(0) @db.Decimal(12, 2) @map("other_deductions")
+  deductionDetails Json?   @map("deduction_details")
+
+  netSalary   Decimal @default(0) @db.Decimal(12, 2) @map("net_salary")
+  overtimePay Decimal @default(0) @db.Decimal(12, 2) @map("overtime_pay")
+
+  bankName         String?             @map("bank_name")
+  iban             String?
+  status           PayrollRecordStatus @default(DRAFT)
+  paymentReference String?             @map("payment_reference")
+
+  payrollPeriod PayrollPeriod     @relation(fields: [payrollPeriodId], references: [id])
+  employee      Employee          @relation(fields: [employeeId], references: [id])
+  slipViews     PayrollSlipView[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([payrollPeriodId, employeeId])
+  @@index([employeeId])
+  @@index([status])
+  @@map("payroll_records")
+}
+
+model PayrollSlipView {
+  id              String   @id @default(cuid())
+  employeeId      String   @map("employee_id")
+  payrollRecordId String   @map("payroll_record_id")
+  viewedAt        DateTime @map("viewed_at")
+  ipAddress       String?  @map("ip_address")
+
+  employee      Employee      @relation(fields: [employeeId], references: [id])
+  payrollRecord PayrollRecord @relation(fields: [payrollRecordId], references: [id])
+
+  @@index([employeeId])
+  @@map("payroll_slip_views")
+}
+
+enum RequestStatus {
+  DRAFT
+  PENDING_MANAGER
+  PENDING_HR
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model LoanRequest {
+  id              String        @id @default(cuid())
+  employeeId      String        @map("employee_id")
+  amount          Decimal       @db.Decimal(12, 2)
+  installments    Int
+  installmentAmount Decimal     @default(0) @db.Decimal(12, 2) @map("installment_amount")
+  paidInstallments Int          @default(0) @map("paid_installments")
+  remainingAmount Decimal       @default(0) @db.Decimal(12, 2) @map("remaining_amount")
+  reason          String?
+  status          RequestStatus @default(DRAFT)
+  currentStepId   String?       @map("current_step_id")
+  startMonth      Int?          @map("start_month")
+  startYear       Int?          @map("start_year")
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([employeeId])
+  @@index([status])
+  @@map("loan_requests")
+}
+
+enum EndOfServiceReason {
+  // استحقاق كامل (المادة 84)
+  TERMINATION // إنهاء من صاحب العمل (أو إنهاء عقد غير محدّد المدة من جهته)
+  END_OF_CONTRACT // انتهاء أو عدم تجديد العقد محدّد المدة
+  MUTUAL_AGREEMENT // إنهاء/عدم تجديد العقد باتفاق الطرفين (المادة 74)
+  RETIREMENT // التقاعد
+  DEATH // الوفاة (تُصرف للورثة)
+  DISABILITY // العجز أو المرض المُقعِد
+  // الاستقالة وسلّم التخفيض (المادة 85)
+  RESIGNATION
+  // استثناءات الاستحقاق الكامل (المادة 87)
+  RESIGNATION_FORCE_MAJEURE // ترك العمل لقوة قاهرة
+  FEMALE_MARRIAGE // إنهاء العاملة خلال 6 أشهر من الزواج
+  FEMALE_CHILDBIRTH // إنهاء العاملة خلال 3 أشهر من الوضع
+  // ترك مبرر بخطأ صاحب العمل (المادة 81)
+  WORKER_LEFT_EMPLOYER_FAULT
+  // الحرمان من المكافأة (المادة 80)
+  MISCONDUCT_DISMISSAL
+}
+
+model EndOfService {
+  id                 String             @id @default(cuid())
+  employeeId         String             @unique @map("employee_id")
+  reason             EndOfServiceReason
+  lastWorkingDay     DateTime           @map("last_working_day")
+  yearsOfService     Float              @map("years_of_service")
+  monthlyWage        Decimal            @db.Decimal(12, 2) @map("monthly_wage")
+  eosAmount          Decimal            @db.Decimal(12, 2) @map("eos_amount")
+  unpaidLeaveDays    Float              @default(0) @map("unpaid_leave_days")
+  calculationDetails Json               @map("calculation_details")
+  isProvision        Boolean            @default(false) @map("is_provision") // تقدير مستقبلي وليس صرفاً فعلياً
+  settledAt          DateTime?          @map("settled_at")
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([reason])
+  @@map("end_of_service")
+}
+
+// ═══════════════════════════════════════
+// المستندات والطلبات العامة
+// ═══════════════════════════════════════
+
+model Document {
+  id         String    @id @default(cuid())
+  employeeId String    @map("employee_id")
+  type       String
+  name       String
+  fileUrl    String    @map("file_url")
+  expiryDate DateTime? @map("expiry_date")
+  isVerified Boolean   @default(false) @map("is_verified")
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([employeeId])
+  @@index([type])
+  @@map("documents")
+}
+
+enum RequestType {
+  SALARY_CERTIFICATE
+  EMPLOYMENT_CERTIFICATE
+  EXPERIENCE_CERTIFICATE
+  SALARY_DEFINITION
+  LOAN
+  ADVANCE
+  OTHER
+}
+
+model GeneralRequest {
+  id            String        @id @default(cuid())
+  employeeId    String        @map("employee_id")
+  type          RequestType
+  title         String
+  details       String?
+  attachmentUrl String?       @map("attachment_url")
+  outputUrl     String?       @map("output_url")
+  status        RequestStatus @default(DRAFT)
+  currentStepId String?       @map("current_step_id")
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([employeeId])
+  @@index([type])
+  @@index([status])
+  @@map("general_requests")
+}
+
+// ═══════════════════════════════════════
+// الإعلانات والإشعارات (استهداف متقدم)
+// ═══════════════════════════════════════
+
+enum AnnouncementAudience {
+  ALL
+  DEPARTMENT
+  BRANCH
+  POSITION
+  SPECIFIC
+}
+
+model Announcement {
+  id             String               @id @default(cuid())
+  title          String
+  content        String
+  targetAudience AnnouncementAudience @default(ALL) @map("target_audience")
+  targetIds      Json?                @map("target_ids") // معرّفات الأقسام/الفروع/المسميات/الموظفين
+  publishDate    DateTime             @map("publish_date")
+  expiryDate     DateTime?            @map("expiry_date")
+  isPinned       Boolean              @default(false) @map("is_pinned")
+  isPublished    Boolean              @default(false) @map("is_published")
+  createdById    String?              @map("created_by_id")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([publishDate])
+  @@index([targetAudience])
+  @@map("announcements")
+}
+
+model Notification {
+  id      String   @id @default(cuid())
+  userId  String   @map("user_id")
+  title   String
+  body    String?
+  type    String   @default("INFO")
+  data    Json?
+  isRead  Boolean  @default(false) @map("is_read")
+  readAt  DateTime? @map("read_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+// ═══════════════════════════════════════
+// تقييم الأداء
+// ═══════════════════════════════════════
+
+enum PerformanceCycleType {
+  ANNUAL
+  SEMI_ANNUAL
+  QUARTERLY
+  PROBATION
+}
+
+enum PerformanceCycleStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+model PerformanceCycle {
+  id        String                 @id @default(cuid())
+  name      String
+  type      PerformanceCycleType   @default(ANNUAL)
+  startDate DateTime               @map("start_date")
+  endDate   DateTime               @map("end_date")
+  status    PerformanceCycleStatus @default(DRAFT)
+
+  reviews PerformanceReview[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("performance_cycles")
+}
+
+enum ReviewStatus {
+  PENDING_SELF
+  PENDING_MANAGER
+  PENDING_HR
+  COMPLETED
+}
+
+model PerformanceReview {
+  id            String       @id @default(cuid())
+  cycleId       String       @map("cycle_id")
+  employeeId    String       @map("employee_id")
+  reviewerId    String       @map("reviewer_id")
+  goals         Json? // الأهداف ومؤشرات الأداء (KPIs)
+  competencies  Json? // الكفاءات
+  selfRating    Float?       @map("self_rating")
+  managerRating Float?       @map("manager_rating")
+  finalRating   Float?       @map("final_rating")
+  comments      String?
+  status        ReviewStatus @default(PENDING_SELF)
+
+  cycle    PerformanceCycle @relation(fields: [cycleId], references: [id])
+  employee Employee         @relation("EmployeeReviews", fields: [employeeId], references: [id])
+  reviewer Employee         @relation("ReviewerReviews", fields: [reviewerId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([cycleId, employeeId])
+  @@index([employeeId])
+  @@index([reviewerId])
+  @@map("performance_reviews")
+}
+
+// ═══════════════════════════════════════
+// الأصول ومهام التهيئة
+// ═══════════════════════════════════════
+
+enum AssetStatus {
+  ASSIGNED
+  RETURNED
+  LOST
+  DAMAGED
+}
+
+model EmployeeAsset {
+  id           String      @id @default(cuid())
+  employeeId   String      @map("employee_id")
+  assetName    String      @map("asset_name")
+  category     String?
+  serialNumber String?     @map("serial_number")
+  assignedAt   DateTime    @map("assigned_at")
+  returnedAt   DateTime?   @map("returned_at")
+  status       AssetStatus @default(ASSIGNED)
+  notes        String?
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([employeeId])
+  @@map("employee_assets")
+}
+
+model OnboardingTask {
+  id          String    @id @default(cuid())
+  employeeId  String    @map("employee_id")
+  taskName    String    @map("task_name")
+  description String?
+  dueDate     DateTime? @map("due_date")
+  isCompleted Boolean   @default(false) @map("is_completed")
+  completedAt DateTime? @map("completed_at")
+  sortOrder   Int       @default(0) @map("sort_order")
+
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([employeeId])
+  @@map("onboarding_tasks")
+}
+
+// ═══════════════════════════════════════
+// الإعدادات وسجل التدقيق
+// ═══════════════════════════════════════
+
+// إعدادات النظام التقنية (مفصولة عن إعدادات الشركة)
+model SystemSettings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  category  String   @default("GENERAL")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
+
+// إعدادات الشركة (الاسم، الشعار، معدلات التأمينات، إلخ)
+model CompanySettings {
+  id              String  @id @default(cuid())
+  companyName     String  @map("company_name")
+  companyNameEn   String? @map("company_name_en")
+  logoUrl         String? @map("logo_url")
+  commercialReg   String? @map("commercial_reg")
+  vatNumber       String? @map("vat_number")
+  gosiEmployeeRate Decimal @default(0.0975) @db.Decimal(5, 4) @map("gosi_employee_rate")
+  gosiCompanyRate  Decimal @default(0.1175) @db.Decimal(5, 4) @map("gosi_company_rate")
+  currency        String  @default("SAR")
+  fiscalYearStart Int     @default(1) @map("fiscal_year_start")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("company_settings")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?  @map("user_id")
+  action     String
+  entity     String
+  entityId   String?  @map("entity_id")
+  oldValue   Json?    @map("old_value")
+  newValue   Json?    @map("new_value")
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([entity])
+  @@index([entityId])
+  @@map("audit_logs")
+}
