@@ -25,6 +25,7 @@ export default function CompaniesPage() {
 
   const [invite, setInvite] = useState<{ companyId: string; name: string; email: string } | null>(null);
   const [invited, setInvited] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -194,6 +195,7 @@ export default function CompaniesPage() {
                   placeholder="admin@company.sa"
                 />
               </Field>
+              {inviteError && <p className="text-sm text-danger">{inviteError}</p>}
               <div className="flex justify-end gap-2">
                 <Button variant="secondary" onClick={() => setInvite(null)}>
                   إلغاء
@@ -201,6 +203,11 @@ export default function CompaniesPage() {
                 <Button
                   onClick={() => {
                     if (!invite.name.trim() || !invite.email.trim()) return;
+                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(invite.email.trim())) {
+                      setInviteError("صيغة البريد الإلكتروني غير صحيحة.");
+                      return;
+                    }
+                    setInviteError(null);
                     inviteCompanyAdmin(invite.companyId, { name: invite.name, email: invite.email });
                     setInvited(invite.email);
                   }}

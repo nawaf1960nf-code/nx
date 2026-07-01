@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import { ROLE_LABELS, roleHasPermission } from "@/lib/permissions";
+import { GlobalSearch } from "@/components/GlobalSearch";
 import { cn } from "@/lib/cn";
 
 interface NavItem {
@@ -182,6 +183,9 @@ export function PanelShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* البحث السريع */}
+            <GlobalSearch />
+
             {/* جرس الإشعارات */}
             {notifScope && (
               <div className="relative">

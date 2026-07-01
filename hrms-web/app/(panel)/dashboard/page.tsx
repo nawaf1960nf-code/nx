@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Users, UserCheck, Plane, FileClock, Megaphone } from "lucide-react";
+import { Users, UserCheck, Plane, FileClock, Megaphone, Cake, FileWarning, Award } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import { useScopedCompanyId } from "@/lib/scope";
 import { StatCard, Card, Badge } from "@/components/ui";
@@ -23,6 +23,8 @@ export default function DashboardPage() {
   const employees = useStore((s) => s.employees);
   const requests = useStore((s) => s.requests);
   const announcements = useStore((s) => s.announcements);
+  const leaveRequests = useStore((s) => s.leaveRequests);
+  const documents = useStore((s) => s.documents);
 
   if (!companyId) {
     return (
@@ -47,6 +49,25 @@ export default function DashboardPage() {
   const females = list.filter((e) => e.gender === "FEMALE").length;
   const saudis = list.filter((e) => e.nationality.includes("سعودي")).length;
   const maxDept = Math.max(1, ...byDept.map(([, n]) => n));
+
+  // «من خارج المكتب اليوم»: إجازات معتمدة تغطي تاريخ اليوم.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const outToday = leaveRequests.filter(
+    (l) => l.companyId === companyId && l.status === "APPROVED" && l.startDate <= todayIso && l.endDate >= todayIso,
+  );
+
+  // مناسبات الشهر: أعياد ميلاد وذكرى توظيف.
+  const thisMonth = new Date().getMonth() + 1;
+  const monthOf = (iso?: string) => (iso ? Number(iso.slice(5, 7)) : 0);
+  const birthdays = list.filter((e) => monthOf(e.dateOfBirth) === thisMonth);
+  const anniversaries = list.filter((e) => monthOf(e.hireDate) === thisMonth && e.hireDate.slice(0, 4) !== todayIso.slice(0, 4));
+
+  // مستندات تنتهي خلال 30 يوماً.
+  const expiringDocs = documents.filter((d) => {
+    if (d.companyId !== companyId || !d.expiryDate) return false;
+    const days = (new Date(d.expiryDate).getTime() - Date.now()) / 86400000;
+    return days >= 0 && days <= 30;
+  });
 
   // أحدث الأحداث عبر موظفي الشركة.
   const recent: EmployeeEvent[] = list
@@ -113,6 +134,78 @@ export default function DashboardPage() {
               <span className="font-semibold text-success">{list.length ? Math.round((saudis / list.length) * 100) : 0}%</span>
             </div>
           </div>
+        </Card>
+      </div>
+
+      {/* ودجات يومية: من خارج المكتب، مناسبات الشهر، مستندات تنتهي قريباً */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="p-5">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-slate-800">
+            <Plane size={17} className="text-ink" /> خارج المكتب اليوم
+          </h2>
+          {outToday.length === 0 ? (
+            <p className="text-sm text-slate-400">الجميع على رأس العمل اليوم.</p>
+          ) : (
+            <ul className="space-y-2">
+              {outToday.map((l) => (
+                <li key={l.id} className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-2 text-sm">
+                  <span className="text-slate-700">{l.employeeName}</span>
+                  <span className="text-xs text-slate-400">حتى {formatDate(l.endDate)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <Card className="p-5">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-slate-800">
+            <Cake size={17} className="text-warning" /> مناسبات هذا الشهر
+          </h2>
+          {birthdays.length === 0 && anniversaries.length === 0 ? (
+            <p className="text-sm text-slate-400">لا توجد مناسبات هذا الشهر.</p>
+          ) : (
+            <ul className="space-y-2">
+              {birthdays.map((e) => (
+                <li key={`b-${e.id}`} className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-2 text-sm">
+                  <span className="text-slate-700">{e.displayName}</span>
+                  <span className="inline-flex items-center gap-1 text-xs text-warning">
+                    <Cake size={12} /> عيد ميلاد
+                  </span>
+                </li>
+              ))}
+              {anniversaries.map((e) => (
+                <li key={`a-${e.id}`} className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-2 text-sm">
+                  <span className="text-slate-700">{e.displayName}</span>
+                  <span className="inline-flex items-center gap-1 text-xs text-ink">
+                    <Award size={12} /> ذكرى توظيف
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        <Card className="p-5">
+          <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-slate-800">
+            <FileWarning size={17} className="text-danger" /> مستندات تنتهي قريباً
+          </h2>
+          {expiringDocs.length === 0 ? (
+            <p className="text-sm text-slate-400">لا توجد مستندات تنتهي خلال 30 يوماً.</p>
+          ) : (
+            <ul className="space-y-2">
+              {expiringDocs.map((d) => (
+                <li key={d.id} className="flex items-center justify-between rounded-md bg-danger-50/50 px-3 py-2 text-sm">
+                  <span className="text-slate-700">
+                    {d.type} — {d.employeeName}
+                  </span>
+                  <span className="text-xs text-danger">{formatDate(d.expiryDate!)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link href="/documents" className="mt-3 block text-sm text-ink hover:underline">
+            إدارة المستندات ←
+          </Link>
         </Card>
       </div>
 

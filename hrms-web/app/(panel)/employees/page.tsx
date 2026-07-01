@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 import { useStore } from "@/store/useStore";
 import { useScopedCompanyId } from "@/lib/scope";
+import { roleHasPermission } from "@/lib/permissions";
+import { isValidEmail, isValidSaudiMobile } from "@/lib/validate";
 import { Card, Badge, Button, Modal, Field, Input, Select } from "@/components/ui";
 import { serviceLength } from "@/lib/format";
 import type { EmployeeStatus } from "@/lib/types";
@@ -21,9 +24,11 @@ export default function EmployeesPage() {
   const companyId = useScopedCompanyId();
   const employees = useStore((s) => s.employees);
   const addEmployee = useStore((s) => s.addEmployee);
+  const role = useStore((s) => s.currentUser?.role);
 
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState({
     firstName: "",
     secondName: "",
@@ -48,10 +53,55 @@ export default function EmployeesPage() {
 
   const list = employees
     .filter((e) => e.companyId === companyId)
-    .filter((e) => e.displayName.includes(query) || e.employeeNumber.includes(query) || e.department.includes(query));
+    .filter(
+      (e) =>
+        e.displayName.includes(query) ||
+        e.employeeNumber.includes(query) ||
+        e.department.includes(query) ||
+        e.position.includes(query),
+    );
+
+  // تصدير كشف الموظفين إلى إكسل (الأعمدة المالية لأصحاب الصلاحية فقط).
+  function exportEmployees() {
+    const canFinance = roleHasPermission(role, "FINANCIAL_VIEW");
+    const rows = list.map((e) => ({
+      "الرقم الوظيفي": e.employeeNumber,
+      "الاسم": e.displayName,
+      "القسم": e.department,
+      "المسمى الوظيفي": e.position,
+      "الجنسية": e.nationality,
+      "الجوال": e.mobile ?? "",
+      "البريد": e.email ?? "",
+      "تاريخ التعيين": e.hireDate,
+      "الحالة": STATUS_META[e.status].label,
+      ...(canFinance ? { "الراتب الأساسي": e.baseSalary, "اسم البنك": e.bankName } : {}),
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "الموظفون");
+    XLSX.writeFile(wb, "كشف_الموظفين.xlsx");
+  }
 
   function submit() {
-    if (!form.firstName.trim() || !form.lastName.trim() || !companyId) return;
+    if (!companyId) return;
+    // تحقق من المدخلات قبل الحفظ.
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      setFormError("الاسم الأول والأخير مطلوبان.");
+      return;
+    }
+    if (form.email && !isValidEmail(form.email)) {
+      setFormError("صيغة البريد الإلكتروني غير صحيحة.");
+      return;
+    }
+    if (form.mobile && !isValidSaudiMobile(form.mobile)) {
+      setFormError("رقم الجوال يجب أن يكون بصيغة 05xxxxxxxx.");
+      return;
+    }
+    if (form.baseSalary < 0) {
+      setFormError("الراتب لا يمكن أن يكون سالباً.");
+      return;
+    }
+    setFormError(null);
     const displayName = [form.firstName, form.secondName, form.lastName].filter(Boolean).join(" ");
     addEmployee({
       companyId,
@@ -90,9 +140,14 @@ export default function EmployeesPage() {
           <h1 className="text-2xl font-bold text-slate-900">الموظفون</h1>
           <p className="mt-1 text-sm text-slate-500">{list.length} موظف</p>
         </div>
-        <Button onClick={() => setOpen(true)}>
-          <Plus size={18} /> إضافة موظف
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={exportEmployees}>
+            <Download size={16} /> تصدير إكسل
+          </Button>
+          <Button onClick={() => setOpen(true)}>
+            <Plus size={18} /> إضافة موظف
+          </Button>
+        </div>
       </div>
 
       <div className="relative max-w-sm">
@@ -208,6 +263,7 @@ export default function EmployeesPage() {
             <Input type="date" value={form.hireDate} onChange={(e) => setForm({ ...form, hireDate: e.target.value })} />
           </Field>
         </div>
+        {formError && <p className="mt-3 text-sm text-danger">{formError}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => setOpen(false)}>إلغاء</Button>
           <Button onClick={submit}>حفظ الموظف</Button>

@@ -82,6 +82,10 @@ interface StoreState {
   onboarding: OnboardingTask[];
   training: TrainingRecord[];
 
+  // حماية تسجيل الدخول من التخمين المتكرر
+  loginFailures: number;
+  loginLockUntil: number | null;
+
   // المصادقة
   login: (user: { name: string; role: UserRole; companyId?: string }) => void;
   loginByEmail: (email: string) => boolean;
@@ -221,6 +225,8 @@ export const useStore = create<StoreState>()(
         assets: SEED_ASSETS,
         onboarding: SEED_ONBOARDING,
         training: SEED_TRAINING,
+        loginFailures: 0,
+        loginLockUntil: null,
 
         login: (user) =>
           set({
@@ -229,11 +235,24 @@ export const useStore = create<StoreState>()(
           }),
 
         loginByEmail: (email) => {
+          // إيقاف مؤقت بعد 5 محاولات فاشلة (حماية من التخمين المتكرر).
+          const lockUntil = get().loginLockUntil;
+          if (lockUntil && Date.now() < lockUntil) return false;
+
           const user = get().users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
-          if (!user) return false;
+          if (!user) {
+            const failures = get().loginFailures + 1;
+            set({
+              loginFailures: failures,
+              loginLockUntil: failures >= 5 ? Date.now() + 60_000 : null,
+            });
+            return false;
+          }
           set({
             currentUser: { id: user.id, name: user.name, role: user.role, companyId: user.companyId },
             activeCompanyId: user.companyId ?? null,
+            loginFailures: 0,
+            loginLockUntil: null,
           });
           return true;
         },
@@ -666,6 +685,6 @@ export const useStore = create<StoreState>()(
         },
       };
     },
-    { name: "hrms-store", version: 9 },
+    { name: "hrms-store", version: 10 },
   ),
 );

@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Play, BadgeCheck, Wallet } from "lucide-react";
+import { Play, BadgeCheck, Wallet, Printer, Receipt } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import { useScopedCompanyId } from "@/lib/scope";
 import { roleHasPermission } from "@/lib/permissions";
-import { Card, Badge, Button, Field, Select, StatCard } from "@/components/ui";
+import { Card, Badge, Button, Field, Select, StatCard, Modal } from "@/components/ui";
 import { formatSAR } from "@/lib/format";
 import { MONTH_NAMES } from "@/lib/payroll";
-import type { PayrollStatus } from "@/lib/types";
+import type { PayrollLine, PayrollStatus } from "@/lib/types";
 
 const STATUS_META: Record<PayrollStatus, { label: string; tone: "warning" | "info" | "success" }> = {
   DRAFT: { label: "مسودة", tone: "warning" },
@@ -22,18 +22,26 @@ export default function PayrollPage() {
   const companyId = useScopedCompanyId();
   const role = useStore((s) => s.currentUser?.role);
   const payrollRuns = useStore((s) => s.payrollRuns);
+  const companies = useStore((s) => s.companies);
   const runPayroll = useStore((s) => s.runPayroll);
   const setPayrollStatus = useStore((s) => s.setPayrollStatus);
 
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
   const [selected, setSelected] = useState<string | null>(null);
+  const [slip, setSlip] = useState<PayrollLine | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const canRun = roleHasPermission(role, "SETTINGS_MANAGE");
 
   if (!companyId) {
     return <Card className="p-10 text-center text-sm text-slate-500">اختر شركة من المبدّل في الأعلى أولاً.</Card>;
+  }
+
+  // حاجز وصول: بيانات الرواتب مقصورة على من يملك الصلاحية المالية،
+  // حتى عند فتح الرابط مباشرة.
+  if (!roleHasPermission(role, "FINANCIAL_VIEW")) {
+    return <Card className="p-10 text-center text-sm text-slate-500">هذه الصفحة متاحة للموارد البشرية فقط.</Card>;
   }
 
   const runs = payrollRuns.filter((r) => r.companyId === companyId);
@@ -133,6 +141,7 @@ export default function PayrollPage() {
                     <th className="px-5 py-3 font-medium">السلف</th>
                     <th className="px-5 py-3 font-medium">خصومات</th>
                     <th className="px-5 py-3 font-medium">الصافي</th>
+                    <th className="px-5 py-3 font-medium">قسيمة</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -146,6 +155,11 @@ export default function PayrollPage() {
                       <td className="px-5 py-3 text-danger">{l.loanDeduction ? `- ${formatSAR(l.loanDeduction)}` : "—"}</td>
                       <td className="px-5 py-3 text-danger">{l.otherDeductions ? `- ${formatSAR(l.otherDeductions)}` : "—"}</td>
                       <td className="px-5 py-3 font-semibold text-ink">{formatSAR(l.net)}</td>
+                      <td className="px-5 py-3">
+                        <Button variant="secondary" className="px-2.5 py-1.5 text-xs" onClick={() => setSlip(l)}>
+                          <Receipt size={14} /> عرض
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -154,7 +168,7 @@ export default function PayrollPage() {
                     <td className="px-5 py-3 text-slate-700" colSpan={7}>
                       الإجمالي
                     </td>
-                    <td className="px-5 py-3 text-ink">{formatSAR(current.total)}</td>
+                    <td className="px-5 py-3 text-ink" colSpan={2}>{formatSAR(current.total)}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -164,6 +178,75 @@ export default function PayrollPage() {
       ) : (
         <Card className="p-10 text-center text-sm text-slate-400">لا يوجد كشف رواتب بعد. شغّل كشفاً جديداً للبدء.</Card>
       )}
+
+      {/* قسيمة الراتب — قابلة للطباعة */}
+      <Modal open={slip !== null} onClose={() => setSlip(null)} title="قسيمة راتب">
+        {slip && current && (
+          <div>
+            <div className="print-area rounded-lg border border-slate-200 p-5">
+              <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-4">
+                <div>
+                  <p className="text-base font-bold text-slate-900">
+                    {companies.find((c) => c.id === companyId)?.name ?? "الشركة"}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    قسيمة راتب — {MONTH_NAMES[current.month - 1]} {current.year}
+                  </p>
+                </div>
+                <span className="flex h-10 w-10 items-center justify-center rounded-md bg-ink font-bold text-white">م</span>
+              </div>
+
+              <p className="mb-4 text-sm font-semibold text-slate-800">{slip.employeeName}</p>
+
+              <table className="w-full text-right text-sm">
+                <tbody className="divide-y divide-slate-100">
+                  <tr>
+                    <td className="py-2 text-slate-500">الراتب الأساسي</td>
+                    <td className="py-2 font-medium text-slate-800">{formatSAR(slip.baseSalary)}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 text-slate-500">البدلات</td>
+                    <td className="py-2 font-medium text-slate-800">{formatSAR(slip.allowances)}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 text-slate-500">إجمالي الأجر</td>
+                    <td className="py-2 font-medium text-slate-800">{formatSAR(slip.gross)}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 text-slate-500">خصم التأمينات (GOSI)</td>
+                    <td className="py-2 font-medium text-danger">{slip.gosi ? `- ${formatSAR(slip.gosi)}` : "—"}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 text-slate-500">قسط السلفة</td>
+                    <td className="py-2 font-medium text-danger">{slip.loanDeduction ? `- ${formatSAR(slip.loanDeduction)}` : "—"}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 text-slate-500">خصومات أخرى</td>
+                    <td className="py-2 font-medium text-danger">{slip.otherDeductions ? `- ${formatSAR(slip.otherDeductions)}` : "—"}</td>
+                  </tr>
+                  <tr className="bg-ink-50">
+                    <td className="py-2.5 pr-2 font-bold text-slate-800">صافي الراتب</td>
+                    <td className="py-2.5 text-lg font-bold text-ink">{formatSAR(slip.net)}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <p className="mt-4 text-[11px] text-slate-400">
+                هذه القسيمة إشعار داخلي بمكوّنات الراتب ولا تُعد مستنداً بنكياً.
+              </p>
+            </div>
+
+            <div className="no-print mt-4 flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setSlip(null)}>
+                إغلاق
+              </Button>
+              <Button onClick={() => window.print()}>
+                <Printer size={16} /> طباعة
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

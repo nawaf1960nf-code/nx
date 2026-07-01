@@ -1,6 +1,7 @@
 "use client";
 
 import * as XLSX from "xlsx";
+import { isValidSaudiIban, normalizeIban } from "./validate";
 import type { Employee } from "./types";
 
 type EmployeeInput = Omit<Employee, "id" | "companyId" | "events">;
@@ -66,6 +67,11 @@ function buildRow(raw: Record<string, unknown>, cols: Partial<Record<keyof Emplo
   const errors: string[] = [];
   if (!displayName) errors.push("الاسم مفقود");
   if (hireRaw && !toISODate(hireRaw)) errors.push("تاريخ التعيين غير صالح");
+  // تحقق الآيبان السعودي (فقط عندما تكون القيمة موجودة وتبدأ بـ SA).
+  const ibanRaw = String(get("ibanNumber") ?? "").trim();
+  if (ibanRaw && normalizeIban(ibanRaw).startsWith("SA") && !isValidSaudiIban(ibanRaw)) {
+    errors.push("الآيبان غير صالح");
+  }
 
   // اشتقاق أجزاء الاسم من الاسم الكامل.
   const parts = displayName.split(/\s+/).filter(Boolean);

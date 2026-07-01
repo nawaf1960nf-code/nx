@@ -10,6 +10,7 @@ import { Card, Badge } from "@/components/ui";
 import { EmployeeTimeline } from "@/components/EmployeeTimeline";
 import { EosCalculator } from "@/components/EosCalculator";
 import { formatSAR, formatDate, serviceLength } from "@/lib/format";
+import { maskIban } from "@/lib/validate";
 import { sumWage } from "@/lib/eos";
 import { computePayrollLine } from "@/lib/payroll";
 import type { CompanyAsset, Employee, EmployeeDocument, Loan, PerformanceReview, TrainingRecord } from "@/lib/types";
@@ -250,11 +251,26 @@ function SalaryInfo({ e, loans }: { e: Employee; loans: Loan[] }) {
 }
 
 function BankInfo({ e }: { e: Employee }) {
+  // الآيبان مخفي افتراضياً ويُكشف عند الطلب فقط (تقليل التعرّض البصري للبيانات الحساسة).
+  const [revealed, setRevealed] = useState(false);
+  const iban = e.ibanNumber && e.ibanNumber !== "—" ? (revealed ? e.ibanNumber : maskIban(e.ibanNumber)) : "—";
   return (
     <Section title="البيانات البنكية">
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Item label="اسم البنك" value={e.bankName} />
-        <Item label="رقم الآيبان (IBAN)" value={<span className="font-mono tracking-wide">{e.ibanNumber}</span>} />
+        <Item
+          label="رقم الآيبان (IBAN)"
+          value={
+            <span className="inline-flex items-center gap-2">
+              <span className="font-mono tracking-wide">{iban}</span>
+              {e.ibanNumber && e.ibanNumber !== "—" && (
+                <button onClick={() => setRevealed((v) => !v)} className="text-xs text-ink hover:underline">
+                  {revealed ? "إخفاء" : "إظهار"}
+                </button>
+              )}
+            </span>
+          }
+        />
       </div>
     </Section>
   );

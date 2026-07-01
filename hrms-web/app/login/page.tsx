@@ -53,9 +53,12 @@ export default function LoginPage() {
   const router = useRouter();
   const login = useStore((s) => s.login);
   const loginByEmail = useStore((s) => s.loginByEmail);
+  const loginLockUntil = useStore((s) => s.loginLockUntil);
 
   const [email, setEmail] = useState("");
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isLocked = loginLockUntil !== null && Date.now() < loginLockUntil;
 
   function enter(p: Profile) {
     login({ name: p.name, role: p.role, companyId: p.companyId });
@@ -64,9 +67,22 @@ export default function LoginPage() {
 
   function enterByEmail() {
     if (!email.trim()) return;
+    if (isLocked) {
+      setError("تم إيقاف المحاولات مؤقتاً لكثرة المحاولات الخاطئة. حاول بعد دقيقة.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
+      setError("صيغة البريد الإلكتروني غير صحيحة.");
+      return;
+    }
     const ok = loginByEmail(email);
     if (!ok) {
-      setError(true);
+      const nowLocked = useStore.getState().loginLockUntil;
+      setError(
+        nowLocked && Date.now() < nowLocked
+          ? "تم إيقاف المحاولات مؤقتاً لكثرة المحاولات الخاطئة. حاول بعد دقيقة."
+          : "لا يوجد حساب بهذا البريد. جرّب: sara@alfajr.sa",
+      );
       return;
     }
     const user = useStore.getState().currentUser;
@@ -113,7 +129,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
-                setError(false);
+                setError(null);
               }}
               onKeyDown={(e) => e.key === "Enter" && enterByEmail()}
               placeholder="admin@company.sa"
@@ -126,7 +142,7 @@ export default function LoginPage() {
               <LogIn size={16} /> دخول
             </button>
           </div>
-          {error && <p className="mt-2 text-xs text-danger">لا يوجد حساب بهذا البريد. جرّب: sara@alfajr.sa</p>}
+          {error && <p className="mt-2 text-xs text-danger">{error}</p>}
           <p className="mt-2 text-xs text-slate-400">حسابات للتجربة: admin@system.sa · sara@alfajr.sa · majed@noor.sa</p>
         </div>
 
